@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const CATEGORIES = [
-  { id: "all", label: "Todos", icon: null },
-  { id: "tech", label: "Tecnología & Gadgets", icon: Smartphone },
-  { id: "home", label: "Home & Lifestyle", icon: Home },
-  { id: "clothing", label: "Ropa", icon: Shirt },
+  { id: "all", label: "Todos", icon: null, keywords: [] },
+  { id: "tech", label: "Tecnología & Gadgets", icon: Smartphone, keywords: ["tech", "tecnología", "gadget", "móvil", "mobile", "phone", "electrónica", "electronic", "accesorio", "accessory", "cable", "charger", "cargador"] },
+  { id: "home", label: "Home & Lifestyle", icon: Home, keywords: ["home", "hogar", "lifestyle", "casa", "decoración", "decoration", "kitchen", "cocina", "garden", "jardín"] },
+  { id: "clothing", label: "Ropa", icon: Shirt, keywords: ["ropa", "clothing", "clothes", "zapato", "shoe", "boot", "bota", "calzado", "footwear", "camiseta", "shirt", "pantalón", "pants", "vestido", "dress"] },
 ];
 
 const Products = () => {
@@ -39,8 +39,25 @@ const Products = () => {
       product.node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.node.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // For now, all products match all categories until product types are properly tagged in Shopify
-    return matchesSearch;
+    if (activeCategory === "all") {
+      return matchesSearch;
+    }
+    
+    const category = CATEGORIES.find(c => c.id === activeCategory);
+    if (!category) return matchesSearch;
+    
+    const productText = [
+      product.node.title,
+      product.node.description,
+      product.node.productType,
+      ...(product.node.tags || [])
+    ].join(" ").toLowerCase();
+    
+    const matchesCategory = category.keywords.some(keyword => 
+      productText.includes(keyword.toLowerCase())
+    );
+    
+    return matchesSearch && matchesCategory;
   });
 
   return (
