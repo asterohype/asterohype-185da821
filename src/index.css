@@ -57,6 +57,9 @@
     --gold: 35 40% 50%;
     --gold-light: 35 50% 65%;
     --surface-elevated: 0 0% 10%;
+    
+    /* Title blue */
+    --title-blue: 210 100% 50%;
   }
 
   .dark {

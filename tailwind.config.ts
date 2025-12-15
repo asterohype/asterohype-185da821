@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'sans-serif'],
+        display: ['Russo One', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,6 +67,9 @@ export default {
         },
         surface: {
           elevated: "hsl(var(--surface-elevated))",
+        },
+        title: {
+          blue: "hsl(var(--title-blue))",
         },
       },
       borderRadius: {
