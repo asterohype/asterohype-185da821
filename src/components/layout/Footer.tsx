@@ -5,45 +5,45 @@ export function Footer() {
 
   const links = {
     shop: [
-      { name: "All Products", href: "/products" },
-      { name: "New Arrivals", href: "/products" },
-      { name: "Best Sellers", href: "/products" },
+      { name: "Todos los Productos", href: "/products" },
+      { name: "Tecnología", href: "/products" },
+      { name: "Accesorios", href: "/products" },
     ],
     support: [
-      { name: "Contact", href: "/" },
-      { name: "Shipping", href: "/" },
-      { name: "Returns", href: "/" },
+      { name: "Contacto", href: "/contact" },
+      { name: "Aviso Legal", href: "/legal" },
+      { name: "Envíos y Devoluciones", href: "/terms" },
     ],
     company: [
-      { name: "About", href: "/" },
-      { name: "Blog", href: "/" },
-      { name: "Careers", href: "/" },
+      { name: "Sobre Nosotros", href: "/" },
+      { name: "Política de Privacidad", href: "/privacy" },
+      { name: "Términos y Condiciones", href: "/terms" },
     ],
   };
 
   return (
-    <footer className="bg-background border-t border-border">
+    <footer className="bg-card border-t border-border">
       <div className="container mx-auto px-6 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="text-2xl font-semibold tracking-tight text-foreground">
+            <Link to="/" className="text-2xl font-display uppercase italic tracking-wide text-foreground">
               AsteroHype
             </Link>
             <p className="mt-4 text-sm text-muted-foreground max-w-xs">
-              Modern accessories and gadgets for those who appreciate simplicity and elegance.
+              Tu destino para tecnología, accesorios y moda. Calidad y estilo en cada producto.
             </p>
           </div>
 
           {/* Shop */}
           <div>
-            <h3 className="font-medium text-foreground mb-4">Shop</h3>
+            <h3 className="font-semibold text-foreground mb-4">Tienda</h3>
             <ul className="space-y-3">
               {links.shop.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300"
                   >
                     {link.name}
                   </Link>
@@ -54,13 +54,13 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="font-medium text-foreground mb-4">Support</h3>
+            <h3 className="font-semibold text-foreground mb-4">Soporte</h3>
             <ul className="space-y-3">
               {links.support.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300"
                   >
                     {link.name}
                   </Link>
@@ -71,13 +71,13 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="font-medium text-foreground mb-4">Company</h3>
+            <h3 className="font-semibold text-foreground mb-4">Legal</h3>
             <ul className="space-y-3">
               {links.company.map((link) => (
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300"
                   >
                     {link.name}
                   </Link>
@@ -90,14 +90,14 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} AsteroHype. All rights reserved.
+            © {currentYear} AsteroHype. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-6">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Privacy
+            <Link to="/privacy" className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300">
+              Privacidad
             </Link>
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Terms
+            <Link to="/terms" className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300">
+              Términos
             </Link>
           </div>
         </div>

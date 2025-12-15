@@ -66,8 +66,8 @@ const Products = () => {
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-6">
           {/* Header */}
-          <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-light text-foreground mb-4">
+          <div className="mb-12 animate-fade-up">
+            <h1 className="text-4xl md:text-5xl font-display uppercase italic text-foreground mb-4 tracking-wide">
               Todos los Productos
             </h1>
             <p className="text-muted-foreground max-w-2xl mb-8">
@@ -81,9 +81,9 @@ const Products = () => {
                 return (
                   <Button
                     key={category.id}
-                    variant={activeCategory === category.id ? "default" : "outline"}
+                    variant={activeCategory === category.id ? "hero" : "outline"}
                     size="sm"
-                    className="gap-2 rounded-full"
+                    className="gap-2 rounded-xl transition-all duration-300 hover:scale-105"
                     onClick={() => setActiveCategory(category.id)}
                   >
                     {Icon && <Icon className="h-4 w-4" />}
@@ -95,13 +95,13 @@ const Products = () => {
 
             {/* Search Bar */}
             <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Buscar productos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-secondary/50 border-border/50 focus:border-primary"
+                className="pl-11 bg-card border-border/50 focus:border-price-yellow rounded-xl h-12 transition-all duration-300"
               />
             </div>
           </div>
@@ -112,7 +112,7 @@ const Products = () => {
               <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-32">
+            <div className="text-center py-32 animate-fade-up">
               <p className="text-muted-foreground text-xl">
                 No se encontraron productos
               </p>
@@ -122,8 +122,14 @@ const Products = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.node.id} product={product} />
+              {filteredProducts.map((product, index) => (
+                <div 
+                  key={product.node.id}
+                  className="animate-fade-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           )}

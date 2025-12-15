@@ -1,8 +1,7 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/home/Hero";
-import { FeaturedProducts } from "@/components/home/FeaturedProducts";
-import { Newsletter } from "@/components/home/Newsletter";
+import { CategorySection } from "@/components/home/CategorySection";
 import { Sponsors } from "@/components/home/Sponsors";
 
 const Index = () => {
@@ -11,9 +10,11 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
-        <FeaturedProducts />
+        <CategorySection title="Tecnología & Gadgets" categoryFilter="tech" limit={4} />
+        <CategorySection title="Accesorios Móvil" categoryFilter="movil" limit={4} />
+        <CategorySection title="Home & Lifestyle" categoryFilter="home" limit={4} />
+        <CategorySection title="Ropa" categoryFilter="ropa" limit={4} />
         <Sponsors />
-        <Newsletter />
       </main>
       <Footer />
     </div>
