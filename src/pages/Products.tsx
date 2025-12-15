@@ -3,15 +3,37 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
-import { Loader2, Search, Smartphone, Home, Shirt } from "lucide-react";
+import { Loader2, Search, Smartphone, Home, Shirt, Headphones } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+// Updated categories with better keyword matching
 const CATEGORIES = [
   { id: "all", label: "Todos", icon: null, keywords: [] },
-  { id: "tech", label: "Tecnología & Gadgets", icon: Smartphone, keywords: ["tech", "tecnología", "gadget", "móvil", "mobile", "phone", "electrónica", "electronic", "accesorio", "accessory", "cable", "charger", "cargador"] },
-  { id: "home", label: "Home & Lifestyle", icon: Home, keywords: ["home", "hogar", "lifestyle", "casa", "decoración", "decoration", "kitchen", "cocina", "garden", "jardín"] },
-  { id: "clothing", label: "Ropa", icon: Shirt, keywords: ["ropa", "clothing", "clothes", "zapato", "shoe", "boot", "bota", "calzado", "footwear", "camiseta", "shirt", "pantalón", "pants", "vestido", "dress"] },
+  { 
+    id: "tech", 
+    label: "Tecnología & Gadgets", 
+    icon: Smartphone, 
+    keywords: ["phone case", "leather texture phone", "cable", "charger", "cargador", "auricular", "earphone", "headphone", "watch", "reloj", "smart", "electronic", "gadget", "speaker", "altavoz", "power bank", "bateria", "usb", "bluetooth", "secador", "multifuncional", "cepillo"]
+  },
+  {
+    id: "accesorios",
+    label: "Accesorios Móvil",
+    icon: Headphones,
+    keywords: ["phone case", "leather texture phone", "case", "funda", "carcasa", "protector", "cable", "strap", "correa", "holder", "soporte", "cover"]
+  },
+  { 
+    id: "home", 
+    label: "Home & Lifestyle", 
+    icon: Home, 
+    keywords: ["desk", "escritorio", "lamp", "lámpara", "chair", "silla", "table", "mesa", "home", "hogar", "kitchen", "cocina", "decoration", "decoración", "furniture", "mueble", "organizer", "storage", "shelf", "computer desk", "slippers", "zapatillas casa"]
+  },
+  { 
+    id: "clothing", 
+    label: "Ropa", 
+    icon: Shirt, 
+    keywords: ["coat", "chaqueta", "jacket", "shirt", "camiseta", "pants", "pantalón", "dress", "vestido", "boots", "botas", "shoes", "zapatos", "slippers", "sweater", "suéter", "hoodie", "cotton", "winter", "warm", "clothing", "wear", "fashion", "collar", "plush", "thickening", "boys", "cotton boots"]
+  },
 ];
 
 const Products = () => {
@@ -23,7 +45,7 @@ const Products = () => {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(20);
+        const data = await fetchProducts(50);
         setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);
@@ -35,9 +57,12 @@ const Products = () => {
   }, []);
 
   const filteredProducts = products.filter((product) => {
+    const titleLower = product.node.title?.toLowerCase() || "";
+    const descLower = product.node.description?.toLowerCase() || "";
+    
     const matchesSearch =
-      product.node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.node.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      titleLower.includes(searchQuery.toLowerCase()) ||
+      descLower.includes(searchQuery.toLowerCase());
     
     if (activeCategory === "all") {
       return matchesSearch;
@@ -46,15 +71,14 @@ const Products = () => {
     const category = CATEGORIES.find(c => c.id === activeCategory);
     if (!category) return matchesSearch;
     
-    const productText = [
-      product.node.title,
-      product.node.description,
-      product.node.productType,
-      ...(product.node.tags || [])
-    ].join(" ").toLowerCase();
+    const productType = product.node.productType?.toLowerCase() || "";
+    const tags = product.node.tags?.map(t => t.toLowerCase()) || [];
     
     const matchesCategory = category.keywords.some(keyword => 
-      productText.includes(keyword.toLowerCase())
+      titleLower.includes(keyword.toLowerCase()) ||
+      descLower.includes(keyword.toLowerCase()) ||
+      productType.includes(keyword.toLowerCase()) ||
+      tags.some(tag => tag.includes(keyword.toLowerCase()))
     );
     
     return matchesSearch && matchesCategory;
