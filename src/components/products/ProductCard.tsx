@@ -76,10 +76,10 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Info */}
       <div className="mt-4 space-y-1">
-        <h3 className="font-display text-title-blue italic uppercase line-clamp-2 leading-tight group-hover:text-primary transition-colors text-lg tracking-wide">
+        <h3 className="font-display text-foreground italic uppercase line-clamp-2 leading-tight group-hover:text-title-blue transition-colors duration-300 text-lg tracking-wide">
           {node.title}
         </h3>
-        <p className="text-primary font-semibold">
+        <p className="text-price-yellow font-semibold">
           {formatPrice(price.amount, price.currencyCode)}
         </p>
       </div>

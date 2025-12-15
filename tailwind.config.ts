@@ -71,6 +71,9 @@ export default {
         title: {
           blue: "hsl(var(--title-blue))",
         },
+        price: {
+          yellow: "hsl(var(--price-yellow))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

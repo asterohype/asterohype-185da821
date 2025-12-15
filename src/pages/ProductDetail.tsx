@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -51,6 +51,37 @@ const ProductDetail = () => {
     );
   })?.node;
 
+  // Find matching image based on selected color/variant
+  const matchingImageIndex = useMemo(() => {
+    if (!product) return 0;
+    
+    // Look for color option
+    const colorOption = selectedOptions["Color"] || selectedOptions["color"] || selectedOptions["Colour"];
+    if (!colorOption) return selectedImage;
+
+    // Try to find an image that matches the color in alt text
+    const matchIndex = product.images.edges.findIndex((img) => {
+      const altText = img.node.altText?.toLowerCase() || "";
+      return altText.includes(colorOption.toLowerCase());
+    });
+
+    return matchIndex >= 0 ? matchIndex : selectedImage;
+  }, [product, selectedOptions, selectedImage]);
+
+  // Update selected image when variant changes
+  useEffect(() => {
+    if (matchingImageIndex !== selectedImage) {
+      setSelectedImage(matchingImageIndex);
+    }
+  }, [matchingImageIndex]);
+
+  const handleOptionChange = (optionName: string, value: string) => {
+    setSelectedOptions((prev) => ({
+      ...prev,
+      [optionName]: value,
+    }));
+  };
+
   const handleAddToCart = () => {
     if (!product || !selectedVariant) return;
 
@@ -63,10 +94,10 @@ const ProductDetail = () => {
       selectedOptions: selectedVariant.selectedOptions,
     });
 
-    toast.success("Added to cart", {
+    toast.success("Añadido al carrito", {
       description: `${product.title} × ${quantity}`,
       action: {
-        label: "View Cart",
+        label: "Ver Carrito",
         onClick: () => setCartOpen(true),
       },
     });
@@ -89,11 +120,11 @@ const ProductDetail = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="flex flex-col items-center justify-center py-40">
-          <p className="text-xl text-muted-foreground mb-4">Product not found</p>
+          <p className="text-xl text-muted-foreground mb-4">Producto no encontrado</p>
           <Button asChild variant="outline">
             <Link to="/products">
               <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Products
+              Volver a Productos
             </Link>
           </Button>
         </div>
@@ -113,41 +144,41 @@ const ProductDetail = () => {
           {/* Breadcrumb */}
           <Link
             to="/products"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300 mb-8 group"
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back to Products
+            <ChevronLeft className="h-4 w-4 mr-1 transition-transform group-hover:-translate-x-1" />
+            Volver a Productos
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
             {/* Images */}
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-up">
               {/* Main Image */}
               <div className="aspect-square rounded-2xl overflow-hidden bg-card border border-border">
                 {images[selectedImage]?.node.url ? (
                   <img
                     src={images[selectedImage].node.url}
                     alt={images[selectedImage].node.altText || product.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    No image
+                    Sin imagen
                   </div>
                 )}
               </div>
 
-              {/* Thumbnails */}
+              {/* Thumbnails - Styled better */}
               {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto pb-2">
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                   {images.map((img, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                      className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
                         selectedImage === index
-                          ? "border-primary"
-                          : "border-border hover:border-muted-foreground"
+                          ? "border-price-yellow shadow-lg shadow-price-yellow/20"
+                          : "border-border/50 hover:border-muted-foreground opacity-70 hover:opacity-100"
                       }`}
                     >
                       <img
@@ -162,12 +193,12 @@ const ProductDetail = () => {
             </div>
 
             {/* Product Info */}
-            <div className="lg:sticky lg:top-28 lg:self-start space-y-8">
+            <div className="lg:sticky lg:top-28 lg:self-start space-y-8 animate-fade-up" style={{ animationDelay: "150ms" }}>
               <div>
-                <h1 className="text-3xl md:text-4xl font-light text-foreground mb-4">
+                <h1 className="text-3xl md:text-4xl font-display italic uppercase text-foreground mb-4 tracking-wide">
                   {product.title}
                 </h1>
-                <p className="text-2xl md:text-3xl font-semibold text-primary">
+                <p className="text-2xl md:text-3xl font-semibold text-price-yellow">
                   {formatPrice(price.amount, price.currencyCode)}
                 </p>
               </div>
@@ -183,22 +214,17 @@ const ProductDetail = () => {
               {product.options.map((option) => (
                 <div key={option.name}>
                   <h3 className="font-medium text-foreground mb-3">
-                    {option.name}
+                    {option.name}: <span className="text-price-yellow">{selectedOptions[option.name]}</span>
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {option.values.map((value) => (
                       <button
                         key={value}
-                        onClick={() =>
-                          setSelectedOptions((prev) => ({
-                            ...prev,
-                            [option.name]: value,
-                          }))
-                        }
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        onClick={() => handleOptionChange(option.name, value)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                           selectedOptions[option.name] === value
-                            ? "bg-foreground text-background"
-                            : "bg-secondary text-foreground hover:bg-secondary/80"
+                            ? "bg-price-yellow text-background shadow-lg shadow-price-yellow/30"
+                            : "bg-secondary text-foreground hover:bg-secondary/80 hover:scale-105"
                         }`}
                       >
                         {value}
@@ -210,21 +236,21 @@ const ProductDetail = () => {
 
               {/* Quantity */}
               <div>
-                <h3 className="font-medium text-foreground mb-3">Quantity</h3>
-                <div className="inline-flex items-center gap-1 bg-secondary rounded-full p-1">
+                <h3 className="font-medium text-foreground mb-3">Cantidad</h3>
+                <div className="inline-flex items-center gap-1 bg-secondary rounded-xl p-1">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10"
+                    className="h-10 w-10 rounded-lg hover:bg-background transition-colors"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-12 text-center font-medium">{quantity}</span>
+                  <span className="w-12 text-center font-semibold text-foreground">{quantity}</span>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10"
+                    className="h-10 w-10 rounded-lg hover:bg-background transition-colors"
                     onClick={() => setQuantity(quantity + 1)}
                   >
                     <Plus className="h-4 w-4" />
@@ -238,28 +264,28 @@ const ProductDetail = () => {
                   onClick={handleAddToCart}
                   variant="hero"
                   size="xl"
-                  className="w-full"
+                  className="w-full group"
                   disabled={!selectedVariant?.availableForSale}
                 >
-                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  <ShoppingBag className="h-5 w-5 mr-2 transition-transform group-hover:scale-110" />
                   {selectedVariant?.availableForSale
-                    ? "Add to Cart"
-                    : "Out of Stock"}
+                    ? "Añadir al Carrito"
+                    : "Agotado"}
                 </Button>
 
                 {/* Features */}
                 <div className="flex flex-wrap gap-4 pt-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-primary" />
-                    Free Shipping
+                    <Check className="h-4 w-4 text-price-yellow" />
+                    Envío Gratis
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-primary" />
-                    30-Day Returns
+                    <Check className="h-4 w-4 text-price-yellow" />
+                    30 Días Devolución
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-primary" />
-                    Secure Payment
+                    <Check className="h-4 w-4 text-price-yellow" />
+                    Pago Seguro
                   </div>
                 </div>
               </div>
