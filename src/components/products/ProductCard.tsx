@@ -76,7 +76,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Info */}
       <div className="mt-4 space-y-1">
-        <h3 className="font-light tracking-tight text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors text-lg">
+        <h3 className="font-display text-title-blue italic uppercase line-clamp-2 leading-tight group-hover:text-primary transition-colors text-lg tracking-wide">
           {node.title}
         </h3>
         <p className="text-primary font-semibold">
