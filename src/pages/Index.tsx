@@ -11,9 +11,9 @@ const Index = () => {
       <main>
         <Hero />
         <CategorySection title="Tecnología & Gadgets" categoryFilter="tech" limit={4} />
-        <CategorySection title="Accesorios Móvil" categoryFilter="movil" limit={4} />
+        <CategorySection title="Accesorios Móvil" categoryFilter="accesorios" limit={4} />
         <CategorySection title="Home & Lifestyle" categoryFilter="home" limit={4} />
-        <CategorySection title="Ropa" categoryFilter="ropa" limit={4} />
+        <CategorySection title="Ropa & Calzado" categoryFilter="ropa" limit={4} />
         <Sponsors />
       </main>
       <Footer />
