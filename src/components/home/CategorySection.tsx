@@ -5,12 +5,24 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
 
-// Keywords mapping for better category filtering
-const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  "tech": ["phone case", "leather texture phone", "cable", "charger", "cargador", "auricular", "earphone", "headphone", "watch", "reloj", "smart", "electronic", "gadget", "speaker", "altavoz", "power bank", "bateria", "usb", "bluetooth"],
-  "accesorios": ["phone case", "leather texture phone", "case", "funda", "carcasa", "protector", "cable", "strap", "correa", "holder", "soporte"],
-  "home": ["desk", "escritorio", "lamp", "lámpara", "chair", "silla", "table", "mesa", "home", "hogar", "kitchen", "cocina", "decoration", "decoración", "furniture", "mueble", "organizer", "storage", "shelf"],
-  "ropa": ["coat", "chaqueta", "jacket", "shirt", "camiseta", "pants", "pantalón", "dress", "vestido", "boots", "botas", "shoes", "zapatos", "slippers", "zapatillas", "sweater", "suéter", "hoodie", "cotton", "winter", "warm", "clothing", "wear", "fashion"],
+// Keywords mapping for STRICT category filtering - each category has EXCLUSIVE keywords
+const CATEGORY_KEYWORDS: Record<string, { include: string[], exclude: string[] }> = {
+  "tech": {
+    include: ["secador", "hair dryer", "cepillo", "brush", "electronic", "gadget", "speaker", "altavoz", "power bank", "bluetooth", "smart watch", "auricular", "earphone", "headphone"],
+    exclude: ["phone case", "funda", "carcasa", "coat", "jacket", "boots", "slippers", "desk", "table"]
+  },
+  "accesorios": {
+    include: ["phone case", "leather texture phone", "funda", "carcasa", "protector", "cable", "charger", "cargador"],
+    exclude: ["coat", "jacket", "boots", "desk", "table", "slippers"]
+  },
+  "home": {
+    include: ["desk", "escritorio", "lamp", "lámpara", "table", "mesa", "slippers", "zapatillas casa", "linen slippers", "home", "hogar", "kitchen", "cocina", "decoration", "furniture", "organizer", "storage", "shelf"],
+    exclude: ["phone case", "coat", "jacket", "boots", "secador"]
+  },
+  "ropa": {
+    include: ["coat", "chaqueta", "jacket", "shirt", "camiseta", "pants", "pantalón", "dress", "vestido", "boots", "botas", "shoes", "zapatos", "sweater", "suéter", "hoodie", "cotton boots", "winter coat", "stand collar"],
+    exclude: ["phone case", "desk", "table", "slippers", "secador", "lamp"]
+  },
 };
 
 interface CategorySectionProps {
@@ -30,21 +42,24 @@ export function CategorySection({ title, categoryFilter, limit = 4 }: CategorySe
         let filtered = data;
         
         if (categoryFilter && CATEGORY_KEYWORDS[categoryFilter]) {
-          const keywords = CATEGORY_KEYWORDS[categoryFilter];
+          const { include, exclude } = CATEGORY_KEYWORDS[categoryFilter];
           
           filtered = data.filter((product) => {
             const titleLower = product.node.title?.toLowerCase() || "";
-            const descLower = product.node.description?.toLowerCase() || "";
-            const productType = product.node.productType?.toLowerCase() || "";
-            const tags = product.node.tags?.map(t => t.toLowerCase()) || [];
+            const searchText = titleLower;
             
-            // Check if any keyword matches
-            return keywords.some(keyword => 
-              titleLower.includes(keyword.toLowerCase()) ||
-              descLower.includes(keyword.toLowerCase()) ||
-              productType.includes(keyword.toLowerCase()) ||
-              tags.some(tag => tag.includes(keyword.toLowerCase()))
+            // Check if product matches ANY include keyword
+            const hasInclude = include.some(keyword => 
+              searchText.includes(keyword.toLowerCase())
             );
+            
+            // Check if product matches ANY exclude keyword
+            const hasExclude = exclude.some(keyword => 
+              searchText.includes(keyword.toLowerCase())
+            );
+            
+            // Must match include AND not match exclude
+            return hasInclude && !hasExclude;
           });
         }
         

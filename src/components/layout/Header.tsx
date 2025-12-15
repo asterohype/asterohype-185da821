@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useState } from "react";
@@ -47,7 +47,7 @@ export function Header() {
                 className="relative group flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
               >
                 <div className="relative">
-                  <Sparkles className="h-5 w-5 text-price-yellow" />
+                  <ShoppingBag className="h-5 w-5 text-price-yellow" />
                   {totalItems > 0 && (
                     <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-price-yellow text-background text-[10px] flex items-center justify-center font-bold">
                       {totalItems}
