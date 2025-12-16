@@ -3,14 +3,15 @@ import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { fetchProductByHandle, formatPrice, ShopifyProduct } from "@/lib/shopify";
+import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
+import { ProductCard } from "@/components/products/ProductCard";
 import { toast } from "sonner";
 import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check } from "lucide-react";
-
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
   const [product, setProduct] = useState<ShopifyProduct['node'] | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
@@ -35,6 +36,14 @@ const ProductDetail = () => {
           });
           setSelectedOptions(initialOptions);
         }
+        
+        // Fetch related products
+        const allProducts = await fetchProducts(20);
+        // Filter to show products that are not the current one
+        const related = allProducts
+          .filter((p) => p.node.handle !== handle)
+          .slice(0, 4);
+        setRelatedProducts(related);
       } catch (error) {
         console.error("Failed to load product:", error);
       } finally {
@@ -291,6 +300,20 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
+
+          {/* Related Products */}
+          {relatedProducts.length > 0 && (
+            <section className="mt-20 pt-16 border-t border-border">
+              <h2 className="text-2xl md:text-3xl font-display italic uppercase text-foreground mb-8">
+                También te puede gustar
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {relatedProducts.map((product) => (
+                  <ProductCard key={product.node.id} product={product} />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
       <Footer />
