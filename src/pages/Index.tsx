@@ -375,27 +375,28 @@ const Index = () => {
           );
         })}
 
-        {/* Trust Badges */}
-        <section className="container mx-auto px-4 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Sponsors section with products */}
+        <Sponsors products={products.slice(12, 20)} />
+
+        {/* Trust Badges - Above footer */}
+        <section className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { icon: Truck, title: "Envío Rápido", desc: "6-10 días laborables" },
+              { icon: Truck, title: "Envío Rápido", desc: "Envío mundial disponible" },
               { icon: Shield, title: "Pago Seguro", desc: "Transacciones protegidas" },
               { icon: Star, title: "Calidad Premium", desc: "Productos seleccionados" },
               { icon: Headphones, title: "Soporte 24/7", desc: "Estamos para ayudarte" },
             ].map((badge, i) => (
-              <div key={i} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border/50 hover:border-price-yellow/30 transition-colors">
-                <badge.icon className="h-8 w-8 text-price-yellow" />
+              <div key={i} className="flex items-center gap-3 p-3 md:p-4 bg-card rounded-xl border border-border/50 hover:border-price-yellow/30 transition-colors">
+                <badge.icon className="h-6 w-6 md:h-8 md:w-8 text-price-yellow flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-foreground text-sm">{badge.title}</p>
-                  <p className="text-xs text-muted-foreground">{badge.desc}</p>
+                  <p className="font-semibold text-foreground text-xs md:text-sm">{badge.title}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">{badge.desc}</p>
                 </div>
               </div>
             ))}
           </div>
         </section>
-
-        <Sponsors />
       </main>
       <Footer />
     </div>
