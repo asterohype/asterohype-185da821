@@ -111,30 +111,30 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-32">
-        {/* Lifestyle Banner - Compact */}
-        <section className="container mx-auto px-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-[180px] md:h-[220px]">
-            <div className="relative rounded-xl overflow-hidden group">
+        {/* Lifestyle Banner */}
+        <section className="container mx-auto px-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[300px] md:h-[400px]">
+            <div className="relative rounded-2xl overflow-hidden group">
               <img src={lifestyleImg1} alt="Shopping lifestyle" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <h2 className="text-lg md:text-xl font-display italic text-foreground mb-1">Compra con Confianza</h2>
-                <p className="text-muted-foreground text-xs md:text-sm">Miles de clientes satisfechos</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+              <div className="absolute bottom-6 left-6 right-6">
+                <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">Compra con Confianza</h2>
+                <p className="text-muted-foreground text-sm md:text-base">Miles de clientes satisfechos</p>
                 <Link to="/products">
-                  <Button variant="hero" size="sm" className="mt-2 rounded-full text-xs">
+                  <Button variant="hero" size="lg" className="mt-4 rounded-full">
                     Explorar Tienda
                   </Button>
                 </Link>
               </div>
             </div>
-            <div className="relative rounded-xl overflow-hidden group">
+            <div className="relative rounded-2xl overflow-hidden group">
               <img src={lifestyleImg2} alt="Happy customer" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <h2 className="text-lg md:text-xl font-display italic text-foreground mb-1">Ofertas Exclusivas</h2>
-                <p className="text-muted-foreground text-xs md:text-sm">Descuentos especiales cada día</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+              <div className="absolute bottom-6 left-6 right-6">
+                <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">Ofertas Exclusivas</h2>
+                <p className="text-muted-foreground text-sm md:text-base">Descuentos especiales cada día</p>
                 <Link to="/products">
-                  <Button variant="hero-outline" size="sm" className="mt-2 rounded-full text-xs">
+                  <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
                     Ver Ofertas
                   </Button>
                 </Link>
