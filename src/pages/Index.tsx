@@ -353,7 +353,7 @@ const Index = () => {
 
         {/* Category Sections with Products */}
         {!loading && products.length > 0 && CATEGORIES.map((category) => {
-          const categoryProducts = getProductsByCategory(category.keywords).slice(0, 5);
+          const categoryProducts = getProductsByCategory(category.keywords).slice(0, 10);
           if (categoryProducts.length === 0) return null;
           return (
             <section key={category.id} className="container mx-auto px-4 py-8">
@@ -366,7 +366,7 @@ const Index = () => {
                   Ver todo <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 md:gap-3">
                 {categoryProducts.map((product) => (
                   <ProductCard key={product.node.id} product={product} />
                 ))}
