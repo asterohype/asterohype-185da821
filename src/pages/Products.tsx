@@ -140,7 +140,7 @@ const Products = () => {
             )}
           </div>
 
-          {/* Products Grid - 5 columns */}
+          {/* Products Grid - 10 columns on large screens */}
           {loading ? (
             <div className="flex items-center justify-center py-32">
               <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
@@ -156,7 +156,7 @@ const Products = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2 md:gap-3">
                 {paginatedProducts.map((product, index) => (
                   <div 
                     key={product.node.id}
