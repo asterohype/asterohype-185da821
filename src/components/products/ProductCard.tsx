@@ -75,16 +75,12 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Info */}
-      <div className="mt-4 space-y-1">
-        <h3 className="font-display text-foreground italic uppercase line-clamp-2 leading-tight group-hover:text-title-blue transition-colors duration-300 text-lg tracking-wide">
+      <div className="mt-3 space-y-1">
+        <h3 className="font-display text-foreground italic uppercase line-clamp-2 leading-tight group-hover:text-title-blue transition-colors duration-300 text-sm tracking-wide">
           {node.title}
         </h3>
-        <p className="text-price-yellow font-semibold">
+        <p className="text-price-yellow font-semibold text-sm">
           {formatPrice(price.amount, price.currencyCode)}
-        </p>
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
-          Entrega: 6-10 días
         </p>
       </div>
     </Link>
