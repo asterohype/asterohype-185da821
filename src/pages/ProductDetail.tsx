@@ -9,6 +9,9 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { toast } from "sonner";
 import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw } from "lucide-react";
 
+const FADE_MS = 280;
+const AUTOSLIDE_MS = 2200;
+
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
   const [product, setProduct] = useState<ShopifyProduct['node'] | null>(null);
@@ -86,15 +89,26 @@ const ProductDetail = () => {
     }
   }, [matchingImageIndex]);
 
-  // Auto-slide images
+  // Preload images for smooth/fast transitions
+  useEffect(() => {
+    if (!product) return;
+    const urls = product.images.edges.map((e) => e.node.url).filter(Boolean);
+    urls.forEach((url) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+    });
+  }, [product]);
+
+  // Auto-slide images (fast + clean)
   useEffect(() => {
     if (!product || !autoSlide || product.images.edges.length <= 1) return;
-    
-    const timer = setInterval(() => {
+
+    const timer = window.setInterval(() => {
       setSelectedImage((prev) => (prev + 1) % product.images.edges.length);
-    }, 4000);
-    
-    return () => clearInterval(timer);
+    }, AUTOSLIDE_MS);
+
+    return () => window.clearInterval(timer);
   }, [product, autoSlide]);
 
   const handleOptionChange = (optionName: string, value: string) => {
@@ -175,14 +189,22 @@ const ProductDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
             {/* Images */}
             <div className="space-y-4 animate-fade-up">
-              {/* Main Image */}
-              <div className="aspect-square rounded-2xl overflow-hidden bg-card border border-border">
-                {images[selectedImage]?.node.url ? (
-                  <img
-                    src={images[selectedImage].node.url}
-                    alt={images[selectedImage].node.altText || product.title}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
+              {/* Main Image (fade carousel) */}
+              <div className="aspect-square rounded-2xl overflow-hidden bg-card border border-border relative">
+                {images.length > 0 ? (
+                  images.map((img, idx) => (
+                    <img
+                      key={img.node.url}
+                      src={img.node.url}
+                      alt={img.node.altText || product.title}
+                      loading={idx === 0 ? "eager" : "lazy"}
+                      decoding="async"
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity ease-out ${
+                        idx === selectedImage ? "opacity-100" : "opacity-0"
+                      }`}
+                      style={{ transitionDuration: `${FADE_MS}ms` }}
+                    />
+                  ))
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                     Sin imagen
@@ -203,7 +225,7 @@ const ProductDetail = () => {
                       onClick={() => {
                         setSelectedImage(index);
                         setAutoSlide(false);
-                        setTimeout(() => setAutoSlide(true), 10000);
+                        window.setTimeout(() => setAutoSlide(true), 10000);
                       }}
                       className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
                         selectedImage === index
@@ -214,6 +236,8 @@ const ProductDetail = () => {
                       <img
                         src={img.node.url}
                         alt={img.node.altText || `${product.title} ${index + 1}`}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </button>
