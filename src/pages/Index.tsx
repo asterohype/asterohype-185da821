@@ -11,10 +11,22 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const CATEGORIES = [
-  { id: "tech", label: "Tecnología", icon: Smartphone, color: "from-blue-500/20 to-cyan-500/20", keywords: ["phone case", "cable", "charger", "electronic", "gadget", "smart", "secador", "bluetooth"] },
-  { id: "accesorios", label: "Accesorios", icon: Headphones, color: "from-purple-500/20 to-pink-500/20", keywords: ["case", "funda", "protector", "cover", "holder"] },
-  { id: "home", label: "Hogar", icon: Home, color: "from-green-500/20 to-emerald-500/20", keywords: ["desk", "kitchen", "home", "tumbler", "organizer"] },
-  { id: "clothing", label: "Ropa", icon: Shirt, color: "from-orange-500/20 to-red-500/20", keywords: ["coat", "boots", "slippers", "cotton", "warm", "fashion"] },
+  { id: "tech", label: "Tecnología", icon: Smartphone, keywords: ["phone case", "cable", "charger", "electronic", "gadget", "smart", "secador", "bluetooth"] },
+  { id: "accesorios", label: "Accesorios", icon: Headphones, keywords: ["case", "funda", "protector", "cover", "holder"] },
+  { id: "home", label: "Hogar", icon: Home, keywords: ["desk", "kitchen", "home", "tumbler", "organizer"] },
+  { id: "clothing", label: "Ropa", icon: Shirt, keywords: ["coat", "boots", "slippers", "cotton", "warm", "fashion"] },
+];
+
+// Shein-style category bubbles - all with unique names
+const SHEIN_CATEGORIES = [
+  { label: "Tecnología", query: "tech", productIndex: 0 },
+  { label: "Accesorios", query: "case", productIndex: 1 },
+  { label: "Hogar", query: "desk", productIndex: 2 },
+  { label: "Ropa", query: "clothing", productIndex: 3 },
+  { label: "Fundas", query: "funda", productIndex: 4 },
+  { label: "Gadgets", query: "gadget", productIndex: 5 },
+  { label: "Calzado", query: "boots", productIndex: 6 },
+  { label: "Electrónica", query: "electronic", productIndex: 7 },
 ];
 
 // Animated Image Carousel Component
@@ -188,7 +200,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Category Quick Access - BIGGER Circles like Shein */}
+        {/* Category Quick Access - Shein Style Circles */}
         <section className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-display text-2xl md:text-3xl uppercase italic text-foreground">Categorías</h2>
@@ -198,8 +210,8 @@ const Index = () => {
           </div>
           
           {loading ? (
-            <div className="flex justify-center gap-8 md:gap-12 flex-wrap">
-              {Array.from({ length: 6 }).map((_, i) => (
+            <div className="flex justify-center gap-6 md:gap-10 flex-wrap">
+              {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="flex flex-col items-center gap-3">
                   <Skeleton className="w-24 h-24 md:w-32 md:h-32 rounded-full" />
                   <Skeleton className="h-4 w-16" />
@@ -207,43 +219,23 @@ const Index = () => {
               ))}
             </div>
           ) : (
-            <div className="flex justify-center gap-6 md:gap-10 lg:gap-14 flex-wrap">
-              {CATEGORIES.map((category) => {
-                const categoryProducts = getProductsByCategory(category.keywords);
-                const previewImage = categoryProducts[0]?.node.images.edges[0]?.node.url;
+            <div className="flex justify-center gap-6 md:gap-10 lg:gap-12 flex-wrap">
+              {SHEIN_CATEGORIES.map((category, index) => {
+                const previewImage = products[category.productIndex]?.node.images.edges[0]?.node.url;
                 return (
                   <Link
-                    key={category.id}
-                    to={`/products?category=${category.id}`}
+                    key={category.label}
+                    to={`/products?search=${category.query}`}
                     className="flex flex-col items-center gap-3 group"
                   >
                     <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full border-2 border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow transition-all duration-300 group-hover:scale-105 bg-secondary/30">
                       {previewImage ? (
                         <img src={previewImage} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <category.icon className="h-10 w-10 text-foreground" />
+                        <Smartphone className="h-10 w-10 text-foreground" />
                       )}
                     </div>
                     <span className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium">{category.label}</span>
-                  </Link>
-                );
-              })}
-              {/* More category circles with different products */}
-              {CATEGORIES.slice(0, 2).map((category) => {
-                const categoryProducts = getProductsByCategory(category.keywords);
-                const previewImage = categoryProducts[1]?.node.images.edges[0]?.node.url;
-                return (
-                  <Link
-                    key={`${category.id}-more`}
-                    to={`/products?category=${category.id}`}
-                    className="flex flex-col items-center gap-3 group"
-                  >
-                    <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full border-2 border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow transition-all duration-300 group-hover:scale-105 bg-secondary/30">
-                      {previewImage && (
-                        <img src={previewImage} alt="" className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                    <span className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium">Más {category.label}</span>
                   </Link>
                 );
               })}
