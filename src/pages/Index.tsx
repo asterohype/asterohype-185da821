@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -6,8 +6,9 @@ import { Hero } from "@/components/home/Hero";
 import { Sponsors } from "@/components/home/Sponsors";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct, formatPrice } from "@/lib/shopify";
-import { Loader2, Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight } from "lucide-react";
+import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CATEGORIES = [
   { id: "tech", label: "Tecnología", icon: Smartphone, color: "from-blue-500/20 to-cyan-500/20", keywords: ["phone case", "cable", "charger", "electronic", "gadget", "smart", "secador", "bluetooth"] },
@@ -16,6 +17,47 @@ const CATEGORIES = [
   { id: "clothing", label: "Ropa", icon: Shirt, color: "from-orange-500/20 to-red-500/20", keywords: ["coat", "boots", "slippers", "cotton", "warm", "fashion"] },
 ];
 
+// Animated Image Carousel Component
+const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval?: number }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [images.length, interval]);
+
+  return (
+    <div className="relative w-full h-full overflow-hidden">
+      {images.map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt=""
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
+            i === currentIndex ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Get category for a product
+const getProductCategory = (product: ShopifyProduct) => {
+  const titleLower = product.node.title?.toLowerCase() || "";
+  const descLower = product.node.description?.toLowerCase() || "";
+  
+  for (const cat of CATEGORIES) {
+    if (cat.keywords.some(kw => titleLower.includes(kw) || descLower.includes(kw))) {
+      return cat;
+    }
+  }
+  return null;
+};
+
 const Index = () => {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +65,7 @@ const Index = () => {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(50);
+        const data = await fetchProducts(30); // Reduced for faster loading
         setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);
@@ -34,7 +76,7 @@ const Index = () => {
     loadProducts();
   }, []);
 
-  const getProductsByCategory = (keywords: string[]) => {
+  const getProductsByCategory = useCallback((keywords: string[]) => {
     return products.filter((product) => {
       const titleLower = product.node.title?.toLowerCase() || "";
       const descLower = product.node.description?.toLowerCase() || "";
@@ -43,6 +85,13 @@ const Index = () => {
         descLower.includes(keyword.toLowerCase())
       );
     });
+  }, [products]);
+
+  // Get images for carousel from products
+  const getCarouselImages = (startIdx: number, count: number) => {
+    return products.slice(startIdx, startIdx + count)
+      .map(p => p.node.images.edges[0]?.node.url)
+      .filter(Boolean) as string[];
   };
 
   return (
@@ -52,165 +101,243 @@ const Index = () => {
         <Hero />
         
         {/* Marketing Cards Grid - Amazon Style */}
-        {!loading && products.length > 0 && (
-          <section className="container mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Top Ventas Card */}
-              <div className="bg-card border border-border rounded-xl p-5 hover:border-price-yellow/50 transition-colors">
-                <div className="flex items-center gap-2 mb-4">
-                  <Flame className="h-5 w-5 text-orange-500" />
-                  <h3 className="font-semibold text-foreground">Top Ventas</h3>
+        <section className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {loading ? (
+              // Skeleton loaders
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-card border border-border rounded-xl p-5">
+                  <Skeleton className="h-6 w-32 mb-4" />
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {Array.from({ length: 4 }).map((_, j) => (
+                      <Skeleton key={j} className="aspect-square rounded-lg" />
+                    ))}
+                  </div>
+                  <Skeleton className="h-4 w-20" />
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {products.slice(0, 4).map((product, i) => (
-                    <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:opacity-80 transition-opacity">
-                      <img src={product.node.images.edges[0]?.node.url} alt="" className="w-full h-full object-cover" />
-                    </Link>
-                  ))}
+              ))
+            ) : (
+              <>
+                {/* Top Ventas Card with Carousel */}
+                <div className="bg-card border border-border rounded-xl p-5 hover:border-price-yellow/50 transition-colors">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    <h3 className="font-semibold text-foreground">Top Ventas</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {products.slice(0, 4).map((product, i) => (
+                      <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
+                        <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3000 + i * 500} />
+                      </Link>
+                    ))}
+                  </div>
+                  <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
+                    Ver más <ChevronRight className="h-3 w-3" />
+                  </Link>
                 </div>
-                <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
-                  Ver más <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
 
-              {/* Ofertas Flash Card */}
-              <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-xl p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="h-5 w-5 text-red-500" />
-                  <h3 className="font-semibold text-foreground">Ofertas del Día</h3>
+                {/* Ofertas Flash Card */}
+                <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Zap className="h-5 w-5 text-red-500 animate-pulse" />
+                    <h3 className="font-semibold text-foreground">Ofertas del Día</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {products.slice(4, 8).map((product, i) => (
+                      <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-red-500/50 transition-all relative group">
+                        <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={2500 + i * 400} />
+                        <span className="absolute bottom-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">HOT</span>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link to="/products" className="text-sm text-red-400 hover:underline flex items-center gap-1">
+                    Ver ofertas <ChevronRight className="h-3 w-3" />
+                  </Link>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {products.slice(4, 8).map((product, i) => (
-                    <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:opacity-80 transition-opacity relative">
-                      <img src={product.node.images.edges[0]?.node.url} alt="" className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded">HOT</span>
-                    </Link>
-                  ))}
-                </div>
-                <Link to="/products" className="text-sm text-red-400 hover:underline flex items-center gap-1">
-                  Ver ofertas <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
 
-              {/* Nuevos Productos Card */}
-              <div className="bg-gradient-to-br from-price-yellow/10 to-amber-500/10 border border-price-yellow/20 rounded-xl p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Gift className="h-5 w-5 text-price-yellow" />
-                  <h3 className="font-semibold text-foreground">Nuevos Productos</h3>
+                {/* Nuevos Productos Card */}
+                <div className="bg-gradient-to-br from-price-yellow/10 to-amber-500/10 border border-price-yellow/20 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Gift className="h-5 w-5 text-price-yellow" />
+                    <h3 className="font-semibold text-foreground">Nuevos Productos</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {products.slice(8, 12).map((product, i) => (
+                      <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
+                        <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3500 + i * 300} />
+                      </Link>
+                    ))}
+                  </div>
+                  <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
+                    Explorar <ChevronRight className="h-3 w-3" />
+                  </Link>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {products.slice(8, 12).map((product, i) => (
-                    <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:opacity-80 transition-opacity">
-                      <img src={product.node.images.edges[0]?.node.url} alt="" className="w-full h-full object-cover" />
-                    </Link>
-                  ))}
-                </div>
-                <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
-                  Explorar <ChevronRight className="h-3 w-3" />
-                </Link>
-              </div>
 
-              {/* Iniciar Sesión Card */}
-              <div className="bg-card border border-border rounded-xl p-5 flex flex-col">
-                <h3 className="font-semibold text-foreground mb-2">Mejora tu experiencia</h3>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Inicia sesión para guardar favoritos y ver tu historial.</p>
-                <Link to="/auth">
-                  <Button variant="hero" className="w-full rounded-full">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
-              </div>
+                {/* Iniciar Sesión Card */}
+                <div className="bg-card border border-border rounded-xl p-5 flex flex-col">
+                  <h3 className="font-semibold text-foreground mb-2">Mejora tu experiencia</h3>
+                  <p className="text-sm text-muted-foreground mb-4 flex-1">Inicia sesión para guardar favoritos y ver tu historial.</p>
+                  <Link to="/auth">
+                    <Button variant="hero" className="w-full rounded-full">
+                      Iniciar Sesión
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Category Quick Access - BIGGER Circles like Shein */}
+        <section className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="font-display text-2xl md:text-3xl uppercase italic text-foreground">Categorías</h2>
+            <Link to="/products" className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
+              Ver todo <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          
+          {loading ? (
+            <div className="flex justify-center gap-8 md:gap-12 flex-wrap">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-3">
+                  <Skeleton className="w-24 h-24 md:w-32 md:h-32 rounded-full" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
             </div>
-          </section>
-        )}
-
-        {/* Category Quick Access - Visual Circles like Shein */}
-        {!loading && products.length > 0 && (
-          <section className="container mx-auto px-4 py-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-2xl uppercase italic text-foreground">Categorías</h2>
-              <Link to="/products" className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
-                Ver todo <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+          ) : (
+            <div className="flex justify-center gap-6 md:gap-10 lg:gap-14 flex-wrap">
               {CATEGORIES.map((category) => {
-                const Icon = category.icon;
                 const categoryProducts = getProductsByCategory(category.keywords);
                 const previewImage = categoryProducts[0]?.node.images.edges[0]?.node.url;
                 return (
                   <Link
                     key={category.id}
                     to={`/products?category=${category.id}`}
-                    className="flex flex-col items-center gap-2 group"
+                    className="flex flex-col items-center gap-3 group"
                   >
-                    <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br ${category.color} border border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow/50 transition-all group-hover:scale-105`}>
+                    <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full border-2 border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow transition-all duration-300 group-hover:scale-105 bg-secondary/30">
                       {previewImage ? (
                         <img src={previewImage} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <Icon className="h-6 w-6 text-foreground" />
+                        <category.icon className="h-10 w-10 text-foreground" />
                       )}
                     </div>
-                    <span className="text-xs text-center text-muted-foreground group-hover:text-foreground transition-colors">{category.label}</span>
+                    <span className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium">{category.label}</span>
                   </Link>
                 );
               })}
-              {/* Repeat for more visual circles */}
-              {CATEGORIES.map((category) => {
+              {/* More category circles with different products */}
+              {CATEGORIES.slice(0, 2).map((category) => {
                 const categoryProducts = getProductsByCategory(category.keywords);
-                const previewImage = categoryProducts[1]?.node.images.edges[0]?.node.url || categoryProducts[0]?.node.images.edges[0]?.node.url;
+                const previewImage = categoryProducts[1]?.node.images.edges[0]?.node.url;
                 return (
                   <Link
-                    key={`${category.id}-2`}
+                    key={`${category.id}-more`}
                     to={`/products?category=${category.id}`}
-                    className="hidden md:flex flex-col items-center gap-2 group"
+                    className="flex flex-col items-center gap-3 group"
                   >
-                    <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br ${category.color} border border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow/50 transition-all group-hover:scale-105`}>
+                    <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full border-2 border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow transition-all duration-300 group-hover:scale-105 bg-secondary/30">
                       {previewImage && (
                         <img src={previewImage} alt="" className="w-full h-full object-cover" />
                       )}
                     </div>
-                    <span className="text-xs text-center text-muted-foreground group-hover:text-foreground transition-colors">Más {category.label}</span>
+                    <span className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium">Más {category.label}</span>
                   </Link>
                 );
               })}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
-        {/* Featured Products Grid */}
-        {!loading && products.length > 0 && (
-          <section className="container mx-auto px-4 py-8">
+        {/* PRODUCTOS DESTACADOS - Special highlighted section */}
+        <section className="py-10 bg-gradient-to-r from-price-yellow/5 via-price-yellow/10 to-price-yellow/5 border-y border-price-yellow/20">
+          <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-2xl uppercase italic text-foreground">Productos Destacados</h2>
-              <Link to="/products" className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-8 bg-price-yellow rounded-full"></div>
+                <h2 className="font-display text-2xl md:text-3xl uppercase italic text-foreground">
+                  Productos <span className="text-price-yellow">Destacados</span>
+                </h2>
+                <Star className="h-6 w-6 text-price-yellow fill-price-yellow animate-pulse" />
+              </div>
+              <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
                 Ver todo <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-              {products.slice(0, 10).map((product, index) => (
-                <div 
-                  key={product.node.id}
-                  className="animate-fade-up"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+            
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="bg-card rounded-xl p-3">
+                    <Skeleton className="aspect-square rounded-lg mb-3" />
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                {products.slice(0, 10).map((product, index) => {
+                  const category = getProductCategory(product);
+                  return (
+                    <Link 
+                      key={product.node.id}
+                      to={`/product/${product.node.handle}`}
+                      className="group relative bg-card rounded-xl overflow-hidden border-2 border-price-yellow/30 hover:border-price-yellow transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-price-yellow/20 animate-fade-up"
+                      style={{ animationDelay: `${index * 80}ms` }}
+                    >
+                      {/* Destacado badge */}
+                      <div className="absolute top-2 left-2 z-10 bg-price-yellow text-background text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Star className="h-2.5 w-2.5 fill-background" />
+                        DESTACADO
+                      </div>
+                      
+                      {/* Category label */}
+                      {category && (
+                        <div className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-2 py-0.5 rounded-full border border-border/50">
+                          {category.label}
+                        </div>
+                      )}
+                      
+                      {/* Image with glow effect */}
+                      <div className="aspect-square overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-t from-price-yellow/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-[1]"></div>
+                        <img 
+                          src={product.node.images.edges[0]?.node.url} 
+                          alt={product.node.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="p-3">
+                        <h3 className="text-xs md:text-sm font-medium text-foreground line-clamp-2 group-hover:text-price-yellow transition-colors">
+                          {product.node.title}
+                        </h3>
+                        <p className="text-price-yellow font-bold text-sm md:text-base mt-1">
+                          {formatPrice(product.node.priceRange.minVariantPrice.amount, product.node.priceRange.minVariantPrice.currencyCode)}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Category Sections with Products */}
         {!loading && products.length > 0 && CATEGORIES.map((category) => {
           const categoryProducts = getProductsByCategory(category.keywords).slice(0, 5);
           if (categoryProducts.length === 0) return null;
           return (
-            <section key={category.id} className="container mx-auto px-4 py-6">
+            <section key={category.id} className="container mx-auto px-4 py-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <category.icon className="h-5 w-5 text-price-yellow" />
-                  <h2 className="font-display text-xl uppercase italic text-foreground">{category.label}</h2>
+                  <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
                 </div>
                 <Link to={`/products?category=${category.id}`} className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
                   Ver todo <ArrowRight className="h-4 w-4" />
@@ -234,7 +361,7 @@ const Index = () => {
               { icon: Star, title: "Calidad Premium", desc: "Productos seleccionados" },
               { icon: Headphones, title: "Soporte 24/7", desc: "Estamos para ayudarte" },
             ].map((badge, i) => (
-              <div key={i} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border/50">
+              <div key={i} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border/50 hover:border-price-yellow/30 transition-colors">
                 <badge.icon className="h-8 w-8 text-price-yellow" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">{badge.title}</p>
@@ -246,12 +373,6 @@ const Index = () => {
         </section>
 
         <Sponsors />
-
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-          </div>
-        )}
       </main>
       <Footer />
     </div>
