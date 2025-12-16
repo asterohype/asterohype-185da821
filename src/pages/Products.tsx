@@ -3,9 +3,19 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
-import { Loader2, Search, Smartphone, Home, Shirt, Headphones } from "lucide-react";
+import { Loader2, Search, Smartphone, Home, Shirt, Headphones, Sparkles, TrendingUp, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const PRODUCTS_PER_PAGE = 15;
 
 // Updated categories with better keyword matching
 const CATEGORIES = [
@@ -36,11 +46,18 @@ const CATEGORIES = [
   },
 ];
 
+const PROMO_BANNERS = [
+  { icon: Sparkles, title: "Nuevos Productos", subtitle: "Descubre lo último", color: "from-purple-500/20 to-pink-500/20" },
+  { icon: TrendingUp, title: "Top Ventas", subtitle: "Lo más vendido", color: "from-price-yellow/20 to-orange-500/20" },
+  { icon: Zap, title: "Envío Rápido", subtitle: "6-10 días", color: "from-green-500/20 to-emerald-500/20" },
+];
+
 const Products = () => {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function loadProducts() {
@@ -55,6 +72,11 @@ const Products = () => {
     }
     loadProducts();
   }, []);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeCategory]);
 
   const filteredProducts = products.filter((product) => {
     const titleLower = product.node.title?.toLowerCase() || "";
@@ -84,22 +106,51 @@ const Products = () => {
     return matchesSearch && matchesCategory;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-24 pb-16">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-4 md:px-6">
           {/* Header */}
-          <div className="mb-12 animate-fade-up">
-            <h1 className="text-4xl md:text-5xl font-display uppercase italic text-foreground mb-4 tracking-wide">
+          <div className="mb-8 animate-fade-up">
+            <h1 className="text-3xl md:text-5xl font-display uppercase italic text-foreground mb-3 tracking-wide">
               Todos los Productos
             </h1>
-            <p className="text-muted-foreground max-w-2xl mb-8">
+            <p className="text-muted-foreground max-w-2xl text-sm md:text-base mb-6">
               Descubre nuestra colección completa de accesorios modernos y gadgets diseñados para un estilo de vida sofisticado.
             </p>
+
+            {/* Promo Banners */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {PROMO_BANNERS.map((banner, index) => {
+                const Icon = banner.icon;
+                return (
+                  <div 
+                    key={index}
+                    className={`p-3 md:p-4 rounded-xl bg-gradient-to-r ${banner.color} border border-border/50 flex items-center gap-2 md:gap-3 hover:scale-[1.02] transition-transform cursor-pointer`}
+                  >
+                    <Icon className="h-5 w-5 md:h-6 md:w-6 text-foreground" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground text-xs md:text-sm truncate">{banner.title}</p>
+                      <p className="text-muted-foreground text-[10px] md:text-xs truncate">{banner.subtitle}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
             
             {/* Category Filters */}
-            <div className="flex flex-wrap gap-3 mb-6">
+            <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
               {CATEGORIES.map((category) => {
                 const Icon = category.icon;
                 return (
@@ -107,10 +158,10 @@ const Products = () => {
                     key={category.id}
                     variant={activeCategory === category.id ? "hero" : "outline"}
                     size="sm"
-                    className="gap-2 rounded-xl transition-all duration-300 hover:scale-105"
+                    className="gap-1.5 md:gap-2 rounded-full transition-all duration-300 hover:scale-105 text-xs md:text-sm"
                     onClick={() => setActiveCategory(category.id)}
                   >
-                    {Icon && <Icon className="h-4 w-4" />}
+                    {Icon && <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />}
                     {category.label}
                   </Button>
                 );
@@ -125,17 +176,24 @@ const Products = () => {
                 placeholder="Buscar productos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 bg-card border-border/50 focus:border-price-yellow rounded-xl h-12 transition-all duration-300"
+                className="pl-11 bg-card border-border/50 focus:border-price-yellow rounded-full h-11 transition-all duration-300"
               />
             </div>
+
+            {/* Results count */}
+            {!loading && (
+              <p className="text-muted-foreground text-sm mt-4">
+                Mostrando {paginatedProducts.length} de {filteredProducts.length} productos
+              </p>
+            )}
           </div>
 
-          {/* Products Grid */}
+          {/* Products Grid - 5 columns */}
           {loading ? (
             <div className="flex items-center justify-center py-32">
               <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
             </div>
-          ) : filteredProducts.length === 0 ? (
+          ) : paginatedProducts.length === 0 ? (
             <div className="text-center py-32 animate-fade-up">
               <p className="text-muted-foreground text-xl">
                 No se encontraron productos
@@ -145,17 +203,54 @@ const Products = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-              {filteredProducts.map((product, index) => (
-                <div 
-                  key={product.node.id}
-                  className="animate-fade-up"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <ProductCard product={product} />
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
+                {paginatedProducts.map((product, index) => (
+                  <div 
+                    key={product.node.id}
+                    className="animate-fade-up"
+                    style={{ animationDelay: `${index * 30}ms` }}
+                  >
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex justify-center">
+                  <Pagination>
+                    <PaginationContent className="gap-1">
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                          className={`rounded-full ${currentPage === 1 ? 'opacity-50 pointer-events-none' : 'cursor-pointer hover:bg-card'}`}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                            className={`rounded-full cursor-pointer ${currentPage === page ? 'bg-price-yellow text-background' : 'hover:bg-card'}`}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                          className={`rounded-full ${currentPage === totalPages ? 'opacity-50 pointer-events-none' : 'cursor-pointer hover:bg-card'}`}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </main>
