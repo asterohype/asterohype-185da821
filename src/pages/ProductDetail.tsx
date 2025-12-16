@@ -7,7 +7,8 @@ import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct } from
 import { useCartStore } from "@/stores/cartStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check } from "lucide-react";
+import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw } from "lucide-react";
+
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
   const [product, setProduct] = useState<ShopifyProduct['node'] | null>(null);
@@ -16,6 +17,7 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
+  const [autoSlide, setAutoSlide] = useState(true);
 
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
@@ -84,6 +86,17 @@ const ProductDetail = () => {
     }
   }, [matchingImageIndex]);
 
+  // Auto-slide images
+  useEffect(() => {
+    if (!product || !autoSlide || product.images.edges.length <= 1) return;
+    
+    const timer = setInterval(() => {
+      setSelectedImage((prev) => (prev + 1) % product.images.edges.length);
+    }, 4000);
+    
+    return () => clearInterval(timer);
+  }, [product, autoSlide]);
+
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({
       ...prev,
@@ -148,8 +161,8 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-6">
+      <main className="pt-32 pb-16">
+        <div className="container mx-auto px-4 md:px-6">
           {/* Breadcrumb */}
           <Link
             to="/products"
@@ -177,16 +190,24 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Thumbnails - Styled better */}
+              {/* Thumbnails - Auto-sliding with manual control */}
               {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                <div 
+                  className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
+                  onMouseEnter={() => setAutoSlide(false)}
+                  onMouseLeave={() => setAutoSlide(true)}
+                >
                   {images.map((img, index) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedImage(index)}
+                      onClick={() => {
+                        setSelectedImage(index);
+                        setAutoSlide(false);
+                        setTimeout(() => setAutoSlide(true), 10000);
+                      }}
                       className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
                         selectedImage === index
-                          ? "border-price-yellow shadow-lg shadow-price-yellow/20"
+                          ? "border-price-yellow shadow-lg shadow-price-yellow/20 scale-105"
                           : "border-border/50 hover:border-muted-foreground opacity-70 hover:opacity-100"
                       }`}
                     >
@@ -202,12 +223,12 @@ const ProductDetail = () => {
             </div>
 
             {/* Product Info */}
-            <div className="lg:sticky lg:top-28 lg:self-start space-y-8 animate-fade-up" style={{ animationDelay: "150ms" }}>
+            <div className="lg:sticky lg:top-36 lg:self-start space-y-6 animate-fade-up" style={{ animationDelay: "150ms" }}>
               <div>
-                <h1 className="text-3xl md:text-4xl font-display italic uppercase text-foreground mb-4 tracking-wide">
+                <h1 className="text-2xl md:text-3xl font-display italic uppercase text-foreground mb-3 tracking-wide">
                   {product.title}
                 </h1>
-                <p className="text-2xl md:text-3xl font-semibold text-price-yellow">
+                <p className="text-2xl md:text-3xl font-bold text-price-yellow">
                   {formatPrice(price.amount, price.currencyCode)}
                 </p>
               </div>
