@@ -1,14 +1,35 @@
 import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag } from "lucide-react";
+import { Menu, X, ShoppingBag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { supabase } from "@/integrations/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
   const setCartOpen = useCartStore((state) => state.setOpen);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   const navLinks = [
     { name: "Productos", href: "/products" },
@@ -41,6 +62,25 @@ export function Header() {
 
             {/* Right side actions */}
             <div className="flex items-center gap-3">
+              {/* User Account */}
+              {user ? (
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
+                >
+                  <User className="h-4 w-4 text-price-yellow" />
+                  <span className="hidden sm:inline text-sm text-muted-foreground">Salir</span>
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
+                >
+                  <User className="h-4 w-4 text-price-yellow" />
+                  <span className="hidden sm:inline text-sm text-muted-foreground">Entrar</span>
+                </Link>
+              )}
+
               {/* Custom Cart Icon */}
               <button
                 onClick={() => setCartOpen(true)}
