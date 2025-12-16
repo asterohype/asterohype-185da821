@@ -1,11 +1,26 @@
 import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag, User } from "lucide-react";
+import { Menu, X, ShoppingBag, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useState, useEffect } from "react";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const COLLECTIONS = [
+  { name: "Fundas", query: "case" },
+  { name: "Mesas", query: "desk" },
+  { name: "Muebles", query: "furniture" },
+  { name: "Tecnología", query: "tech" },
+  { name: "Accesorios", query: "accesorios" },
+  { name: "Ropa", query: "clothing" },
+];
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -31,12 +46,6 @@ export function Header() {
     await supabase.auth.signOut();
   };
 
-  const navLinks = [
-    { name: "Productos", href: "/products" },
-    { name: "Colecciones", href: "/products" },
-    { name: "Contacto", href: "/contact" },
-  ];
-
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 glass">
@@ -49,15 +58,39 @@ export function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300"
-                >
-                  {link.name}
-                </Link>
-              ))}
+              <Link
+                to="/products"
+                className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300"
+              >
+                Productos
+              </Link>
+              
+              {/* Collections Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300 outline-none">
+                  Colecciones
+                  <ChevronDown className="h-3 w-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="bg-card border-border/50 min-w-[160px]">
+                  {COLLECTIONS.map((collection) => (
+                    <DropdownMenuItem key={collection.name} asChild>
+                      <Link 
+                        to={`/products?search=${collection.query}`}
+                        className="cursor-pointer hover:text-price-yellow"
+                      >
+                        {collection.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <Link
+                to="/contact"
+                className="text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300"
+              >
+                Contacto
+              </Link>
             </nav>
 
             {/* Right side actions */}
@@ -115,17 +148,36 @@ export function Header() {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl">
-            <nav className="container mx-auto px-6 py-4 flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="text-base text-muted-foreground hover:text-price-yellow transition-colors py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
+            <nav className="container mx-auto px-6 py-4 flex flex-col gap-2">
+              <Link
+                to="/products"
+                className="text-base text-muted-foreground hover:text-price-yellow transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Productos
+              </Link>
+              <div className="py-2">
+                <span className="text-sm text-muted-foreground/70 mb-2 block">Colecciones</span>
+                <div className="pl-3 flex flex-col gap-1">
+                  {COLLECTIONS.map((collection) => (
+                    <Link
+                      key={collection.name}
+                      to={`/products?search=${collection.query}`}
+                      className="text-sm text-muted-foreground hover:text-price-yellow transition-colors py-1"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {collection.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <Link
+                to="/contact"
+                className="text-base text-muted-foreground hover:text-price-yellow transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contacto
+              </Link>
             </nav>
           </div>
         )}

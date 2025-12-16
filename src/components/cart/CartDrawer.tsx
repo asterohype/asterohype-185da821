@@ -5,7 +5,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Minus, Plus, Trash2, CreditCard, Loader2, Sparkles, Package } from "lucide-react";
+import { Minus, Plus, Trash2, CreditCard, Loader2, ShoppingBag, Package } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { formatPrice } from "@/lib/shopify";
 
@@ -45,7 +45,7 @@ export function CartDrawer() {
         <SheetHeader className="flex-shrink-0 pb-4 border-b border-border/50">
           <SheetTitle className="flex items-center gap-3 text-foreground">
             <div className="w-10 h-10 rounded-xl bg-price-yellow/20 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-price-yellow" />
+              <ShoppingBag className="h-5 w-5 text-price-yellow" />
             </div>
             <div>
               <span className="font-display uppercase italic tracking-wide">Tu Carrito</span>
