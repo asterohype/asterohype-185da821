@@ -82,6 +82,10 @@ export function ProductCard({ product }: ProductCardProps) {
         <p className="text-price-yellow font-semibold">
           {formatPrice(price.amount, price.currencyCode)}
         </p>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
+          Entrega: 6-10 días
+        </p>
       </div>
     </Link>
   );
