@@ -47,8 +47,8 @@ export function ProductCard({ product }: ProductCardProps) {
       to={`/product/${node.handle}`}
       className="group block"
     >
-      <div className="relative overflow-hidden rounded-2xl bg-card border border-border hover-lift">
-        {/* Image */}
+      <div className="relative overflow-hidden rounded-xl bg-card border border-border hover:border-price-yellow/50 transition-all duration-300">
+        {/* Image - Square */}
         <div className="aspect-square overflow-hidden bg-secondary">
           {imageUrl ? (
             <img
@@ -67,21 +67,21 @@ export function ProductCard({ product }: ProductCardProps) {
         <Button
           variant="hero"
           size="icon"
-          className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg"
+          className="absolute bottom-20 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg h-8 w-8"
           onClick={handleAddToCart}
         >
-          <ShoppingBag className="h-4 w-4" />
+          <ShoppingBag className="h-3.5 w-3.5" />
         </Button>
-      </div>
 
-      {/* Info */}
-      <div className="mt-3 space-y-1">
-        <h3 className="font-display text-foreground italic uppercase line-clamp-2 leading-tight group-hover:text-title-blue transition-colors duration-300 text-sm tracking-wide">
-          {node.title}
-        </h3>
-        <p className="text-price-yellow font-semibold text-sm">
-          {formatPrice(price.amount, price.currencyCode)}
-        </p>
+        {/* Info inside card */}
+        <div className="p-3 space-y-1">
+          <h3 className="font-medium text-foreground line-clamp-2 leading-tight group-hover:text-price-yellow transition-colors duration-300 text-sm">
+            {node.title}
+          </h3>
+          <p className="text-price-yellow font-bold text-base">
+            {formatPrice(price.amount, price.currencyCode)}
+          </p>
+        </div>
       </div>
     </Link>
   );
