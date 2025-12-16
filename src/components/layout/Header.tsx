@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag, User, ChevronDown } from "lucide-react";
+import { Menu, X, ShoppingBag, User, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useState, useEffect } from "react";
@@ -99,6 +99,14 @@ export function Header() {
 
               {/* Right side actions */}
               <div className="flex items-center gap-3">
+                {/* Search Icon */}
+                <Link
+                  to="/products"
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
+                >
+                  <Search className="h-4 w-4 text-price-yellow" />
+                </Link>
+
                 {/* User Account */}
                 {user ? (
                   <button
