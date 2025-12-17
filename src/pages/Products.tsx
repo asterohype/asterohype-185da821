@@ -55,7 +55,7 @@ const Products = () => {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(100);
+        const data = await fetchProducts(250);
         setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);

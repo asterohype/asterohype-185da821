@@ -38,7 +38,7 @@ export function CategorySection({ title, categoryFilter, limit = 4 }: CategorySe
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(50);
+        const data = await fetchProducts(250);
         let filtered = data;
         
         if (categoryFilter && CATEGORY_KEYWORDS[categoryFilter]) {
