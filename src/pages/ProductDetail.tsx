@@ -430,31 +430,60 @@ const ProductDetail = () => {
         body: { productName: product.title }
       });
 
-      if (error || !data.success || !data.products?.length) {
-        console.log('Product not found in CJ');
+      if (error) {
+        console.log('Error searching CJ:', error);
         return;
       }
 
-      const cjProduct = data.products[0];
-      
-      // Get shipping cost
-      if (cjProduct.variants?.length > 0) {
-        const firstVariant = cjProduct.variants[0];
-        const { data: freightData } = await supabase.functions.invoke('cj-freight', {
-          body: { vid: firstVariant.vid, quantity: 1, destCountry: 'ES' }
+      // Handle searchResults from the search endpoint
+      if (data.searchResults && data.searchResults.length > 0) {
+        const cjProduct = data.searchResults[0];
+        
+        // Now fetch full product details to get variants
+        const { data: detailData } = await supabase.functions.invoke('cj-product-cost', {
+          body: { cjProductId: cjProduct.productId }
         });
 
-        if (freightData?.success && freightData.cheapestOption) {
-          setCjCostData({
-            productCost: firstVariant.variantPrice || cjProduct.sellPrice,
-            shippingCost: freightData.cheapestOption.price,
-            productName: cjProduct.productName,
-            sku: cjProduct.sku
+        if (detailData?.success && detailData.product) {
+          const fullProduct = detailData.product;
+          
+          // Get shipping cost
+          if (fullProduct.variants?.length > 0) {
+            const firstVariant = fullProduct.variants[0];
+            const { data: freightData } = await supabase.functions.invoke('cj-freight', {
+              body: { vid: firstVariant.vid, quantity: 1, destCountry: 'ES' }
+            });
+
+            const productCost = firstVariant.variantPrice || parseFloat(fullProduct.sellPrice) || 0;
+            const shippingCost = freightData?.success && freightData.cheapestOption ? freightData.cheapestOption.price : 0;
+
+            setCjCostData({
+              productCost,
+              shippingCost,
+              productName: fullProduct.productName,
+              sku: fullProduct.sku
+            });
+          }
+        }
+        return;
+      }
+
+      // Handle direct product response (when searching by ID)
+      if (data.success && data.product) {
+        const cjProduct = data.product;
+        
+        if (cjProduct.variants?.length > 0) {
+          const firstVariant = cjProduct.variants[0];
+          const { data: freightData } = await supabase.functions.invoke('cj-freight', {
+            body: { vid: firstVariant.vid, quantity: 1, destCountry: 'ES' }
           });
-        } else {
+
+          const productCost = firstVariant.variantPrice || parseFloat(cjProduct.sellPrice) || 0;
+          const shippingCost = freightData?.success && freightData.cheapestOption ? freightData.cheapestOption.price : 0;
+
           setCjCostData({
-            productCost: cjProduct.sellPrice || firstVariant.variantPrice,
-            shippingCost: 0,
+            productCost,
+            shippingCost,
             productName: cjProduct.productName,
             sku: cjProduct.sku
           });
