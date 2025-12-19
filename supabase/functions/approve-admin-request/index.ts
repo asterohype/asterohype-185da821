@@ -1,10 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { encode as base64Encode } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Generate HMAC signature using Web Crypto API
+async function generateHmacSignature(message: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(message);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+  return base64Encode(signature).replace(/[+/=]/g, (c) => 
+    c === '+' ? '-' : c === '/' ? '_' : ''
+  );
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,9 +36,10 @@ serve(async (req) => {
     const url = new URL(req.url);
     const requestId = url.searchParams.get("requestId");
     const action = url.searchParams.get("action");
-    const secret = url.searchParams.get("secret");
+    const expiresParam = url.searchParams.get("expires");
+    const signature = url.searchParams.get("sig");
 
-    if (!requestId || !action) {
+    if (!requestId || !action || !expiresParam || !signature) {
       return new Response(
         generateHtmlResponse("Error", "Parámetros inválidos", false),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html" } }
@@ -27,11 +49,25 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Simple secret validation (last 10 chars of service key)
-    const expectedSecret = supabaseServiceKey.slice(-10);
-    if (secret !== expectedSecret) {
+    // Check expiration
+    const expiresAt = parseInt(expiresParam, 10);
+    if (isNaN(expiresAt) || Date.now() > expiresAt) {
       return new Response(
-        generateHtmlResponse("Error", "No autorizado", false),
+        generateHtmlResponse("Enlace Expirado", "Este enlace ha caducado. Pide al usuario que envíe una nueva solicitud.", false),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "text/html" } }
+      );
+    }
+
+    // Validate HMAC signature
+    const expectedSignature = await generateHmacSignature(
+      `${requestId}:${action}:${expiresAt}`,
+      supabaseServiceKey
+    );
+    
+    if (signature !== expectedSignature) {
+      console.error("Invalid signature for request:", requestId);
+      return new Response(
+        generateHtmlResponse("Error", "Firma inválida. Este enlace no es válido.", false),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "text/html" } }
       );
     }
@@ -83,6 +119,8 @@ serve(async (req) => {
         .update({ status: "approved", reviewed_at: new Date().toISOString() })
         .eq("id", requestId);
 
+      console.log(`Admin request ${requestId} approved for user ${adminRequest.user_email}`);
+
       return new Response(
         generateHtmlResponse("✅ Aprobado", `El usuario ${adminRequest.user_email} ahora es administrador`, true),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "text/html" } }
@@ -94,6 +132,8 @@ serve(async (req) => {
         .from("admin_requests")
         .update({ status: "rejected", reviewed_at: new Date().toISOString() })
         .eq("id", requestId);
+
+      console.log(`Admin request ${requestId} rejected for user ${adminRequest.user_email}`);
 
       return new Response(
         generateHtmlResponse("❌ Rechazado", `La solicitud de ${adminRequest.user_email} ha sido rechazada`, false),

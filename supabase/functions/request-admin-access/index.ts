@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { encode as base64Encode } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -15,6 +16,26 @@ const VALID_INVITATION_CODE = "CIoMaaffsiXXfledd11978";
 interface AdminRequestPayload {
   invitationCode: string;
   deviceInfo?: string;
+}
+
+// Generate HMAC signature using Web Crypto API
+async function generateHmacSignature(message: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(message);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+  return base64Encode(signature).replace(/[+/=]/g, (c) => 
+    c === '+' ? '-' : c === '/' ? '_' : ''
+  );
 }
 
 serve(async (req) => {
@@ -52,10 +73,14 @@ serve(async (req) => {
       );
     }
 
-    // Get IP and location from headers
-    const ipAddress = req.headers.get("x-forwarded-for") || 
-                     req.headers.get("cf-connecting-ip") || 
-                     "Unknown";
+    // Get IP - mask last octet for privacy
+    const rawIp = req.headers.get("x-forwarded-for") || 
+                  req.headers.get("cf-connecting-ip") || 
+                  "Unknown";
+    const ipParts = rawIp.split(".");
+    const ipAddress = ipParts.length === 4 
+      ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.***` 
+      : "Masked";
 
     // Create admin client for inserting the request
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -90,14 +115,19 @@ serve(async (req) => {
       );
     }
 
-    // Insert the admin request
+    // Sanitize device info - limit length and remove potentially dangerous characters
+    const sanitizedDeviceInfo = deviceInfo 
+      ? deviceInfo.slice(0, 500).replace(/[<>]/g, '') 
+      : "No disponible";
+
+    // Insert the admin request - store minimal data
     const { data: adminRequest, error: insertError } = await supabaseAdmin
       .from("admin_requests")
       .insert({
         user_id: user.id,
         user_email: user.email,
-        invitation_code: invitationCode,
-        device_info: deviceInfo || "No disponible",
+        invitation_code: "VALID", // Don't store actual code
+        device_info: sanitizedDeviceInfo,
         ip_address: ipAddress,
         status: "pending",
       })
@@ -109,9 +139,19 @@ serve(async (req) => {
       throw new Error("Failed to create admin request");
     }
 
-    // Get approval URL
-    const approveUrl = `${supabaseUrl}/functions/v1/approve-admin-request?requestId=${adminRequest.id}&action=approve&secret=${supabaseServiceKey.slice(-10)}`;
-    const rejectUrl = `${supabaseUrl}/functions/v1/approve-admin-request?requestId=${adminRequest.id}&action=reject&secret=${supabaseServiceKey.slice(-10)}`;
+    // Generate expiring HMAC signatures (24 hours)
+    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+    const approveSignature = await generateHmacSignature(
+      `${adminRequest.id}:approve:${expiresAt}`, 
+      supabaseServiceKey
+    );
+    const rejectSignature = await generateHmacSignature(
+      `${adminRequest.id}:reject:${expiresAt}`, 
+      supabaseServiceKey
+    );
+
+    const approveUrl = `${supabaseUrl}/functions/v1/approve-admin-request?requestId=${adminRequest.id}&action=approve&expires=${expiresAt}&sig=${approveSignature}`;
+    const rejectUrl = `${supabaseUrl}/functions/v1/approve-admin-request?requestId=${adminRequest.id}&action=reject&expires=${expiresAt}&sig=${rejectSignature}`;
 
     // Format date
     const requestDate = new Date().toLocaleString("es-ES", {
@@ -141,6 +181,7 @@ serve(async (req) => {
             .approve { background: #22c55e; color: #000; }
             .reject { background: #ef4444; color: #fff; }
             .buttons { margin-top: 24px; }
+            .warning { color: #fbbf24; font-size: 12px; margin-top: 16px; }
           </style>
         </head>
         <body>
@@ -163,24 +204,21 @@ serve(async (req) => {
             </div>
             
             <div class="info-row">
-              <div class="label">Dirección IP</div>
+              <div class="label">Región IP</div>
               <div class="value">${ipAddress}</div>
             </div>
             
             <div class="info-row">
               <div class="label">Dispositivo</div>
-              <div class="value">${deviceInfo || "No disponible"}</div>
-            </div>
-            
-            <div class="info-row">
-              <div class="label">Código Usado</div>
-              <div class="value">${invitationCode}</div>
+              <div class="value">${sanitizedDeviceInfo}</div>
             </div>
             
             <div class="buttons">
               <a href="${approveUrl}" class="button approve">✓ Aprobar</a>
               <a href="${rejectUrl}" class="button reject">✗ Rechazar</a>
             </div>
+            
+            <p class="warning">⚠️ Estos enlaces expiran en 24 horas</p>
           </div>
         </body>
         </html>
