@@ -8,19 +8,35 @@ import { fetchProducts, ShopifyProduct } from '@/lib/shopify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, X, Tag, Search, Shield, Check } from 'lucide-react';
+import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
 
 export default function Admin() {
   const navigate = useNavigate();
   const { isAdmin, loading: adminLoading } = useAdmin();
-  const { tags, loading: tagsLoading, getTagsForProduct, assignTag, removeTag, createTag, refetch } = useProductTags();
+  const { tags, loading: tagsLoading, getTagsForProduct, getTagsByGroup, assignTag, removeTag, createTag, refetch } = useProductTags();
   
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [newTagName, setNewTagName] = useState('');
+  const [newTagGroup, setNewTagGroup] = useState('General');
   const [savingProduct, setSavingProduct] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    'General': true,
+    'Ropa Detallado': false,
+    'Estilos': false,
+    'Destacados': false
+  });
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -46,9 +62,9 @@ export default function Admin() {
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return;
     try {
-      await createTag(newTagName.trim());
+      await createTag(newTagName.trim(), newTagGroup);
       setNewTagName('');
-      toast.success(`Etiqueta "${newTagName}" creada`);
+      toast.success(`Etiqueta "${newTagName}" creada en ${newTagGroup}`);
     } catch (error) {
       toast.error('Error al crear etiqueta');
     }
@@ -72,6 +88,11 @@ export default function Admin() {
     }
   };
 
+  const toggleGroup = (group: string) => {
+    setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  const tagsByGroup = getTagsByGroup();
   const filteredProducts = products.filter(p => 
     p.node.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -103,7 +124,7 @@ export default function Admin() {
               <Tag className="h-5 w-5" />
               Crear Nueva Etiqueta
             </h2>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Input
                 placeholder="Nombre de la etiqueta..."
                 value={newTagName}
@@ -111,22 +132,55 @@ export default function Admin() {
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                 className="max-w-xs"
               />
+              <Select value={newTagGroup} onValueChange={setNewTagGroup}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TAG_GROUPS.map(group => (
+                    <SelectItem key={group} value={group}>{group}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button onClick={handleCreateTag} variant="hero">
                 <Plus className="h-4 w-4 mr-2" />
                 Crear
               </Button>
             </div>
             
-            {/* Existing Tags */}
-            <div className="mt-4">
+            {/* Existing Tags by Group */}
+            <div className="mt-6 space-y-3">
               <p className="text-sm text-muted-foreground mb-2">Etiquetas existentes:</p>
-              <div className="flex flex-wrap gap-2">
-                {tags.map(tag => (
-                  <Badge key={tag.id} variant="secondary" className="px-3 py-1">
-                    {tag.name}
-                  </Badge>
-                ))}
-              </div>
+              {TAG_GROUPS.map(group => {
+                const groupTags = tagsByGroup[group] || [];
+                if (groupTags.length === 0) return null;
+                return (
+                  <div key={group} className="border border-border/50 rounded-lg overflow-hidden">
+                    <button 
+                      onClick={() => toggleGroup(group)}
+                      className="w-full flex items-center justify-between px-4 py-2 bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                    >
+                      <span className="font-medium text-sm text-foreground">{group}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{groupTags.length}</Badge>
+                        {expandedGroups[group] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      </div>
+                    </button>
+                    {expandedGroups[group] && (
+                      <div className="flex flex-wrap gap-2 p-3 bg-background/50">
+                        {groupTags.map(tag => (
+                          <Badge 
+                            key={tag.id} 
+                            className="px-3 py-1 bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800"
+                          >
+                            {tag.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -160,16 +214,16 @@ export default function Admin() {
                   return (
                     <div 
                       key={product.node.id}
-                      className="flex flex-col sm:flex-row gap-4 p-4 bg-secondary/30 rounded-lg border border-border/50"
+                      className="flex flex-col gap-4 p-4 bg-secondary/30 rounded-lg border border-border/50"
                     >
                       {/* Product Info */}
-                      <div className="flex gap-3 flex-1 min-w-0">
+                      <div className="flex gap-3">
                         <img 
                           src={product.node.images.edges[0]?.node.url}
                           alt={product.node.title}
                           className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                         />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <h3 className="font-medium text-foreground text-sm line-clamp-2">
                             {product.node.title}
                           </h3>
@@ -180,32 +234,44 @@ export default function Admin() {
                             }
                           </p>
                         </div>
+                        {isSaving && (
+                          <Loader2 className="h-4 w-4 animate-spin text-price-yellow flex-shrink-0" />
+                        )}
                       </div>
 
-                      {/* Tags Selection */}
-                      <div className="flex flex-wrap gap-1.5 items-start">
-                        {isSaving && (
-                          <Loader2 className="h-4 w-4 animate-spin text-price-yellow mr-2" />
-                        )}
-                        {tags.map(tag => {
-                          const isSelected = productTags.some(t => t.id === tag.id);
+                      {/* Tags Selection by Group */}
+                      <div className="space-y-2">
+                        {TAG_GROUPS.map(group => {
+                          const groupTags = tagsByGroup[group] || [];
+                          if (groupTags.length === 0) return null;
+                          
                           return (
-                            <button
-                              key={tag.id}
-                              onClick={() => handleToggleTag(product.node.id, tag)}
-                              disabled={isSaving}
-                              className={`
-                                text-xs px-2 py-1 rounded-full border transition-all
-                                ${isSelected 
-                                  ? 'bg-price-yellow text-background border-price-yellow' 
-                                  : 'bg-transparent text-muted-foreground border-border hover:border-price-yellow/50'
-                                }
-                                disabled:opacity-50
-                              `}
-                            >
-                              {isSelected && <Check className="h-3 w-3 inline mr-1" />}
-                              {tag.name}
-                            </button>
+                            <div key={group} className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground w-20 flex-shrink-0">
+                                {group}:
+                              </span>
+                              {groupTags.map(tag => {
+                                const isSelected = productTags.some(t => t.id === tag.id);
+                                return (
+                                  <button
+                                    key={tag.id}
+                                    onClick={() => handleToggleTag(product.node.id, tag)}
+                                    disabled={isSaving}
+                                    className={`
+                                      text-xs px-2 py-1 rounded-full border transition-all
+                                      ${isSelected 
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/50 dark:text-amber-100 dark:border-amber-700' 
+                                        : 'bg-transparent text-muted-foreground border-border hover:border-amber-400/50 hover:text-amber-700 dark:hover:text-amber-300'
+                                      }
+                                      disabled:opacity-50
+                                    `}
+                                  >
+                                    {isSelected && <Check className="h-3 w-3 inline mr-1" />}
+                                    {tag.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           );
                         })}
                       </div>
