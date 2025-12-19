@@ -151,7 +151,11 @@ export function Header() {
                 
                 {/* Collections Dropdown */}
                 <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300 outline-none">
+                  <DropdownMenuTrigger 
+                    data-nav-trigger
+                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300 outline-none"
+                    style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
+                  >
                     {renderEditableText('collections-label', collectionsLabel, 'collections-label')}
                     <ChevronDown className="h-3 w-3" />
                   </DropdownMenuTrigger>
@@ -198,13 +202,19 @@ export function Header() {
                   <HoverCard openDelay={100} closeDelay={200}>
                     <HoverCardTrigger asChild>
                       <button
-                        data-admin-button
-                        data-active={isAdminModeActive}
                         onClick={() => {
                           toggleAdminMode();
                           toast.success(isAdminModeActive ? 'Modo Admin desactivado' : 'Modo Admin activado');
                         }}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300"
+                        style={{
+                          background: isAdminModeActive 
+                            ? 'linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(40, 100%, 45%) 100%)' 
+                            : 'hsla(45, 100%, 50%, 0.15)',
+                          color: isAdminModeActive ? 'hsl(0, 0%, 5%)' : 'hsl(45, 100%, 50%)',
+                          border: isAdminModeActive ? '1px solid hsl(45, 100%, 55%)' : '1px solid hsla(45, 100%, 50%, 0.4)',
+                          boxShadow: isAdminModeActive ? '0 4px 16px hsla(45, 100%, 50%, 0.3)' : 'none',
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 hover:opacity-90"
                       >
                         <Shield className="h-4 w-4" />
                         <span className="hidden sm:inline text-sm font-medium">

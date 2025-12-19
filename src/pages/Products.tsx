@@ -129,7 +129,11 @@ const Products = () => {
             open={openSections[groupName]} 
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, [groupName]: open }))}
           >
-            <CollapsibleTrigger className="flex items-center justify-between w-full py-3 text-left">
+            <CollapsibleTrigger 
+              data-filter-trigger
+              className="flex items-center justify-between w-full py-3 text-left rounded-lg"
+              style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
+            >
               <span className="font-semibold text-foreground">{groupName}</span>
               {openSections[groupName] ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </CollapsibleTrigger>

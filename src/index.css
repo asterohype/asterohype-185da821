@@ -134,8 +134,8 @@ html.theme-default h6 {
 }
 
 /* Glass buttons for Clean theme */
-html.theme-default button:not([data-admin-button]),
-html.theme-default [role="button"]:not([data-admin-button]),
+html.theme-default button:not([data-nav-trigger]):not([data-filter-trigger]),
+html.theme-default [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]),
 html.theme-default a[class*="btn"] {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.85) 0%, 
@@ -149,8 +149,8 @@ html.theme-default a[class*="btn"] {
   color: hsl(222 47% 11%) !important;
 }
 
-html.theme-default button:not([data-admin-button]):hover,
-html.theme-default [role="button"]:not([data-admin-button]):hover {
+html.theme-default button:not([data-nav-trigger]):not([data-filter-trigger]):hover,
+html.theme-default [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]):hover {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.95) 0%, 
     rgba(240, 248, 255, 0.9) 100%) !important;
@@ -232,8 +232,8 @@ html.theme-hype h3 {
 }
 
 /* Dark buttons for Hype theme */
-html.theme-hype button:not([data-admin-button]),
-html.theme-hype [role="button"]:not([data-admin-button]),
+html.theme-hype button:not([data-nav-trigger]):not([data-filter-trigger]),
+html.theme-hype [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]),
 html.theme-hype a[class*="btn"] {
   background: linear-gradient(135deg, 
     hsl(0 0% 12%) 0%, 
@@ -246,8 +246,8 @@ html.theme-hype a[class*="btn"] {
   color: hsl(0 0% 95%) !important;
 }
 
-html.theme-hype button:not([data-admin-button]):hover,
-html.theme-hype [role="button"]:not([data-admin-button]):hover {
+html.theme-hype button:not([data-nav-trigger]):not([data-filter-trigger]):hover,
+html.theme-hype [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]):hover {
   background: linear-gradient(135deg, 
     hsl(0 0% 16%) 0%, 
     hsl(0 0% 12%) 100%) !important;
@@ -315,8 +315,8 @@ html.theme-cute h6 {
 }
 
 /* Soft buttons for Cute theme */
-html.theme-cute button:not([data-admin-button]),
-html.theme-cute [role="button"]:not([data-admin-button]) {
+html.theme-cute button:not([data-nav-trigger]):not([data-filter-trigger]),
+html.theme-cute [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]) {
   background: linear-gradient(135deg, 
     hsl(330 70% 65%) 0%, 
     hsl(330 60% 55%) 100%) !important;
@@ -325,8 +325,8 @@ html.theme-cute [role="button"]:not([data-admin-button]) {
   color: white !important;
 }
 
-html.theme-cute button:not([data-admin-button]):hover,
-html.theme-cute [role="button"]:not([data-admin-button]):hover {
+html.theme-cute button:not([data-nav-trigger]):not([data-filter-trigger]):hover,
+html.theme-cute [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]):hover {
   background: linear-gradient(135deg, 
     hsl(330 70% 70%) 0%, 
     hsl(330 60% 60%) 100%) !important;
