@@ -31,6 +31,7 @@ import {
 import { AdminRequestModal } from '@/components/admin/AdminRequestModal';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProductCostManager } from '@/components/admin/ProductCostManager';
+import { SyncCJCostsButton } from '@/components/admin/SyncCJCostsButton';
 import { supabase } from '@/integrations/supabase/client';
 
 const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
@@ -302,11 +303,14 @@ export default function Admin() {
       <main className="pt-32 pb-16">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8 animate-fade-up">
-            <Shield className="h-8 w-8 text-price-yellow" />
-            <h1 className="text-3xl font-display uppercase italic text-foreground">
-              Panel de <span className="text-price-yellow">Administración</span>
-            </h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-fade-up">
+            <div className="flex items-center gap-3">
+              <Shield className="h-8 w-8 text-price-yellow" />
+              <h1 className="text-3xl font-display uppercase italic text-foreground">
+                Panel de <span className="text-price-yellow">Administración</span>
+              </h1>
+            </div>
+            <SyncCJCostsButton products={products} />
           </div>
 
           {/* Create Tag Section */}
