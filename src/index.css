@@ -10,8 +10,45 @@
 /* AsteroHype Design System */
 
 @layer base {
+  /* Default values - applied when no theme class present */
   :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 210 40% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 210 40% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 20%;
+    --muted: 210 40% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 100% 96%;
+    --accent-foreground: 211 100% 50%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 210 40% 94%;
+    --ring: 211 100% 50%;
     --radius: 1rem;
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222 47% 20%;
+    --sidebar-primary: 211 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 100% 96%;
+    --sidebar-accent-foreground: 222 47% 20%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 211 100% 50%;
+    --gold: 211 100% 50%;
+    --gold-light: 211 100% 70%;
+    --surface-elevated: 210 40% 100%;
+    --title-blue: 211 100% 50%;
+    --price-yellow: 211 100% 45%;
+    --sale-red: 0 72% 50%;
+    --sale-original: 215 16% 55%;
+    --glass-bg: 211 100% 98%;
+    --glass-border: 211 60% 90%;
   }
 
   * {
