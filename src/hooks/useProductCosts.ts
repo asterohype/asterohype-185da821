@@ -7,6 +7,7 @@ export interface ProductCost {
   product_cost: number;
   shipping_cost: number;
   notes: string | null;
+  cj_product_id: string | null;
   created_at: string;
   updated_at: string;
 }
