@@ -7,6 +7,7 @@ import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct } from
 import { useCartStore } from "@/stores/cartStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { toast } from "sonner";
 import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag } from "lucide-react";
@@ -31,7 +32,10 @@ const ProductDetail = () => {
   const setCartOpen = useCartStore((state) => state.setOpen);
   
   const { isAdmin } = useAdmin();
+  const { isAdminModeActive } = useAdminModeStore();
   const { tags, getTagsForProduct, getTagsByGroup, assignTag, removeTag } = useProductTags();
+  
+  const showAdminControls = isAdmin && isAdminModeActive;
 
   useEffect(() => {
     async function loadProduct() {
@@ -297,7 +301,7 @@ const ProductDetail = () => {
               )}
 
               {/* Admin Tag Editor */}
-              {isAdmin && (
+              {showAdminControls && (
                 <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
                     <Tag className="h-4 w-4" />

@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield } from "lucide-react";
+import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
+import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useState, useEffect } from "react";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +13,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { PromoBanner } from "./PromoBanner";
 import { useAdmin } from "@/hooks/useAdmin";
+import { toast } from "sonner";
 
 const COLLECTIONS = [
   { name: "Fundas", query: "case" },
@@ -27,6 +34,7 @@ const COLLECTIONS = [
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
   const setCartOpen = useCartStore((state) => state.setOpen);
+  const { isAdminModeActive, toggleAdminMode } = useAdminModeStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const { isAdmin } = useAdmin();
@@ -109,15 +117,41 @@ export function Header() {
                   <Search className="h-4 w-4 text-price-yellow" />
                 </Link>
 
-                {/* Admin Link */}
+                {/* Admin Button with Hover Menu */}
                 {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-price-yellow/10 hover:bg-price-yellow/20 border border-price-yellow/30 hover:border-price-yellow/50 transition-all duration-300"
-                  >
-                    <Shield className="h-4 w-4 text-price-yellow" />
-                    <span className="hidden sm:inline text-sm text-price-yellow">Admin</span>
-                  </Link>
+                  <HoverCard openDelay={100} closeDelay={200}>
+                    <HoverCardTrigger asChild>
+                      <button
+                        onClick={() => {
+                          toggleAdminMode();
+                          toast.success(isAdminModeActive ? 'Modo Admin desactivado' : 'Modo Admin activado');
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300 ${
+                          isAdminModeActive 
+                            ? 'bg-price-yellow text-background border-price-yellow shadow-lg shadow-price-yellow/30' 
+                            : 'bg-price-yellow/10 hover:bg-price-yellow/20 border-price-yellow/30 hover:border-price-yellow/50'
+                        }`}
+                      >
+                        <Shield className={`h-4 w-4 ${isAdminModeActive ? 'text-background' : 'text-price-yellow'}`} />
+                        <span className={`hidden sm:inline text-sm ${isAdminModeActive ? 'text-background font-semibold' : 'text-price-yellow'}`}>
+                          Admin {isAdminModeActive && '✓'}
+                        </span>
+                      </button>
+                    </HoverCardTrigger>
+                    <HoverCardContent 
+                      align="center" 
+                      className="w-48 p-2 bg-card border-border/50"
+                      sideOffset={8}
+                    >
+                      <Link
+                        to="/admin"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
+                      >
+                        <Tag className="h-4 w-4" />
+                        Gestionar Etiquetas
+                      </Link>
+                    </HoverCardContent>
+                  </HoverCard>
                 )}
 
                 {/* User Account */}
