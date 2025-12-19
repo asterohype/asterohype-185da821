@@ -31,6 +31,16 @@ export function AdminRequestModal({ open, onOpenChange }: AdminRequestModalProps
     setErrorMessage("");
 
     try {
+      // Verify user is authenticated before making request
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        setStatus("error");
+        setErrorMessage("Debes iniciar sesión antes de solicitar acceso admin");
+        setLoading(false);
+        return;
+      }
+
       // Get device info
       const deviceInfo = `${navigator.userAgent} | ${navigator.language} | ${screen.width}x${screen.height}`;
 
