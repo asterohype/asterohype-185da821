@@ -66,11 +66,11 @@ serve(async (req) => {
       );
     }
 
-    const { cjProductId, cjSku } = await req.json();
+    const { cjProductId, cjSku, productName } = await req.json();
 
-    if (!cjProductId && !cjSku) {
+    if (!cjProductId && !cjSku && !productName) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Either cjProductId or cjSku is required' }),
+        JSON.stringify({ success: false, error: 'Either cjProductId, cjSku, or productName is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -82,6 +82,57 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to get CJ Access Token' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If searching by name, use the list endpoint
+    if (productName && !cjProductId && !cjSku) {
+      const searchUrl = 'https://developers.cjdropshipping.com/api2.0/v1/product/list';
+      console.log('Searching CJ products by name:', productName);
+      
+      const searchResponse = await fetch(searchUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CJ-Access-Token': accessToken,
+        },
+        body: JSON.stringify({
+          productNameEn: productName,
+          pageNum: 1,
+          pageSize: 20,
+        }),
+      });
+
+      const searchData = await searchResponse.json();
+      console.log('CJ Search response code:', searchData.code, 'results:', searchData.data?.list?.length || 0);
+
+      if (searchData.code !== 200 || !searchData.data?.list?.length) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'No products found matching the name',
+            searchQuery: productName
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Return the search results for user to pick
+      const products = searchData.data.list.map((p: any) => ({
+        productId: p.pid,
+        productName: p.productNameEn,
+        sku: p.productSku,
+        sellPrice: p.sellPrice,
+        productImage: p.productImage,
+      }));
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          searchResults: products,
+          totalFound: searchData.data.total || products.length,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
