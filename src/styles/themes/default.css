@@ -1,92 +1,145 @@
-/* DEFAULT THEME - Clean, Minimal, Professional */
+/* DEFAULT THEME - Clean, Apple-style with Blue Glass Effect */
 /* Target: General audience - men, women, kids, all ages */
-/* Typography: SF Pro / System UI */
-/* Colors: White, Black, Neutral grays */
+/* Typography: SF Pro Display */
+/* Colors: Blue gradients, glass/frosted effects */
 
 :root.theme-default,
 .theme-default {
-  /* Light clean background */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 8%;
+  /* Light clean background with subtle blue tint */
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
 
-  /* Cards - subtle elevation */
-  --card: 0 0% 98%;
-  --card-foreground: 0 0% 8%;
+  /* Cards - glass effect base */
+  --card: 210 40% 100%;
+  --card-foreground: 222 47% 11%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 8%;
+  --popover: 210 40% 100%;
+  --popover-foreground: 222 47% 11%;
 
-  /* Primary - elegant black */
-  --primary: 0 0% 9%;
+  /* Primary - Apple blue */
+  --primary: 211 100% 50%;
   --primary-foreground: 0 0% 100%;
 
-  /* Neutral secondary */
-  --secondary: 0 0% 96%;
-  --secondary-foreground: 0 0% 20%;
+  /* Secondary - soft blue-gray */
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 20%;
 
   /* Muted elements */
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 45%;
+  --muted: 210 40% 94%;
+  --muted-foreground: 215 16% 47%;
 
-  /* Accent - soft gray */
-  --accent: 0 0% 92%;
-  --accent-foreground: 0 0% 9%;
+  /* Accent - lighter blue */
+  --accent: 210 100% 96%;
+  --accent-foreground: 211 100% 50%;
 
   --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 100%;
 
   /* Borders and inputs */
-  --border: 0 0% 90%;
-  --input: 0 0% 94%;
-  --ring: 0 0% 9%;
+  --border: 214 32% 91%;
+  --input: 210 40% 94%;
+  --ring: 211 100% 50%;
 
-  --radius: 0.75rem;
+  --radius: 1rem;
 
   /* Sidebar */
-  --sidebar-background: 0 0% 98%;
-  --sidebar-foreground: 0 0% 20%;
-  --sidebar-primary: 0 0% 9%;
+  --sidebar-background: 210 40% 98%;
+  --sidebar-foreground: 222 47% 20%;
+  --sidebar-primary: 211 100% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 94%;
-  --sidebar-accent-foreground: 0 0% 20%;
-  --sidebar-border: 0 0% 90%;
-  --sidebar-ring: 0 0% 9%;
+  --sidebar-accent: 210 100% 96%;
+  --sidebar-accent-foreground: 222 47% 20%;
+  --sidebar-border: 214 32% 91%;
+  --sidebar-ring: 211 100% 50%;
 
   /* Custom tokens */
-  --gold: 0 0% 15%;
-  --gold-light: 0 0% 30%;
-  --surface-elevated: 0 0% 99%;
+  --gold: 211 100% 50%;
+  --gold-light: 211 100% 70%;
+  --surface-elevated: 210 40% 100%;
   
-  /* Title - clean black */
-  --title-blue: 0 0% 9%;
+  /* Title - blue */
+  --title-blue: 211 100% 50%;
   
-  /* Price - elegant black */
-  --price-yellow: 0 0% 9%;
+  /* Price - blue */
+  --price-yellow: 211 100% 45%;
 
-  /* Sale price - red for discounts */
+  /* Sale price */
   --sale-red: 0 72% 50%;
-  --sale-original: 0 0% 55%;
+  --sale-original: 215 16% 55%;
+
+  /* Glass effect colors */
+  --glass-bg: 211 100% 98%;
+  --glass-border: 211 60% 90%;
 }
 
-/* Typography override for default theme */
+/* Typography - SF Pro Display */
 .theme-default body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
 }
 
+.theme-default h1,
+.theme-default h2,
+.theme-default h3,
+.theme-default h4,
+.theme-default h5,
+.theme-default h6,
 .theme-default .font-display {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
-  font-weight: 600;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 700;
   font-style: normal;
   text-transform: none;
 }
 
-/* Subtle hover effects */
-.theme-default .hover-lift:hover {
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+/* Glass button effect */
+.theme-default .glass {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.9) 0%, 
+    rgba(255, 255, 255, 0.7) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 8px 32px rgba(31, 38, 135, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-/* Glass effect - lighter */
-.theme-default .glass {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: rgba(0, 0, 0, 0.05);
+/* Glass button variant for default theme */
+.theme-default button[data-glass="true"],
+.theme-default .btn-glass {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    rgba(255, 255, 255, 0.5) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 4px 24px rgba(0, 100, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.theme-default button[data-glass="true"]:hover,
+.theme-default .btn-glass:hover {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(255, 255, 255, 0.7) 100%);
+  box-shadow: 
+    0 8px 32px rgba(0, 100, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+}
+
+/* Subtle hover effects */
+.theme-default .hover-lift:hover {
+  box-shadow: 0 20px 40px -10px rgba(0, 100, 255, 0.15);
+}
+
+/* Card glass effect */
+.theme-default .card-glass {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(240, 248, 255, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
