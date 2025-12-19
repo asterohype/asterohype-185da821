@@ -49,9 +49,8 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     setProducts(filtered.slice(0, 6));
   }, [query, allProducts]);
 
-  const handleSelectProduct = (productId: string) => {
-    const cleanId = productId.replace("gid://shopify/Product/", "");
-    navigate(`/product/${cleanId}`);
+  const handleSelectProduct = (productHandle: string) => {
+    navigate(`/product/${productHandle}`);
     onOpenChange(false);
     setQuery("");
   };
@@ -114,7 +113,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
                 return (
                   <button
                     key={product.node.id}
-                    onClick={() => handleSelectProduct(product.node.id)}
+                    onClick={() => handleSelectProduct(product.node.handle)}
                     className="w-full flex items-center gap-4 p-4 hover:bg-secondary/50 transition-colors text-left"
                   >
                     {image && (
