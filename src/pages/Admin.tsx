@@ -4,11 +4,22 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useProductTags, ProductTag } from '@/hooks/useProductTags';
-import { fetchProducts, ShopifyProduct, updateProductTitle, updateProductPrice, formatPrice } from '@/lib/shopify';
+import { fetchProducts, ShopifyProduct, updateProductTitle, updateProductPrice, formatPrice, deleteProduct } from '@/lib/shopify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight, Pencil, X, Save, DollarSign, Package } from 'lucide-react';
+import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight, Pencil, X, Save, DollarSign, Package, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import {
   Select,
@@ -35,6 +46,7 @@ export default function Admin() {
   const [editedTitle, setEditedTitle] = useState('');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [editedPrice, setEditedPrice] = useState('');
+  const [deletingProduct, setDeletingProduct] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'General': true,
     'Ropa Detallado': false,
@@ -180,6 +192,20 @@ export default function Admin() {
       toast.error('Error al actualizar el precio');
     } finally {
       setSavingProduct(null);
+    }
+  };
+
+  const handleDeleteProduct = async (product: ShopifyProduct) => {
+    setDeletingProduct(product.node.id);
+    try {
+      await deleteProduct(product.node.id);
+      setProducts(prev => prev.filter(p => p.node.id !== product.node.id));
+      toast.success(`Producto "${product.node.title}" eliminado`);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Error al eliminar el producto');
+    } finally {
+      setDeletingProduct(null);
     }
   };
 
@@ -427,6 +453,40 @@ export default function Admin() {
                         {isSaving && (
                           <Loader2 className="h-4 w-4 animate-spin text-price-yellow flex-shrink-0" />
                         )}
+                        {/* Delete Button */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={deletingProduct === product.node.id}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-100 flex-shrink-0"
+                            >
+                              {deletingProduct === product.node.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. El producto "{product.node.title}" será eliminado permanentemente de Shopify.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteProduct(product)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
 
                       {/* Tags Selection by Group */}

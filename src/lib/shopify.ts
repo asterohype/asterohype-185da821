@@ -391,3 +391,23 @@ export async function addProductImage(productId: string, imageUrl: string, image
 
   return response.json();
 }
+
+// Delete product via Admin API
+export async function deleteProduct(productId: string): Promise<void> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ action: 'delete_product', productId }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to delete product');
+  }
+}
