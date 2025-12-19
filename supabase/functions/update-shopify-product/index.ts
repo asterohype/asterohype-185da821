@@ -74,6 +74,25 @@ serve(async (req) => {
       }
     }
 
+    // Delete product
+    if (action === "delete_product") {
+      const response = await fetch(
+        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2025-01/products/${numericProductId}.json`,
+        { method: "DELETE", headers }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Shopify API error (delete product):", errorText);
+        throw new Error(`Shopify API error deleting product: ${response.status}`);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Product deleted" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Delete image
     if (action === "delete_image" && imageId) {
       const numericImageId = imageId.replace("gid://shopify/ProductImage/", "");
