@@ -7,10 +7,12 @@ import lifestyleImg1 from "@/assets/lifestyle-shopping-1.jpg";
 import lifestyleImg2 from "@/assets/lifestyle-shopping-2.jpg";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct, formatPrice } from "@/lib/shopify";
-import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight } from "lucide-react";
+import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductTags } from "@/hooks/useProductTags";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 // Category definitions with slugs matching the database tags
 const DISPLAY_CATEGORIES = [
@@ -55,7 +57,19 @@ const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval
 const Index = () => {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const { tags, getTagsForProduct, getProductsForTag, loading: tagsLoading } = useProductTags();
+
+  // Authentication state
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     async function loadProducts() {
@@ -71,6 +85,32 @@ const Index = () => {
     loadProducts();
   }, []);
 
+  // Filter products by special tags
+  const topProducts = useMemo(() => {
+    const ids = getProductsForTag('top');
+    return products.filter(p => ids.includes(p.node.id));
+  }, [products, getProductsForTag]);
+
+  const ofertasProducts = useMemo(() => {
+    const ids = getProductsForTag('ofertas');
+    return products.filter(p => ids.includes(p.node.id));
+  }, [products, getProductsForTag]);
+
+  const nuevosProducts = useMemo(() => {
+    const ids = getProductsForTag('nuevos');
+    return products.filter(p => ids.includes(p.node.id));
+  }, [products, getProductsForTag]);
+
+  const destacadosProducts = useMemo(() => {
+    const ids = getProductsForTag('destacado');
+    return products.filter(p => ids.includes(p.node.id));
+  }, [products, getProductsForTag]);
+
+  const eleganteProducts = useMemo(() => {
+    const ids = getProductsForTag('elegante');
+    return products.filter(p => ids.includes(p.node.id));
+  }, [products, getProductsForTag]);
+
   // Get a product image for a category using DB tags
   const getCategoryPreviewImage = useCallback((categorySlug: string) => {
     const taggedProductIds = getProductsForTag(categorySlug);
@@ -82,13 +122,6 @@ const Index = () => {
     }
     return null;
   }, [products, getProductsForTag]);
-
-  // Get images for carousel from products
-  const getCarouselImages = (startIdx: number, count: number) => {
-    return products.slice(startIdx, startIdx + count)
-      .map(p => p.node.images.edges[0]?.node.url)
-      .filter(Boolean) as string[];
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,70 +178,103 @@ const Index = () => {
             ) : (
               <>
                 {/* Top Ventas Card with Carousel */}
-                <div className="bg-card border border-border rounded-xl p-5 hover:border-price-yellow/50 transition-colors">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Flame className="h-5 w-5 text-orange-500" />
-                    <h3 className="font-semibold text-foreground">Top Ventas</h3>
+                {topProducts.length > 0 && (
+                  <div className="bg-card border border-border rounded-xl p-5 hover:border-price-yellow/50 transition-colors">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Flame className="h-5 w-5 text-orange-500" />
+                      <h3 className="font-semibold text-foreground">Top Ventas</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {topProducts.slice(0, 4).map((product, i) => (
+                        <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
+                          <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3000 + i * 500} />
+                        </Link>
+                      ))}
+                    </div>
+                    <Link to="/products?tag=top" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
+                      Ver más <ChevronRight className="h-3 w-3" />
+                    </Link>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {products.slice(0, 4).map((product, i) => (
-                      <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
-                        <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3000 + i * 500} />
-                      </Link>
-                    ))}
-                  </div>
-                  <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
-                    Ver más <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
+                )}
 
                 {/* Ofertas Flash Card */}
-                <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-xl p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Zap className="h-5 w-5 text-red-500 animate-pulse" />
-                    <h3 className="font-semibold text-foreground">Ofertas del Día</h3>
+                {ofertasProducts.length > 0 && (
+                  <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Zap className="h-5 w-5 text-red-500 animate-pulse" />
+                      <h3 className="font-semibold text-foreground">Ofertas del Día</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {ofertasProducts.slice(0, 4).map((product, i) => (
+                        <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-red-500/50 transition-all relative group">
+                          <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={2500 + i * 400} />
+                          <span className="absolute bottom-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">HOT</span>
+                        </Link>
+                      ))}
+                    </div>
+                    <Link to="/products?tag=ofertas" className="text-sm text-red-400 hover:underline flex items-center gap-1">
+                      Ver ofertas <ChevronRight className="h-3 w-3" />
+                    </Link>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {products.slice(4, 8).map((product, i) => (
-                      <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-red-500/50 transition-all relative group">
-                        <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={2500 + i * 400} />
-                        <span className="absolute bottom-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">HOT</span>
-                      </Link>
-                    ))}
-                  </div>
-                  <Link to="/products" className="text-sm text-red-400 hover:underline flex items-center gap-1">
-                    Ver ofertas <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
+                )}
 
                 {/* Nuevos Productos Card */}
-                <div className="bg-gradient-to-br from-price-yellow/10 to-amber-500/10 border border-price-yellow/20 rounded-xl p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Gift className="h-5 w-5 text-price-yellow" />
-                    <h3 className="font-semibold text-foreground">Nuevos Productos</h3>
+                {nuevosProducts.length > 0 && (
+                  <div className="bg-gradient-to-br from-price-yellow/10 to-amber-500/10 border border-price-yellow/20 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Gift className="h-5 w-5 text-price-yellow" />
+                      <h3 className="font-semibold text-foreground">Nuevos Productos</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {nuevosProducts.slice(0, 4).map((product, i) => (
+                        <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
+                          <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3500 + i * 300} />
+                        </Link>
+                      ))}
+                    </div>
+                    <Link to="/products?tag=nuevos" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
+                      Explorar <ChevronRight className="h-3 w-3" />
+                    </Link>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {products.slice(8, 12).map((product, i) => (
-                      <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
-                        <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3500 + i * 300} />
-                      </Link>
-                    ))}
-                  </div>
-                  <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
-                    Explorar <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
+                )}
 
-                {/* Iniciar Sesión Card */}
-                <div className="bg-card border border-border rounded-xl p-5 flex flex-col">
-                  <h3 className="font-semibold text-foreground mb-2">Mejora tu experiencia</h3>
-                  <p className="text-sm text-muted-foreground mb-4 flex-1">Inicia sesión para guardar favoritos y ver tu historial.</p>
-                  <Link to="/auth">
-                    <Button variant="hero" className="w-full rounded-full">
-                      Iniciar Sesión
-                    </Button>
-                  </Link>
-                </div>
+                {/* User Card - Changes based on auth state */}
+                {user ? (
+                  // Logged in: Show Elegante category
+                  <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Sparkles className="h-5 w-5 text-purple-400" />
+                      <h3 className="font-semibold text-foreground">Estilo Elegante</h3>
+                    </div>
+                    {eleganteProducts.length > 0 ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                          {eleganteProducts.slice(0, 4).map((product, i) => (
+                            <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-purple-500/50 transition-all">
+                              <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3200 + i * 400} />
+                            </Link>
+                          ))}
+                        </div>
+                        <Link to="/products?tag=elegante" className="text-sm text-purple-400 hover:underline flex items-center gap-1">
+                          Ver colección <ChevronRight className="h-3 w-3" />
+                        </Link>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Próximamente más productos</p>
+                    )}
+                  </div>
+                ) : (
+                  // Not logged in: Show login card
+                  <div className="bg-card border border-border rounded-xl p-5 flex flex-col">
+                    <h3 className="font-semibold text-foreground mb-2">Mejora tu experiencia</h3>
+                    <p className="text-sm text-muted-foreground mb-4 flex-1">Inicia sesión para guardar favoritos y ver tu historial.</p>
+                    <Link to="/auth">
+                      <Button variant="hero" className="w-full rounded-full">
+                        Iniciar Sesión
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -283,9 +349,9 @@ const Index = () => {
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : destacadosProducts.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-              {products.slice(0, 10).map((product, index) => {
+              {destacadosProducts.slice(0, 10).map((product, index) => {
                   const productTags = getTagsForProduct(product.node.id);
                   return (
                     <Link 
@@ -337,6 +403,8 @@ const Index = () => {
                   );
                 })}
               </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No hay productos destacados aún</p>
             )}
           </div>
         </section>
