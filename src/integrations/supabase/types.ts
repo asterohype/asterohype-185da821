@@ -260,7 +260,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_admin_request_status: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          reviewed_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
