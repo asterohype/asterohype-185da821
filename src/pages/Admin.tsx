@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AdminRequestModal } from '@/components/admin/AdminRequestModal';
+import { AuthModal } from '@/components/auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 
 const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
@@ -56,6 +57,7 @@ export default function Admin() {
     'Destacados': false
   });
   const [showAdminRequest, setShowAdminRequest] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   // Check auth status
@@ -271,7 +273,7 @@ export default function Admin() {
                 </Button>
               ) : (
                 <Button 
-                  onClick={() => navigate('/')} 
+                  onClick={() => setShowAuthModal(true)} 
                   className="animate-fade-up"
                   style={{ animationDelay: '300ms' }}
                 >
@@ -283,6 +285,7 @@ export default function Admin() {
         </main>
         <Footer />
         <AdminRequestModal open={showAdminRequest} onOpenChange={setShowAdminRequest} />
+        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
       </div>
     );
   }
