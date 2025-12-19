@@ -1,0 +1,92 @@
+/* DEFAULT THEME - Clean, Minimal, Professional */
+/* Target: General audience - men, women, kids, all ages */
+/* Typography: SF Pro / System UI */
+/* Colors: White, Black, Neutral grays */
+
+.theme-default {
+  /* Light clean background */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 8%;
+
+  /* Cards - subtle elevation */
+  --card: 0 0% 98%;
+  --card-foreground: 0 0% 8%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 8%;
+
+  /* Primary - elegant black */
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Neutral secondary */
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 20%;
+
+  /* Muted elements */
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 45%;
+
+  /* Accent - soft gray */
+  --accent: 0 0% 92%;
+  --accent-foreground: 0 0% 9%;
+
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Borders and inputs */
+  --border: 0 0% 90%;
+  --input: 0 0% 94%;
+  --ring: 0 0% 9%;
+
+  --radius: 0.75rem;
+
+  /* Sidebar */
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 0 0% 20%;
+  --sidebar-primary: 0 0% 9%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 94%;
+  --sidebar-accent-foreground: 0 0% 20%;
+  --sidebar-border: 0 0% 90%;
+  --sidebar-ring: 0 0% 9%;
+
+  /* Custom tokens */
+  --gold: 0 0% 15%;
+  --gold-light: 0 0% 30%;
+  --surface-elevated: 0 0% 99%;
+  
+  /* Title - clean black */
+  --title-blue: 0 0% 9%;
+  
+  /* Price - elegant black */
+  --price-yellow: 0 0% 9%;
+
+  /* Sale price - red for discounts */
+  --sale-red: 0 72% 50%;
+  --sale-original: 0 0% 55%;
+}
+
+/* Typography override for default theme */
+.theme-default body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+}
+
+.theme-default .font-display {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  text-transform: none;
+}
+
+/* Subtle hover effects */
+.theme-default .hover-lift:hover {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+}
+
+/* Glass effect - lighter */
+.theme-default .glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border-color: rgba(0, 0, 0, 0.05);
+}

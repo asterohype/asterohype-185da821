@@ -21,6 +21,7 @@ import {
 import { PromoBanner } from "./PromoBanner";
 import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
+import { ThemeSelector } from "@/components/ThemeSelector";
 
 const COLLECTIONS = [
   { name: "Fundas", query: "case" },
@@ -160,6 +161,9 @@ export function Header() {
                     </HoverCardContent>
                   </HoverCard>
                 )}
+
+                {/* Theme Selector */}
+                <ThemeSelector />
 
                 {/* User Account */}
                 {user ? (

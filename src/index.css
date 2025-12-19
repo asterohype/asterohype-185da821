@@ -2,7 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* AsteroHype Design System - Dark Elegant Minimalism */
+/* Import Theme Styles */
+@import './styles/themes/default.css';
+@import './styles/themes/hype.css';
+@import './styles/themes/cute.css';
+
+/* AsteroHype Design System */
 
 @layer base {
   :root {
