@@ -228,19 +228,11 @@ export default function Admin() {
       <main className="pt-32 pb-16">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-price-yellow" />
-              <h1 className="text-3xl font-display uppercase italic text-foreground">
-                Panel de <span className="text-price-yellow">Administración</span>
-              </h1>
-            </div>
-            <Link to="/admin/collections">
-              <Button variant="outline" className="gap-2">
-                <Package className="h-4 w-4" />
-                Colecciones
-              </Button>
-            </Link>
+          <div className="flex items-center gap-3 mb-8">
+            <Shield className="h-8 w-8 text-price-yellow" />
+            <h1 className="text-3xl font-display uppercase italic text-foreground">
+              Panel de <span className="text-price-yellow">Administración</span>
+            </h1>
           </div>
 
           {/* Create Tag Section */}

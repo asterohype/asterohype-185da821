@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag } from "lucide-react";
+import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useAdminModeStore } from "@/stores/adminModeStore";
@@ -149,6 +149,13 @@ export function Header() {
                       >
                         <Tag className="h-4 w-4" />
                         Gestionar Etiquetas
+                      </Link>
+                      <Link
+                        to="/admin/collections"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
+                      >
+                        <Package className="h-4 w-4" />
+                        Colecciones
                       </Link>
                     </HoverCardContent>
                   </HoverCard>

@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct, updateProductTitle, updateProductPrice, updateProductDescription, deleteProductImage, addProductImage } from "@/lib/shopify";
+import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct, updateProductTitle, updateProductPrice, updateProductDescription, deleteProductImage, addProductImage, deleteProduct } from "@/lib/shopify";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCartStore } from "@/stores/cartStore";
@@ -13,6 +13,17 @@ import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { toast } from "sonner";
 import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const FADE_MS = 280;
 const AUTOSLIDE_MS = 2200;
@@ -21,6 +32,7 @@ const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<ShopifyProduct['node'] | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +50,7 @@ const ProductDetail = () => {
   const [newImageUrl, setNewImageUrl] = useState('');
   const [showAddImage, setShowAddImage] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
@@ -340,6 +353,22 @@ const ProductDetail = () => {
     }
   };
 
+  const handleDeleteProduct = async () => {
+    if (!product) return;
+    
+    setDeletingProduct(true);
+    try {
+      await deleteProduct(product.id);
+      toast.success(`Producto "${product.title}" eliminado de Shopify`);
+      navigate('/products');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Error al eliminar el producto');
+    } finally {
+      setDeletingProduct(false);
+    }
+  };
+
   const tagsByGroup = getTagsByGroup();
   const productTags = product ? getTagsForProduct(product.id) : [];
 
@@ -543,14 +572,49 @@ const ProductDetail = () => {
                       {product.title}
                     </h1>
                     {showAdminControls && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={startEditingTitle}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={startEditingTitle}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={deletingProduct}
+                              className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-100"
+                            >
+                              {deletingProduct ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. El producto "{product.title}" será eliminado permanentemente de Shopify.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDeleteProduct}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
                     )}
                   </div>
                 )}
