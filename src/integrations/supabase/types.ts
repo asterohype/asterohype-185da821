@@ -151,6 +151,33 @@ export type Database = {
         }
         Relationships: []
       }
+      product_option_aliases: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          original_name: string
+          shopify_product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          original_name: string
+          shopify_product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          original_name?: string
+          shopify_product_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_tag_assignments: {
         Row: {
           created_at: string
