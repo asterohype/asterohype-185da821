@@ -49,18 +49,25 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     // Get the user from the auth header
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("No authorization header");
+      return new Response(
+        JSON.stringify({ error: "User not authenticated" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // Create admin client (service role) and validate the incoming JWT explicitly
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const jwt = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
     if (userError || !user) {
-      throw new Error("User not authenticated");
+      console.error("Auth getUser failed:", userError);
+      return new Response(
+        JSON.stringify({ error: "User not authenticated" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const { invitationCode, deviceInfo }: AdminRequestPayload = await req.json();
@@ -82,8 +89,7 @@ serve(async (req) => {
       ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.***` 
       : "Masked";
 
-    // Create admin client for inserting the request
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // Use the admin client created above for DB operations
 
     // Check if user already has a pending request
     const { data: existingRequest } = await supabaseAdmin
