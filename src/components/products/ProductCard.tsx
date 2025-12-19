@@ -4,12 +4,15 @@ import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { ProductTag } from "@/hooks/useProductTags";
 
 interface ProductCardProps {
   product: ShopifyProduct;
+  tags?: ProductTag[];
+  showFeaturedBadge?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
   const { node } = product;
@@ -33,10 +36,10 @@ export function ProductCard({ product }: ProductCardProps) {
       selectedOptions: firstVariant.selectedOptions,
     });
 
-    toast.success("Added to cart", {
+    toast.success("Añadido al carrito", {
       description: node.title,
       action: {
-        label: "View Cart",
+        label: "Ver Carrito",
         onClick: () => setCartOpen(true),
       },
     });
@@ -48,6 +51,27 @@ export function ProductCard({ product }: ProductCardProps) {
       className="group block"
     >
       <div className="relative overflow-hidden rounded-xl bg-card border border-border hover:border-price-yellow/50 transition-all duration-300">
+        {/* Featured Badge */}
+        {showFeaturedBadge && (
+          <div className="absolute top-2 left-2 z-10 bg-price-yellow text-background text-[10px] font-bold px-2 py-0.5 rounded-full">
+            ★ DESTACADO
+          </div>
+        )}
+        
+        {/* Tags */}
+        {tags && tags.length > 0 && (
+          <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-1 justify-end max-w-[60%]">
+            {tags.slice(0, 2).map(tag => (
+              <span 
+                key={tag.id}
+                className="bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-2 py-0.5 rounded-full border border-border/50"
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+        
         {/* Image - Square */}
         <div className="aspect-square overflow-hidden bg-secondary">
           {imageUrl ? (
