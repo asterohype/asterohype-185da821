@@ -73,11 +73,16 @@
   }
 
   .animate-fade-up {
-    animation: fadeUp 0.8s ease-out forwards;
+    animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    opacity: 0;
   }
 
   .animate-scale-in {
-    animation: scaleIn 0.5s ease-out forwards;
+    animation: scaleIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .hover-lift {
@@ -91,6 +96,68 @@
   .glass {
     @apply backdrop-blur-xl;
   }
+
+  /* Tag Group Colors - General (neutral gray) */
+  .tag-general {
+    @apply bg-secondary/60 text-foreground border border-border/50;
+  }
+  .tag-general:hover {
+    @apply bg-secondary text-foreground border-border;
+  }
+  .tag-general.selected {
+    @apply bg-foreground/10 text-foreground border-foreground/30;
+  }
+
+  /* Tag Group Colors - Ropa Detallado (purple/violet) */
+  .tag-ropa {
+    background: linear-gradient(135deg, hsla(270, 70%, 60%, 0.15) 0%, hsla(290, 60%, 55%, 0.1) 100%);
+    color: hsl(270, 60%, 65%);
+    border: 1px solid hsla(270, 60%, 60%, 0.3);
+  }
+  .tag-ropa:hover {
+    background: linear-gradient(135deg, hsla(270, 70%, 60%, 0.25) 0%, hsla(290, 60%, 55%, 0.2) 100%);
+    border-color: hsla(270, 60%, 60%, 0.5);
+  }
+  .tag-ropa.selected {
+    background: linear-gradient(135deg, hsl(270, 70%, 60%) 0%, hsl(290, 60%, 55%) 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 12px hsla(270, 70%, 60%, 0.4);
+  }
+
+  /* Tag Group Colors - Estilos (cyan/teal) */
+  .tag-estilos {
+    background: linear-gradient(135deg, hsla(180, 70%, 45%, 0.15) 0%, hsla(190, 60%, 50%, 0.1) 100%);
+    color: hsl(180, 60%, 50%);
+    border: 1px solid hsla(180, 60%, 50%, 0.3);
+  }
+  .tag-estilos:hover {
+    background: linear-gradient(135deg, hsla(180, 70%, 45%, 0.25) 0%, hsla(190, 60%, 50%, 0.2) 100%);
+    border-color: hsla(180, 60%, 50%, 0.5);
+  }
+  .tag-estilos.selected {
+    background: linear-gradient(135deg, hsl(180, 70%, 45%) 0%, hsl(190, 60%, 50%) 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 12px hsla(180, 70%, 50%, 0.4);
+  }
+
+  /* Tag Group Colors - Destacados (gold/amber) */
+  .tag-destacados {
+    background: linear-gradient(135deg, hsla(45, 100%, 50%, 0.15) 0%, hsla(35, 100%, 45%, 0.1) 100%);
+    color: hsl(45, 90%, 50%);
+    border: 1px solid hsla(45, 90%, 50%, 0.3);
+  }
+  .tag-destacados:hover {
+    background: linear-gradient(135deg, hsla(45, 100%, 50%, 0.25) 0%, hsla(35, 100%, 45%, 0.2) 100%);
+    border-color: hsla(45, 90%, 50%, 0.5);
+  }
+  .tag-destacados.selected {
+    background: linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(35, 100%, 45%) 100%);
+    color: hsl(0, 0%, 10%);
+    border-color: transparent;
+    box-shadow: 0 2px 12px hsla(45, 100%, 50%, 0.5);
+  }
 }
 
 @keyframes float {
@@ -99,13 +166,18 @@
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.9); }
+  from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ============================================ */
