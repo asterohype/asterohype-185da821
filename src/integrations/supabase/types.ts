@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      collection_products: {
+        Row: {
+          collection_id: string
+          created_at: string
+          id: string
+          position: number
+          shopify_product_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          id?: string
+          position?: number
+          shopify_product_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          id?: string
+          position?: number
+          shopify_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_products_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_tag_assignments: {
         Row: {
           created_at: string

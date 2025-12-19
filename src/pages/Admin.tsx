@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -8,7 +8,7 @@ import { fetchProducts, ShopifyProduct, updateProductTitle, updateProductPrice, 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight, Pencil, X, Save, DollarSign } from 'lucide-react';
+import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight, Pencil, X, Save, DollarSign, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Select,
@@ -202,11 +202,19 @@ export default function Admin() {
       <main className="pt-32 pb-16">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
-            <Shield className="h-8 w-8 text-price-yellow" />
-            <h1 className="text-3xl font-display uppercase italic text-foreground">
-              Panel de <span className="text-price-yellow">Administración</span>
-            </h1>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <Shield className="h-8 w-8 text-price-yellow" />
+              <h1 className="text-3xl font-display uppercase italic text-foreground">
+                Panel de <span className="text-price-yellow">Administración</span>
+              </h1>
+            </div>
+            <Link to="/admin/collections">
+              <Button variant="outline" className="gap-2">
+                <Package className="h-4 w-4" />
+                Colecciones
+              </Button>
+            </Link>
           </div>
 
           {/* Create Tag Section */}
