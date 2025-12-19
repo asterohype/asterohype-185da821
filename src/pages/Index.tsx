@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useMenuConfigStore } from "@/stores/menuConfigStore";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
@@ -104,8 +105,10 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const { tags, getTagsForProduct, getProductsForTag, loading: tagsLoading } = useProductTags();
   
-  // Admin mode
+  // Admin mode - MUST verify isAdmin from database, not just localStorage
+  const { isAdmin } = useAdmin();
   const { isAdminModeActive } = useAdminModeStore();
+  const showAdminControls = isAdmin && isAdminModeActive;
   const { categories, updateCategory, updateCategoryImage } = useMenuConfigStore();
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -358,7 +361,7 @@ const Index = () => {
                 return (
                   <div key={category.id} className="flex flex-col items-center gap-3 group relative">
                     {/* Admin edit overlay for image */}
-                    {isAdminModeActive && (
+                    {showAdminControls && (
                       <button
                         onClick={() => {
                           const url = prompt('URL de la imagen:', category.customImage || '');
@@ -385,7 +388,7 @@ const Index = () => {
                     </Link>
                     
                     {/* Editable label */}
-                    {isAdminModeActive && isEditing ? (
+                    {showAdminControls && isEditing ? (
                       <div className="flex items-center gap-1">
                         <Input
                           value={editValue}
@@ -416,7 +419,7 @@ const Index = () => {
                       <span 
                         className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium flex items-center gap-1"
                         onClick={(e) => {
-                          if (isAdminModeActive) {
+                          if (showAdminControls) {
                             e.preventDefault();
                             setEditingCategory(category.id);
                             setEditValue(category.label);
@@ -424,7 +427,7 @@ const Index = () => {
                         }}
                       >
                         {category.label}
-                        {isAdminModeActive && (
+                        {showAdminControls && (
                           <Pencil className="h-3 w-3 opacity-50 hover:opacity-100 cursor-pointer" />
                         )}
                       </span>
