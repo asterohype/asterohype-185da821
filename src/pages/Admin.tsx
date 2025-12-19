@@ -28,6 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AdminRequestModal } from '@/components/admin/AdminRequestModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
 
@@ -53,13 +55,30 @@ export default function Admin() {
     'Estilos': false,
     'Destacados': false
   });
+  const [showAdminRequest, setShowAdminRequest] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+  // Check auth status
   useEffect(() => {
-    if (!adminLoading && !isAdmin) {
-      navigate('/');
-      toast.error('Acceso denegado. Solo administradores.');
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    checkAuth();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // If not admin and authenticated, show request modal option
+  useEffect(() => {
+    if (!adminLoading && !isAdmin && isAuthenticated) {
+      setShowAdminRequest(true);
     }
-  }, [isAdmin, adminLoading, navigate]);
+  }, [isAdmin, adminLoading, isAuthenticated]);
 
   useEffect(() => {
     async function loadProducts() {
@@ -214,10 +233,56 @@ export default function Admin() {
     p.node.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (adminLoading || !isAdmin) {
+  if (adminLoading || isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-price-yellow" />
+      </div>
+    );
+  }
+
+  // Show access request screen for non-admins
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-32 pb-16">
+          <div className="container mx-auto px-4 max-w-md">
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto animate-fade-up">
+                <Shield className="w-10 h-10 text-primary" />
+              </div>
+              <h1 className="text-2xl font-display uppercase italic text-foreground animate-fade-up" style={{ animationDelay: '100ms' }}>
+                Acceso <span className="text-price-yellow">Administrador</span>
+              </h1>
+              <p className="text-muted-foreground animate-fade-up" style={{ animationDelay: '200ms' }}>
+                {isAuthenticated 
+                  ? "Necesitas permisos de administrador para acceder a esta sección."
+                  : "Inicia sesión para solicitar acceso de administrador."
+                }
+              </p>
+              {isAuthenticated ? (
+                <Button 
+                  onClick={() => setShowAdminRequest(true)} 
+                  className="animate-fade-up"
+                  style={{ animationDelay: '300ms' }}
+                >
+                  Solicitar Acceso Admin
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => navigate('/')} 
+                  className="animate-fade-up"
+                  style={{ animationDelay: '300ms' }}
+                >
+                  Iniciar Sesión
+                </Button>
+              )}
+            </div>
+          </div>
+        </main>
+        <Footer />
+        <AdminRequestModal open={showAdminRequest} onOpenChange={setShowAdminRequest} />
       </div>
     );
   }
@@ -228,7 +293,7 @@ export default function Admin() {
       <main className="pt-32 pb-16">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-8 animate-fade-up">
             <Shield className="h-8 w-8 text-price-yellow" />
             <h1 className="text-3xl font-display uppercase italic text-foreground">
               Panel de <span className="text-price-yellow">Administración</span>
