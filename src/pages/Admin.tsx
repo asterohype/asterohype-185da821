@@ -4,11 +4,11 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useProductTags, ProductTag } from '@/hooks/useProductTags';
-import { fetchProducts, ShopifyProduct } from '@/lib/shopify';
+import { fetchProducts, ShopifyProduct, updateProductTitle } from '@/lib/shopify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight, Pencil, X, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Select,
@@ -31,6 +31,8 @@ export default function Admin() {
   const [newTagName, setNewTagName] = useState('');
   const [newTagGroup, setNewTagGroup] = useState('General');
   const [savingProduct, setSavingProduct] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [editedTitle, setEditedTitle] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'General': true,
     'Ropa Detallado': false,
@@ -90,6 +92,41 @@ export default function Admin() {
 
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  const startEditing = (product: ShopifyProduct) => {
+    setEditingProduct(product.node.id);
+    setEditedTitle(product.node.title);
+  };
+
+  const cancelEditing = () => {
+    setEditingProduct(null);
+    setEditedTitle('');
+  };
+
+  const saveTitle = async (product: ShopifyProduct) => {
+    if (!editedTitle.trim() || editedTitle === product.node.title) {
+      cancelEditing();
+      return;
+    }
+    
+    setSavingProduct(product.node.id);
+    try {
+      await updateProductTitle(product.node.id, editedTitle.trim());
+      // Update local state
+      setProducts(prev => prev.map(p => 
+        p.node.id === product.node.id 
+          ? { ...p, node: { ...p.node, title: editedTitle.trim() } }
+          : p
+      ));
+      toast.success('Nombre actualizado en Shopify');
+      cancelEditing();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error('Error al actualizar el nombre');
+    } finally {
+      setSavingProduct(null);
+    }
   };
 
   const tagsByGroup = getTagsByGroup();
@@ -224,9 +261,51 @@ export default function Admin() {
                           className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                         />
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-medium text-foreground text-sm line-clamp-2">
-                            {product.node.title}
-                          </h3>
+                          {editingProduct === product.node.id ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={editedTitle}
+                                onChange={(e) => setEditedTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveTitle(product);
+                                  if (e.key === 'Escape') cancelEditing();
+                                }}
+                                className="h-8 text-sm"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => saveTitle(product)}
+                                disabled={isSaving}
+                                className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={cancelEditing}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium text-foreground text-sm line-clamp-2">
+                                {product.node.title}
+                              </h3>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEditing(product)}
+                                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                           <p className="text-xs text-muted-foreground mt-1">
                             {productTags.length > 0 
                               ? productTags.map(t => t.name).join(', ')

@@ -289,3 +289,23 @@ export function formatPrice(amount: string, currencyCode: string = 'USD'): strin
     currency: currencyCode,
   }).format(parseFloat(amount));
 }
+
+// Update product title via Admin API (through edge function)
+export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ productId, title: newTitle }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to update product');
+  }
+}
