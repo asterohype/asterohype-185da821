@@ -329,3 +329,65 @@ export async function updateProductPrice(productId: string, variantId: string, n
     throw new Error(errorData.error || 'Failed to update price');
   }
 }
+
+// Update product description via Admin API (through edge function)
+export async function updateProductDescription(productId: string, description: string): Promise<void> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ productId, description }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to update description');
+  }
+}
+
+// Delete product image via Admin API
+export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ action: 'delete_image', productId, imageId }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to delete image');
+  }
+}
+
+// Add product image via Admin API
+export async function addProductImage(productId: string, imageUrl: string, imageAlt?: string): Promise<unknown> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ action: 'add_image', productId, imageUrl, imageAlt }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to add image');
+  }
+
+  return response.json();
+}
