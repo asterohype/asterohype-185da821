@@ -3,14 +3,15 @@ import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct } from "@/lib/shopify";
+import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct, updateProductTitle, updateProductPrice } from "@/lib/shopify";
+import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/stores/cartStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag } from "lucide-react";
+import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X } from "lucide-react";
 
 const FADE_MS = 280;
 const AUTOSLIDE_MS = 2200;
@@ -27,6 +28,11 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [autoSlide, setAutoSlide] = useState(true);
   const [savingTag, setSavingTag] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [editedPrice, setEditedPrice] = useState('');
+  const [savingProduct, setSavingProduct] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
@@ -172,6 +178,74 @@ const ProductDetail = () => {
     }
   };
 
+  const startEditingTitle = () => {
+    if (product) {
+      setEditedTitle(product.title);
+      setEditingTitle(true);
+    }
+  };
+
+  const saveTitle = async () => {
+    if (!product || !editedTitle.trim() || editedTitle === product.title) {
+      setEditingTitle(false);
+      return;
+    }
+    
+    setSavingProduct(true);
+    try {
+      await updateProductTitle(product.id, editedTitle.trim());
+      setProduct({ ...product, title: editedTitle.trim() });
+      toast.success('Nombre actualizado en Shopify');
+      setEditingTitle(false);
+    } catch (error) {
+      console.error('Error updating title:', error);
+      toast.error('Error al actualizar el nombre');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const startEditingPrice = () => {
+    if (product) {
+      const currentPrice = selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount;
+      setEditedPrice(currentPrice);
+      setEditingPrice(true);
+    }
+  };
+
+  const savePrice = async () => {
+    if (!product || !selectedVariant || !editedPrice.trim()) {
+      setEditingPrice(false);
+      return;
+    }
+    
+    setSavingProduct(true);
+    try {
+      await updateProductPrice(product.id, selectedVariant.id, editedPrice.trim());
+      // Update local product state
+      const updatedVariants = product.variants.edges.map(v => 
+        v.node.id === selectedVariant.id 
+          ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: editedPrice.trim() } } }
+          : v
+      );
+      setProduct({ 
+        ...product, 
+        variants: { edges: updatedVariants },
+        priceRange: { 
+          ...product.priceRange, 
+          minVariantPrice: { ...product.priceRange.minVariantPrice, amount: editedPrice.trim() } 
+        }
+      });
+      toast.success('Precio actualizado en Shopify');
+      setEditingPrice(false);
+    } catch (error) {
+      console.error('Error updating price:', error);
+      toast.error('Error al actualizar el precio');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
   const tagsByGroup = getTagsByGroup();
   const productTags = product ? getTagsForProduct(product.id) : [];
 
@@ -285,12 +359,106 @@ const ProductDetail = () => {
             {/* Product Info */}
             <div className="lg:sticky lg:top-36 lg:self-start space-y-6 animate-fade-up" style={{ animationDelay: "150ms" }}>
               <div>
-                <h1 className="text-2xl md:text-3xl font-display italic uppercase text-foreground mb-3 tracking-wide">
-                  {product.title}
-                </h1>
-                <p className="text-2xl md:text-3xl font-bold text-price-yellow">
-                  {formatPrice(price.amount, price.currencyCode)}
-                </p>
+                {/* Editable Title */}
+                {showAdminControls && editingTitle ? (
+                  <div className="flex items-center gap-2 mb-3">
+                    <Input
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveTitle();
+                        if (e.key === 'Escape') setEditingTitle(false);
+                      }}
+                      className="text-xl font-display italic uppercase"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={saveTitle}
+                      disabled={savingProduct}
+                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
+                    >
+                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingTitle(false)}
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mb-3">
+                    <h1 className="text-2xl md:text-3xl font-display italic uppercase text-foreground tracking-wide">
+                      {product.title}
+                    </h1>
+                    {showAdminControls && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={startEditingTitle}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {/* Editable Price */}
+                {showAdminControls && editingPrice ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl text-price-yellow">€</span>
+                    <Input
+                      value={editedPrice}
+                      onChange={(e) => setEditedPrice(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') savePrice();
+                        if (e.key === 'Escape') setEditingPrice(false);
+                      }}
+                      className="text-xl font-bold w-32"
+                      type="number"
+                      step="0.01"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={savePrice}
+                      disabled={savingProduct}
+                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
+                    >
+                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingPrice(false)}
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl md:text-3xl font-bold text-price-yellow">
+                      {formatPrice(price.amount, price.currencyCode)}
+                    </p>
+                    {showAdminControls && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={startEditingPrice}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-price-yellow"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -302,43 +470,45 @@ const ProductDetail = () => {
 
               {/* Admin Tag Editor */}
               {showAdminControls && (
-                <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                <div className="bg-stone-200/80 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
                     <Tag className="h-4 w-4" />
                     <span className="font-medium text-sm">Gestionar Etiquetas (Admin)</span>
                     {savingTag && <Loader2 className="h-3 w-3 animate-spin" />}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {TAG_GROUPS.map(group => {
                       const groupTags = tagsByGroup[group] || [];
                       if (groupTags.length === 0) return null;
                       
                       return (
-                        <div key={group} className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300 w-24 flex-shrink-0">
+                        <div key={group} className="flex flex-wrap items-start gap-2">
+                          <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-700 dark:text-amber-400 w-24 flex-shrink-0 pt-1.5">
                             {group}:
                           </span>
-                          {groupTags.map(tag => {
-                            const isSelected = productTags.some(t => t.id === tag.id);
-                            return (
-                              <button
-                                key={tag.id}
-                                onClick={() => handleToggleTag(tag)}
-                                disabled={savingTag}
-                                className={`
-                                  text-xs px-3 py-1.5 rounded-full font-medium transition-all shadow-sm
-                                  ${isSelected 
-                                    ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-900 border border-amber-300 shadow-amber-200/50 dark:from-amber-800/60 dark:to-orange-800/50 dark:text-amber-50 dark:border-amber-600' 
-                                    : 'bg-white/80 text-stone-600 border border-stone-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:text-amber-800 hover:border-amber-200 hover:shadow-md dark:bg-stone-800/50 dark:text-stone-300 dark:border-stone-700 dark:hover:from-amber-900/30 dark:hover:to-orange-900/20 dark:hover:text-amber-200 dark:hover:border-amber-700'
-                                  }
-                                  disabled:opacity-50 disabled:cursor-not-allowed
-                                `}
-                              >
-                                {isSelected && <Check className="h-3 w-3 inline mr-1" />}
-                                {tag.name}
-                              </button>
-                            );
-                          })}
+                          <div className="flex flex-wrap gap-1.5 flex-1">
+                            {groupTags.map(tag => {
+                              const isSelected = productTags.some(t => t.id === tag.id);
+                              return (
+                                <button
+                                  key={tag.id}
+                                  onClick={() => handleToggleTag(tag)}
+                                  disabled={savingTag}
+                                  className={`
+                                    text-xs px-3 py-1.5 rounded-full font-medium transition-all
+                                    ${isSelected 
+                                      ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900 border border-amber-300 shadow-sm' 
+                                      : 'bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-300 dark:border-stone-600 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 dark:hover:bg-amber-900/30 dark:hover:text-amber-200 dark:hover:border-amber-700'
+                                    }
+                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                  `}
+                                >
+                                  {isSelected && <Check className="h-3 w-3 inline mr-1" />}
+                                  {tag.name}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     })}
