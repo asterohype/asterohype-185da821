@@ -5,6 +5,7 @@ export interface ProductTag {
   id: string;
   name: string;
   slug: string;
+  group_name: string;
 }
 
 export interface ProductTagAssignment {
@@ -98,12 +99,12 @@ export function useProductTags() {
     await fetchAssignments();
   }, [fetchAssignments]);
 
-  const createTag = useCallback(async (name: string) => {
+  const createTag = useCallback(async (name: string, groupName: string = 'General') => {
     const slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
     
     const { error } = await supabase
       .from('product_tags')
-      .insert({ name, slug });
+      .insert({ name, slug, group_name: groupName });
     
     if (error) {
       console.error('Error creating tag:', error);
@@ -113,12 +114,22 @@ export function useProductTags() {
     await fetchTags();
   }, [fetchTags]);
 
+  const getTagsByGroup = useCallback((): Record<string, ProductTag[]> => {
+    return tags.reduce((acc, tag) => {
+      const group = tag.group_name || 'General';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(tag);
+      return acc;
+    }, {} as Record<string, ProductTag[]>);
+  }, [tags]);
+
   return {
     tags,
     assignments,
     loading,
     getTagsForProduct,
     getProductsForTag,
+    getTagsByGroup,
     assignTag,
     removeTag,
     createTag,

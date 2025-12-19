@@ -46,18 +46,21 @@ export type Database = {
       product_tags: {
         Row: {
           created_at: string
+          group_name: string
           id: string
           name: string
           slug: string
         }
         Insert: {
           created_at?: string
+          group_name?: string
           id?: string
           name: string
           slug: string
         }
         Update: {
           created_at?: string
+          group_name?: string
           id?: string
           name?: string
           slug?: string
