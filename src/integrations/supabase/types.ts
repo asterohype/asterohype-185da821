@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_requests: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          id: string
+          invitation_code: string
+          ip_address: string | null
+          location: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          invitation_code: string
+          ip_address?: string | null
+          location?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          invitation_code?: string
+          ip_address?: string | null
+          location?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       collection_products: {
         Row: {
           collection_id: string
