@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { productId, title } = await req.json();
+    const { productId, title, price, variantId } = await req.json();
 
-    if (!productId || !title) {
+    if (!productId) {
       return new Response(
-        JSON.stringify({ error: "Product ID and title are required" }),
+        JSON.stringify({ error: "Product ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -29,35 +29,63 @@ serve(async (req) => {
     }
 
     // Extract numeric ID from Shopify GID
-    const numericId = productId.replace("gid://shopify/Product/", "");
+    const numericProductId = productId.replace("gid://shopify/Product/", "");
 
-    const response = await fetch(
-      `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2025-01/products/${numericId}.json`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
-        },
-        body: JSON.stringify({
-          product: {
-            id: numericId,
-            title: title,
+    // Build product update payload
+    const productUpdate: Record<string, unknown> = { id: numericProductId };
+    if (title) productUpdate.title = title;
+
+    // Update product title if provided
+    if (title) {
+      const productResponse = await fetch(
+        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2025-01/products/${numericProductId}.json`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
           },
-        }),
-      }
-    );
+          body: JSON.stringify({ product: productUpdate }),
+        }
+      );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Shopify API error:", errorText);
-      throw new Error(`Shopify API error: ${response.status}`);
+      if (!productResponse.ok) {
+        const errorText = await productResponse.text();
+        console.error("Shopify API error (product):", errorText);
+        throw new Error(`Shopify API error: ${productResponse.status}`);
+      }
     }
 
-    const data = await response.json();
+    // Update variant price if provided
+    if (price && variantId) {
+      const numericVariantId = variantId.replace("gid://shopify/ProductVariant/", "");
+      
+      const variantResponse = await fetch(
+        `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2025-01/variants/${numericVariantId}.json`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+          },
+          body: JSON.stringify({
+            variant: {
+              id: numericVariantId,
+              price: price,
+            },
+          }),
+        }
+      );
+
+      if (!variantResponse.ok) {
+        const errorText = await variantResponse.text();
+        console.error("Shopify API error (variant):", errorText);
+        throw new Error(`Shopify API error updating price: ${variantResponse.status}`);
+      }
+    }
 
     return new Response(
-      JSON.stringify({ success: true, product: data.product }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

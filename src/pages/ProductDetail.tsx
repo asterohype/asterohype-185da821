@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { ProductCard } from "@/components/products/ProductCard";
+import { useAdmin } from "@/hooks/useAdmin";
+import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw } from "lucide-react";
+import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag } from "lucide-react";
 
 const FADE_MS = 280;
 const AUTOSLIDE_MS = 2200;
+
+const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -21,9 +25,13 @@ const ProductDetail = () => {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [autoSlide, setAutoSlide] = useState(true);
+  const [savingTag, setSavingTag] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
+  
+  const { isAdmin } = useAdmin();
+  const { tags, getTagsForProduct, getTagsByGroup, assignTag, removeTag } = useProductTags();
 
   useEffect(() => {
     async function loadProduct() {
@@ -138,6 +146,30 @@ const ProductDetail = () => {
       },
     });
   };
+
+  const handleToggleTag = async (tag: ProductTag) => {
+    if (!product) return;
+    setSavingTag(true);
+    const currentTags = getTagsForProduct(product.id);
+    const hasTag = currentTags.some(t => t.id === tag.id);
+    
+    try {
+      if (hasTag) {
+        await removeTag(product.id, tag.id);
+        toast.success(`Etiqueta "${tag.name}" eliminada`);
+      } else {
+        await assignTag(product.id, tag.id);
+        toast.success(`Etiqueta "${tag.name}" añadida`);
+      }
+    } catch (error) {
+      toast.error('Error al actualizar etiqueta');
+    } finally {
+      setSavingTag(false);
+    }
+  };
+
+  const tagsByGroup = getTagsByGroup();
+  const productTags = product ? getTagsForProduct(product.id) : [];
 
   if (loading) {
     return (
@@ -262,6 +294,52 @@ const ProductDetail = () => {
                 <p className="text-muted-foreground leading-relaxed">
                   {product.description}
                 </p>
+              )}
+
+              {/* Admin Tag Editor */}
+              {isAdmin && (
+                <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                    <Tag className="h-4 w-4" />
+                    <span className="font-medium text-sm">Gestionar Etiquetas (Admin)</span>
+                    {savingTag && <Loader2 className="h-3 w-3 animate-spin" />}
+                  </div>
+                  <div className="space-y-2">
+                    {TAG_GROUPS.map(group => {
+                      const groupTags = tagsByGroup[group] || [];
+                      if (groupTags.length === 0) return null;
+                      
+                      return (
+                        <div key={group} className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300 w-24 flex-shrink-0">
+                            {group}:
+                          </span>
+                          {groupTags.map(tag => {
+                            const isSelected = productTags.some(t => t.id === tag.id);
+                            return (
+                              <button
+                                key={tag.id}
+                                onClick={() => handleToggleTag(tag)}
+                                disabled={savingTag}
+                                className={`
+                                  text-xs px-3 py-1.5 rounded-full font-medium transition-all shadow-sm
+                                  ${isSelected 
+                                    ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-900 border border-amber-300 shadow-amber-200/50 dark:from-amber-800/60 dark:to-orange-800/50 dark:text-amber-50 dark:border-amber-600' 
+                                    : 'bg-white/80 text-stone-600 border border-stone-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:text-amber-800 hover:border-amber-200 hover:shadow-md dark:bg-stone-800/50 dark:text-stone-300 dark:border-stone-700 dark:hover:from-amber-900/30 dark:hover:to-orange-900/20 dark:hover:text-amber-200 dark:hover:border-amber-700'
+                                  }
+                                  disabled:opacity-50 disabled:cursor-not-allowed
+                                `}
+                              >
+                                {isSelected && <Check className="h-3 w-3 inline mr-1" />}
+                                {tag.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               {/* Options */}
