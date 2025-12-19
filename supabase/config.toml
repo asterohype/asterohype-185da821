@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.sync-cj-costs]
 verify_jwt = false
+
+[functions.cj-freight]
+verify_jwt = false
