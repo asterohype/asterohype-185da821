@@ -35,47 +35,33 @@ const DISPLAY_CATEGORIES = [
 const LIFESTYLE_BANNER_IMAGES = [lifestyleImg1, shoppingBags1, deliveryBoxes1, shoppingCart1];
 const OFFERS_BANNER_IMAGES = [lifestyleImg2, giftBoxes1, premiumBags1];
 
-// Banner Carousel Component with smooth crossfade transitions
+// Banner Carousel Component with clean blur transitions
 const BannerCarousel = ({ images, interval = 4000 }: { images: string[], interval?: number }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (images.length <= 1) return;
     const timer = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % images.length);
-        setIsTransitioning(false);
-      }, 800);
+      setCurrentIndex((prev) => (prev + 1) % images.length);
     }, interval);
     return () => clearInterval(timer);
   }, [images.length, interval]);
 
-  const nextIndex = (currentIndex + 1) % images.length;
-
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {/* Current image */}
-      <img
-        src={images[currentIndex]}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover transition-all duration-[1200ms] ease-out group-hover:scale-105"
-        style={{
-          opacity: isTransitioning ? 0 : 1,
-          transform: isTransitioning ? 'scale(1.05)' : 'scale(1)',
-        }}
-      />
-      {/* Next image (fading in) */}
-      <img
-        src={images[nextIndex]}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover transition-all duration-[1200ms] ease-out group-hover:scale-105"
-        style={{
-          opacity: isTransitioning ? 1 : 0,
-          transform: isTransitioning ? 'scale(1)' : 'scale(1.05)',
-        }}
-      />
+      {images.map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-[1500ms] ease-in-out group-hover:scale-105"
+          style={{
+            opacity: i === currentIndex ? 1 : 0,
+            filter: i === currentIndex ? 'blur(0px)' : 'blur(12px)',
+            transform: i === currentIndex ? 'scale(1)' : 'scale(1.02)',
+          }}
+        />
+      ))}
     </div>
   );
 };
