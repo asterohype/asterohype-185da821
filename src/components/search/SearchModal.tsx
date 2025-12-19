@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Input } from "@/components/ui/input";
-import { Search, ArrowRight, Loader2 } from "lucide-react";
+import { Search, ArrowRight, Loader2, X } from "lucide-react";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
+import { cn } from "@/lib/utils";
 
 interface SearchModalProps {
   open: boolean;
@@ -74,24 +76,34 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="sm:max-w-xl p-0 gap-0 bg-popover border border-border rounded-2xl overflow-hidden"
-        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
-      >
-        <div className="p-4 border-b border-border/50">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Buscar productos..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="pl-12 pr-4 h-12 text-lg bg-transparent placeholder:text-muted-foreground/60"
-              style={{ border: 'none', boxShadow: 'none', outline: 'none' }}
-              autoFocus
-            />
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-xl translate-x-[-50%] translate-y-[-50%] gap-0 border bg-popover shadow-lg duration-200 rounded-2xl overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          )}
+          style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+        >
+          {/* Close button - properly positioned */}
+          <DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full p-1.5 bg-secondary/80 hover:bg-secondary opacity-70 hover:opacity-100 transition-all">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Cerrar</span>
+          </DialogPrimitive.Close>
+          
+          <div className="p-4 border-b border-border/50">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar productos..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="pl-12 pr-12 h-12 text-lg bg-transparent placeholder:text-muted-foreground/60"
+                style={{ border: 'none', boxShadow: 'none', outline: 'none' }}
+                autoFocus
+              />
+            </div>
           </div>
-        </div>
 
         <div className="max-h-[400px] overflow-y-auto">
           {loading ? (
@@ -148,8 +160,9 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               </button>
             </div>
           )}
-        </div>
-      </DialogContent>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 }

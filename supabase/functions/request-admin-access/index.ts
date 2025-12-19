@@ -10,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_EMAIL = "asterohype@gmail.com";
+const ADMIN_EMAIL = "neomaffofficial@gmail.com";
 const VALID_INVITATION_CODE = "CIoMaaffsiXXfledd11978";
 
 interface AdminRequestPayload {
