@@ -85,7 +85,7 @@ const STOREFRONT_QUERY = `
               currencyCode
             }
           }
-          images(first: 5) {
+          images(first: 2) {
             edges {
               node {
                 url
@@ -93,7 +93,7 @@ const STOREFRONT_QUERY = `
               }
             }
           }
-          variants(first: 100) {
+          variants(first: 5) {
             edges {
               node {
                 id

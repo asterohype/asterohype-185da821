@@ -123,6 +123,18 @@ const Products = () => {
         const groupTags = tagsByGroup[groupName] || [];
         if (groupTags.length === 0) return null;
         
+        // Get tag class based on group
+        const getTagClass = (group: string) => {
+          switch (group) {
+            case 'Ropa Detallado': return 'tag-ropa';
+            case 'Estilos': return 'tag-estilos';
+            case 'Destacados': return 'tag-destacados';
+            default: return 'tag-general';
+          }
+        };
+        
+        const tagClass = getTagClass(groupName);
+        
         return (
           <Collapsible 
             key={groupName}
@@ -138,20 +150,18 @@ const Products = () => {
               {openSections[groupName] ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3 pb-4">
-              <div className="flex flex-wrap gap-1.5">
-                {groupTags.map((tag) => {
+              <div className="flex flex-wrap gap-2">
+                {groupTags.map((tag, idx) => {
                   const isSelected = selectedTags.includes(tag.slug);
                   return (
                     <button
                       key={tag.id}
                       onClick={() => toggleTag(tag.slug)}
                       className={`
-                        text-xs px-3 py-1.5 rounded-full transition-all
-                        ${isSelected 
-                          ? 'bg-primary/20 text-primary border border-primary/30' 
-                          : 'bg-secondary/50 text-muted-foreground border border-transparent hover:border-border hover:text-foreground'
-                        }
+                        text-xs px-3 py-1.5 rounded-full transition-all duration-200
+                        ${tagClass} ${isSelected ? 'selected' : ''}
                       `}
+                      style={{ animationDelay: `${idx * 30}ms` }}
                     >
                       {tag.name}
                     </button>
