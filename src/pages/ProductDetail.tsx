@@ -12,6 +12,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
+import { useOptionAliases } from "@/hooks/useOptionAliases";
 import { toast } from "sonner";
 import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus, DollarSign, TrendingUp } from "lucide-react";
 import {
@@ -60,6 +61,7 @@ const ProductDetail = () => {
   const { isAdminModeActive } = useAdminModeStore();
   const { tags, getTagsForProduct, getTagsByGroup, assignTag, removeTag } = useProductTags();
   const { getCostForProduct, saveCost, calculateProfit, loading: costsLoading } = useProductCosts();
+  const { getDisplayName, saveAlias } = useOptionAliases();
   
   const showAdminControls = isAdmin && isAdminModeActive;
   
@@ -69,6 +71,11 @@ const ProductDetail = () => {
   const [editedShippingCost, setEditedShippingCost] = useState('');
   const [editedCostNotes, setEditedCostNotes] = useState('');
   const [savingCost, setSavingCost] = useState(false);
+
+  // Option name editing states
+  const [editingOptionName, setEditingOptionName] = useState<string | null>(null);
+  const [editedOptionName, setEditedOptionName] = useState('');
+  const [savingOptionName, setSavingOptionName] = useState(false);
 
   useEffect(() => {
     async function loadProduct() {
@@ -934,28 +941,102 @@ const ProductDetail = () => {
               )}
 
               {/* Options */}
-              {product.options.map((option) => (
-                <div key={option.name}>
-                  <h3 className="font-medium text-foreground mb-3">
-                    {option.name}: <span className="text-price-yellow">{selectedOptions[option.name]}</span>
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {option.values.map((value) => (
-                      <button
-                        key={value}
-                        onClick={() => handleOptionChange(option.name, value)}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
-                          selectedOptions[option.name] === value
-                            ? "bg-price-yellow text-background shadow-lg shadow-price-yellow/30"
-                            : "bg-secondary text-foreground hover:bg-secondary/80 hover:scale-105"
-                        }`}
-                      >
-                        {value}
-                      </button>
-                    ))}
+              {product.options.map((option) => {
+                const displayName = getDisplayName(product.id, option.name);
+                const isEditingThis = editingOptionName === option.name;
+                
+                return (
+                  <div key={option.name}>
+                    <div className="flex items-center gap-2 mb-3">
+                      {showAdminControls && isEditingThis ? (
+                        <>
+                          <Input
+                            value={editedOptionName}
+                            onChange={(e) => setEditedOptionName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setSavingOptionName(true);
+                                saveAlias(product.id, option.name, editedOptionName.trim() || option.name)
+                                  .then(() => {
+                                    toast.success('Nombre de opción actualizado');
+                                    setEditingOptionName(null);
+                                  })
+                                  .catch(() => toast.error('Error al guardar'))
+                                  .finally(() => setSavingOptionName(false));
+                              }
+                              if (e.key === 'Escape') setEditingOptionName(null);
+                            }}
+                            className="font-medium w-40"
+                            autoFocus
+                          />
+                          <span className="text-muted-foreground">:</span>
+                          <span className="text-price-yellow">{selectedOptions[option.name]}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSavingOptionName(true);
+                              saveAlias(product.id, option.name, editedOptionName.trim() || option.name)
+                                .then(() => {
+                                  toast.success('Nombre de opción actualizado');
+                                  setEditingOptionName(null);
+                                })
+                                .catch(() => toast.error('Error al guardar'))
+                                .finally(() => setSavingOptionName(false));
+                            }}
+                            disabled={savingOptionName}
+                            className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
+                          >
+                            {savingOptionName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingOptionName(null)}
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="font-medium text-foreground">
+                            {displayName}: <span className="text-price-yellow">{selectedOptions[option.name]}</span>
+                          </h3>
+                          {showAdminControls && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditedOptionName(displayName);
+                                setEditingOptionName(option.name);
+                              }}
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {option.values.map((value) => (
+                        <button
+                          key={value}
+                          onClick={() => handleOptionChange(option.name, value)}
+                          className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                            selectedOptions[option.name] === value
+                              ? "bg-price-yellow text-background shadow-lg shadow-price-yellow/30"
+                              : "bg-secondary text-foreground hover:bg-secondary/80 hover:scale-105"
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Quantity */}
               <div>
