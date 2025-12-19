@@ -150,6 +150,7 @@ export type Database = {
       }
       product_costs: {
         Row: {
+          cj_product_id: string | null
           created_at: string
           id: string
           notes: string | null
@@ -159,6 +160,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cj_product_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -168,6 +170,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cj_product_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null

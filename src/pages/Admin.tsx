@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { AdminRequestModal } from '@/components/admin/AdminRequestModal';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { ProductCostManager } from '@/components/admin/ProductCostManager';
 import { supabase } from '@/integrations/supabase/client';
 
 const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
@@ -56,6 +57,7 @@ export default function Admin() {
     'Estilos': false,
     'Destacados': false
   });
+  const [expandedCosts, setExpandedCosts] = useState<Record<string, boolean>>({});
   const [showAdminRequest, setShowAdminRequest] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -127,6 +129,10 @@ export default function Admin() {
 
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  const toggleCosts = (productId: string) => {
+    setExpandedCosts(prev => ({ ...prev, [productId]: !prev[productId] }));
   };
 
   const startEditing = (product: ShopifyProduct) => {
@@ -547,6 +553,33 @@ export default function Admin() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                      </div>
+
+                      {/* Cost Management Toggle */}
+                      <div className="border-t border-border/30 pt-3">
+                        <button
+                          onClick={() => toggleCosts(product.node.id)}
+                          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <DollarSign className="h-3.5 w-3.5" />
+                          <span>Gestión de Costes CJ</span>
+                          {expandedCosts[product.node.id] ? (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        
+                        {expandedCosts[product.node.id] && (
+                          <div className="mt-3">
+                            <ProductCostManager
+                              shopifyProductId={product.node.id}
+                              productTitle={product.node.title}
+                              sellingPrice={parseFloat(product.node.priceRange.minVariantPrice.amount)}
+                              currencyCode={product.node.priceRange.minVariantPrice.currencyCode}
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {/* Tags Selection by Group */}
