@@ -3,6 +3,7 @@
 /* Typography: Rounded, soft fonts */
 /* Colors: Pink, purple, stars, soft pastels */
 
+:root.theme-cute,
 .theme-cute {
   /* Soft cream background */
   --background: 330 30% 98%;
@@ -87,6 +88,5 @@
 /* Glass effect - pink tint */
 .theme-cute .glass {
   background: rgba(255, 240, 245, 0.85);
-  backdrop-filter: blur(20px);
   border-color: rgba(255, 182, 193, 0.3);
 }
