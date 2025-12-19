@@ -5,6 +5,11 @@ import { Footer } from "@/components/layout/Footer";
 import { Sponsors } from "@/components/home/Sponsors";
 import lifestyleImg1 from "@/assets/lifestyle-shopping-1.jpg";
 import lifestyleImg2 from "@/assets/lifestyle-shopping-2.jpg";
+import lifestyleImg3 from "@/assets/lifestyle-shopping-3.jpg";
+import lifestyleImg4 from "@/assets/lifestyle-shopping-4.jpg";
+import lifestyleImg5 from "@/assets/lifestyle-shopping-5.jpg";
+import offersBanner2 from "@/assets/offers-banner-2.jpg";
+import offersBanner3 from "@/assets/offers-banner-3.jpg";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct, formatPrice } from "@/lib/shopify";
 import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight, Sparkles } from "lucide-react";
@@ -26,7 +31,39 @@ const DISPLAY_CATEGORIES = [
   { slug: "electronica", label: "Electrónica", icon: Smartphone },
 ];
 
-// Animated Image Carousel Component
+// Banner images arrays
+const LIFESTYLE_BANNER_IMAGES = [lifestyleImg1, lifestyleImg3, lifestyleImg4, lifestyleImg5];
+const OFFERS_BANNER_IMAGES = [lifestyleImg2, offersBanner2, offersBanner3];
+
+// Banner Carousel Component with smooth transitions
+const BannerCarousel = ({ images, interval = 4000 }: { images: string[], interval?: number }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [images.length, interval]);
+
+  return (
+    <>
+      {images.map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt=""
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out group-hover:scale-105 transition-transform ${
+            i === currentIndex ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      ))}
+    </>
+  );
+};
+
+// Animated Image Carousel Component for product cards
 const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval?: number }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -127,13 +164,13 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-32">
-        {/* Lifestyle Banner */}
+        {/* Lifestyle Banner with Carousel */}
         <section className="container mx-auto px-4 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[300px] md:h-[400px]">
             <div className="relative rounded-2xl overflow-hidden group">
-              <img src={lifestyleImg1} alt="Shopping lifestyle" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6">
+              <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5000} />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent z-10" />
+              <div className="absolute bottom-6 left-6 right-6 z-20">
                 <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">Compra con Confianza</h2>
                 <p className="text-muted-foreground text-sm md:text-base">Miles de clientes satisfechos</p>
                 <Link to="/products">
@@ -144,9 +181,9 @@ const Index = () => {
               </div>
             </div>
             <div className="relative rounded-2xl overflow-hidden group">
-              <img src={lifestyleImg2} alt="Happy customer" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6">
+              <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4000} />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent z-10" />
+              <div className="absolute bottom-6 left-6 right-6 z-20">
                 <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">Ofertas Exclusivas</h2>
                 <p className="text-muted-foreground text-sm md:text-base">Descuentos especiales cada día</p>
                 <Link to="/products">
