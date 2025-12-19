@@ -1,0 +1,91 @@
+/* HYPE THEME - Dark, Urban, Streetwear */
+/* Target: Young audience, streetwear enthusiasts */
+/* Typography: Russo One / Inter */
+/* Colors: Dark backgrounds, gold/yellow accents */
+
+.theme-hype {
+  /* Dark elegant background */
+  --background: 0 0% 4%;
+  --foreground: 0 0% 95%;
+
+  /* Cards with subtle elevation */
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 95%;
+
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 95%;
+
+  /* Rose gold accent as primary */
+  --primary: 30 45% 55%;
+  --primary-foreground: 0 0% 4%;
+
+  /* Neutral secondary */
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 85%;
+
+  /* Muted elements */
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 55%;
+
+  /* Accent - subtle gold */
+  --accent: 35 35% 45%;
+  --accent-foreground: 0 0% 95%;
+
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Borders and inputs */
+  --border: 0 0% 18%;
+  --input: 0 0% 15%;
+  --ring: 30 45% 55%;
+
+  --radius: 1rem;
+
+  /* Sidebar */
+  --sidebar-background: 0 0% 5%;
+  --sidebar-foreground: 0 0% 85%;
+  --sidebar-primary: 30 45% 55%;
+  --sidebar-primary-foreground: 0 0% 4%;
+  --sidebar-accent: 0 0% 12%;
+  --sidebar-accent-foreground: 0 0% 85%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-ring: 30 45% 55%;
+
+  /* Custom tokens */
+  --gold: 35 40% 50%;
+  --gold-light: 35 50% 65%;
+  --surface-elevated: 0 0% 10%;
+  
+  /* Title blue */
+  --title-blue: 210 100% 50%;
+  
+  /* Price yellow */
+  --price-yellow: 45 100% 50%;
+
+  /* Sale price */
+  --sale-red: 0 72% 50%;
+  --sale-original: 0 0% 55%;
+}
+
+/* Typography for hype theme */
+.theme-hype body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+}
+
+.theme-hype .font-display {
+  font-family: 'Russo One', 'Inter', sans-serif;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+/* Strong hover effects */
+.theme-hype .hover-lift:hover {
+  box-shadow: 0 20px 40px -15px hsl(var(--price-yellow) / 0.2);
+}
+
+/* Glass effect - dark */
+.theme-hype .glass {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.1);
+}
