@@ -85,52 +85,56 @@ serve(async (req) => {
       );
     }
 
-    // If searching by name, use the list endpoint
+    // If searching by name, use the listV2 endpoint (GET with keyWord)
     if (productName && !cjProductId && !cjSku) {
-      const searchUrl = 'https://developers.cjdropshipping.com/api2.0/v1/product/list';
-      console.log('Searching CJ products by name:', productName);
+      const searchUrl = new URL('https://developers.cjdropshipping.com/api2.0/v1/product/listV2');
+      searchUrl.searchParams.set('keyWord', productName);
+      searchUrl.searchParams.set('page', '1');
+      searchUrl.searchParams.set('size', '20');
       
-      const searchResponse = await fetch(searchUrl, {
-        method: 'POST',
+      console.log('Searching CJ products by keyword:', productName);
+      
+      const searchResponse = await fetch(searchUrl.toString(), {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'CJ-Access-Token': accessToken,
         },
-        body: JSON.stringify({
-          productNameEn: productName,
-          pageNum: 1,
-          pageSize: 20,
-        }),
       });
 
       const searchData = await searchResponse.json();
-      console.log('CJ Search response code:', searchData.code, 'results:', searchData.data?.list?.length || 0);
+      console.log('CJ Search response code:', searchData.code, 'total:', searchData.data?.totalRecords || 0);
 
-      if (searchData.code !== 200 || !searchData.data?.list?.length) {
+      const productList = searchData.data?.content?.[0]?.productList || [];
+      
+      if (searchData.code !== 200 || productList.length === 0) {
         return new Response(
           JSON.stringify({ 
             success: false, 
             error: 'No products found matching the name',
-            searchQuery: productName
+            searchQuery: productName,
+            apiCode: searchData.code,
+            apiMessage: searchData.message
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       // Return the search results for user to pick
-      const products = searchData.data.list.map((p: any) => ({
-        productId: p.pid,
-        productName: p.productNameEn,
-        sku: p.productSku,
+      const products = productList.map((p: any) => ({
+        productId: p.id,
+        productName: p.nameEn,
+        sku: p.sku,
         sellPrice: p.sellPrice,
-        productImage: p.productImage,
+        discountPrice: p.discountPrice,
+        productImage: p.bigImage,
       }));
 
       return new Response(
         JSON.stringify({ 
           success: true,
           searchResults: products,
-          totalFound: searchData.data.total || products.length,
+          totalFound: searchData.data?.totalRecords || products.length,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
