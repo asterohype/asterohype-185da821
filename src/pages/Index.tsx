@@ -12,24 +12,28 @@ import shoppingCart1 from "@/assets/shopping-cart-1.jpg";
 import premiumBags1 from "@/assets/premium-bags-1.jpg";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct, formatPrice } from "@/lib/shopify";
-import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight, Sparkles } from "lucide-react";
+import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight, Sparkles, Pencil, Check, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductTags } from "@/hooks/useProductTags";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { useAdminModeStore } from "@/stores/adminModeStore";
+import { useMenuConfigStore } from "@/stores/menuConfigStore";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
-// Category definitions with slugs matching the database tags
-const DISPLAY_CATEGORIES = [
-  { slug: "tecnologia", label: "Tecnología", icon: Smartphone },
-  { slug: "accesorios", label: "Accesorios", icon: Headphones },
-  { slug: "hogar", label: "Hogar", icon: Home },
-  { slug: "ropa", label: "Ropa", icon: Shirt },
-  { slug: "fundas", label: "Fundas", icon: Smartphone },
-  { slug: "gadgets", label: "Gadgets", icon: Smartphone },
-  { slug: "calzado", label: "Calzado", icon: Shirt },
-  { slug: "electronica", label: "Electrónica", icon: Smartphone },
-];
+// Category icon mapping
+const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
+  tecnologia: Smartphone,
+  accesorios: Headphones,
+  hogar: Home,
+  ropa: Shirt,
+  fundas: Smartphone,
+  gadgets: Smartphone,
+  calzado: Shirt,
+  electronica: Smartphone,
+};
 
 // Banner images arrays - realistic product photos without text
 const LIFESTYLE_BANNER_IMAGES = [lifestyleImg1, shoppingBags1, deliveryBoxes1, shoppingCart1];
@@ -99,6 +103,12 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const { tags, getTagsForProduct, getProductsForTag, loading: tagsLoading } = useProductTags();
+  
+  // Admin mode
+  const { isAdminModeActive } = useAdminModeStore();
+  const { categories, updateCategory, updateCategoryImage } = useMenuConfigStore();
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   // Authentication state
   useEffect(() => {
@@ -340,23 +350,86 @@ const Index = () => {
             </div>
           ) : (
             <div className="flex justify-center gap-6 md:gap-10 lg:gap-12 flex-wrap">
-              {DISPLAY_CATEGORIES.map((category) => {
-                const previewImage = getCategoryPreviewImage(category.slug);
+              {categories.map((category) => {
+                const previewImage = category.customImage || getCategoryPreviewImage(category.slug);
+                const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
+                const isEditing = editingCategory === category.id;
+                
                 return (
-                  <Link
-                    key={category.label}
-                    to={`/products?tag=${category.slug}`}
-                    className="flex flex-col items-center gap-3 group"
-                  >
-                    <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full border-2 border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow transition-all duration-300 group-hover:scale-105 bg-secondary/30">
+                  <div key={category.id} className="flex flex-col items-center gap-3 group relative">
+                    {/* Admin edit overlay for image */}
+                    {isAdminModeActive && (
+                      <button
+                        onClick={() => {
+                          const url = prompt('URL de la imagen:', category.customImage || '');
+                          if (url !== null) {
+                            updateCategoryImage(category.id, url);
+                            toast.success('Imagen actualizada');
+                          }
+                        }}
+                        className="absolute top-0 right-0 z-10 p-1.5 rounded-full bg-primary/90 text-primary-foreground shadow-lg hover:bg-primary transition-colors"
+                      >
+                        <ImagePlus className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    
+                    <Link
+                      to={`/products?tag=${category.slug}`}
+                      className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full border-2 border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow transition-all duration-300 group-hover:scale-105 bg-secondary/30"
+                    >
                       {previewImage ? (
                         <img src={previewImage} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <category.icon className="h-10 w-10 text-foreground" />
+                        <Icon className="h-10 w-10 text-foreground" />
                       )}
-                    </div>
-                    <span className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium">{category.label}</span>
-                  </Link>
+                    </Link>
+                    
+                    {/* Editable label */}
+                    {isAdminModeActive && isEditing ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="h-7 w-24 text-sm px-2 py-0 text-center"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              updateCategory(category.id, editValue);
+                              setEditingCategory(null);
+                              toast.success('Guardado');
+                            }
+                            if (e.key === 'Escape') setEditingCategory(null);
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            updateCategory(category.id, editValue);
+                            setEditingCategory(null);
+                            toast.success('Guardado');
+                          }}
+                          className="p-1 rounded-full bg-primary/20 hover:bg-primary/30"
+                        >
+                          <Check className="h-3 w-3 text-primary" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span 
+                        className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium flex items-center gap-1"
+                        onClick={(e) => {
+                          if (isAdminModeActive) {
+                            e.preventDefault();
+                            setEditingCategory(category.id);
+                            setEditValue(category.label);
+                          }
+                        }}
+                      >
+                        {category.label}
+                        {isAdminModeActive && (
+                          <Pencil className="h-3 w-3 opacity-50 hover:opacity-100 cursor-pointer" />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -450,15 +523,16 @@ const Index = () => {
         </section>
 
         {/* Category Sections with Products - using DB tags */}
-        {!loading && !tagsLoading && products.length > 0 && DISPLAY_CATEGORIES.slice(0, 4).map((category) => {
+        {!loading && !tagsLoading && products.length > 0 && categories.slice(0, 4).map((category) => {
           const taggedProductIds = getProductsForTag(category.slug);
           const categoryProducts = products.filter(p => taggedProductIds.includes(p.node.id)).slice(0, 10);
           if (categoryProducts.length === 0) return null;
+          const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
           return (
             <section key={category.slug} className="container mx-auto px-4 py-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <category.icon className="h-5 w-5 text-price-yellow" />
+                  <Icon className="h-5 w-5 text-price-yellow" />
                   <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
                 </div>
                 <Link to={`/products?tag=${category.slug}`} className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">

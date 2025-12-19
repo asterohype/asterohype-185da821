@@ -13,13 +13,23 @@ interface Collection {
   query: string;
 }
 
+interface Category {
+  id: string;
+  slug: string;
+  label: string;
+  customImage?: string;
+}
+
 interface MenuConfigState {
   menuItems: MenuItem[];
   collections: Collection[];
   collectionsLabel: string;
+  categories: Category[];
   updateMenuItem: (id: string, label: string) => void;
   updateCollectionsLabel: (label: string) => void;
   updateCollection: (id: string, name: string) => void;
+  updateCategory: (id: string, label: string) => void;
+  updateCategoryImage: (id: string, imageUrl: string) => void;
 }
 
 export const useMenuConfigStore = create<MenuConfigState>()(
@@ -38,6 +48,16 @@ export const useMenuConfigStore = create<MenuConfigState>()(
         { id: 'accesorios', name: 'Accesorios', query: 'accesorios' },
         { id: 'ropa', name: 'Ropa', query: 'clothing' },
       ],
+      categories: [
+        { id: 'tecnologia', slug: 'tecnologia', label: 'Tecnología' },
+        { id: 'accesorios', slug: 'accesorios', label: 'Accesorios' },
+        { id: 'hogar', slug: 'hogar', label: 'Hogar' },
+        { id: 'ropa', slug: 'ropa', label: 'Ropa' },
+        { id: 'fundas', slug: 'fundas', label: 'Fundas' },
+        { id: 'gadgets', slug: 'gadgets', label: 'Gadgets' },
+        { id: 'calzado', slug: 'calzado', label: 'Calzado' },
+        { id: 'electronica', slug: 'electronica', label: 'Electrónica' },
+      ],
       updateMenuItem: (id, label) =>
         set((state) => ({
           menuItems: state.menuItems.map((item) =>
@@ -50,6 +70,18 @@ export const useMenuConfigStore = create<MenuConfigState>()(
         set((state) => ({
           collections: state.collections.map((col) =>
             col.id === id ? { ...col, name } : col
+          ),
+        })),
+      updateCategory: (id, label) =>
+        set((state) => ({
+          categories: state.categories.map((cat) =>
+            cat.id === id ? { ...cat, label } : cat
+          ),
+        })),
+      updateCategoryImage: (id, imageUrl) =>
+        set((state) => ({
+          categories: state.categories.map((cat) =>
+            cat.id === id ? { ...cat, customImage: imageUrl } : cat
           ),
         })),
     }),
