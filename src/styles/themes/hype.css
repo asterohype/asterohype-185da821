@@ -10,51 +10,51 @@
   --foreground: 0 0% 95%;
 
   /* Cards with subtle elevation */
-  --card: 0 0% 7%;
+  --card: 0 0% 8%;
   --card-foreground: 0 0% 95%;
 
-  --popover: 0 0% 7%;
+  --popover: 0 0% 8%;
   --popover-foreground: 0 0% 95%;
 
-  /* Rose gold accent as primary */
-  --primary: 30 45% 55%;
+  /* Gold/Yellow accent as primary */
+  --primary: 45 100% 50%;
   --primary-foreground: 0 0% 4%;
 
   /* Neutral secondary */
-  --secondary: 0 0% 12%;
+  --secondary: 0 0% 14%;
   --secondary-foreground: 0 0% 85%;
 
   /* Muted elements */
-  --muted: 0 0% 15%;
+  --muted: 0 0% 18%;
   --muted-foreground: 0 0% 55%;
 
-  /* Accent - subtle gold */
-  --accent: 35 35% 45%;
-  --accent-foreground: 0 0% 95%;
+  /* Accent - gold */
+  --accent: 45 90% 45%;
+  --accent-foreground: 0 0% 4%;
 
   --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 100%;
 
   /* Borders and inputs */
-  --border: 0 0% 18%;
+  --border: 0 0% 20%;
   --input: 0 0% 15%;
-  --ring: 30 45% 55%;
+  --ring: 45 100% 50%;
 
   --radius: 1rem;
 
   /* Sidebar */
-  --sidebar-background: 0 0% 5%;
+  --sidebar-background: 0 0% 6%;
   --sidebar-foreground: 0 0% 85%;
-  --sidebar-primary: 30 45% 55%;
+  --sidebar-primary: 45 100% 50%;
   --sidebar-primary-foreground: 0 0% 4%;
-  --sidebar-accent: 0 0% 12%;
+  --sidebar-accent: 0 0% 14%;
   --sidebar-accent-foreground: 0 0% 85%;
-  --sidebar-border: 0 0% 15%;
-  --sidebar-ring: 30 45% 55%;
+  --sidebar-border: 0 0% 18%;
+  --sidebar-ring: 45 100% 50%;
 
   /* Custom tokens */
-  --gold: 35 40% 50%;
-  --gold-light: 35 50% 65%;
+  --gold: 45 90% 50%;
+  --gold-light: 45 100% 65%;
   --surface-elevated: 0 0% 10%;
   
   /* Title blue */
@@ -73,6 +73,9 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
 
+.theme-hype h1,
+.theme-hype h2,
+.theme-hype h3,
 .theme-hype .font-display {
   font-family: 'Russo One', 'Inter', sans-serif;
   font-style: italic;
@@ -81,11 +84,19 @@
 
 /* Strong hover effects */
 .theme-hype .hover-lift:hover {
-  box-shadow: 0 20px 40px -15px hsl(var(--price-yellow) / 0.2);
+  box-shadow: 0 20px 40px -15px hsl(45 100% 50% / 0.3);
 }
 
 /* Glass effect - dark */
 .theme-hype .glass {
-  background: rgba(0, 0, 0, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card styling */
+.theme-hype .card-glass {
+  background: rgba(15, 15, 15, 0.9);
+  border: 1px solid rgba(255, 215, 0, 0.1);
 }
