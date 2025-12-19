@@ -5,11 +5,11 @@ import { Footer } from "@/components/layout/Footer";
 import { Sponsors } from "@/components/home/Sponsors";
 import lifestyleImg1 from "@/assets/lifestyle-shopping-1.jpg";
 import lifestyleImg2 from "@/assets/lifestyle-shopping-2.jpg";
-import lifestyleImg3 from "@/assets/lifestyle-shopping-3.jpg";
-import lifestyleImg4 from "@/assets/lifestyle-shopping-4.jpg";
-import lifestyleImg5 from "@/assets/lifestyle-shopping-5.jpg";
-import offersBanner2 from "@/assets/offers-banner-2.jpg";
-import offersBanner3 from "@/assets/offers-banner-3.jpg";
+import bannerIllustration1 from "@/assets/banner-illustration-1.jpg";
+import bannerIllustration2 from "@/assets/banner-illustration-2.jpg";
+import bannerIllustration3 from "@/assets/banner-illustration-3.jpg";
+import bannerIllustration4 from "@/assets/banner-illustration-4.jpg";
+import bannerIllustration5 from "@/assets/banner-illustration-5.jpg";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct, formatPrice } from "@/lib/shopify";
 import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight, Sparkles } from "lucide-react";
@@ -31,9 +31,9 @@ const DISPLAY_CATEGORIES = [
   { slug: "electronica", label: "Electrónica", icon: Smartphone },
 ];
 
-// Banner images arrays
-const LIFESTYLE_BANNER_IMAGES = [lifestyleImg1, lifestyleImg3, lifestyleImg4, lifestyleImg5];
-const OFFERS_BANNER_IMAGES = [lifestyleImg2, offersBanner2, offersBanner3];
+// Banner images arrays - illustrations + original photos
+const LIFESTYLE_BANNER_IMAGES = [lifestyleImg1, bannerIllustration1, bannerIllustration2, bannerIllustration5];
+const OFFERS_BANNER_IMAGES = [lifestyleImg2, bannerIllustration3, bannerIllustration4];
 
 // Banner Carousel Component with smooth transitions
 const BannerCarousel = ({ images, interval = 4000 }: { images: string[], interval?: number }) => {
