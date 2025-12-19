@@ -171,7 +171,7 @@ export default function Admin() {
                         {groupTags.map(tag => (
                           <Badge 
                             key={tag.id} 
-                            className="px-3 py-1 bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800"
+                            className="px-3 py-1.5 rounded-full font-medium shadow-sm bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 border border-amber-200/80 hover:shadow-md hover:scale-105 transition-all cursor-default dark:from-amber-900/40 dark:to-orange-900/30 dark:text-amber-100 dark:border-amber-700/60"
                           >
                             {tag.name}
                           </Badge>
@@ -258,12 +258,12 @@ export default function Admin() {
                                     onClick={() => handleToggleTag(product.node.id, tag)}
                                     disabled={isSaving}
                                     className={`
-                                      text-xs px-2 py-1 rounded-full border transition-all
+                                      text-xs px-3 py-1.5 rounded-full font-medium transition-all shadow-sm
                                       ${isSelected 
-                                        ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/50 dark:text-amber-100 dark:border-amber-700' 
-                                        : 'bg-transparent text-muted-foreground border-border hover:border-amber-400/50 hover:text-amber-700 dark:hover:text-amber-300'
+                                        ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-900 border border-amber-300 shadow-amber-200/50 dark:from-amber-800/60 dark:to-orange-800/50 dark:text-amber-50 dark:border-amber-600' 
+                                        : 'bg-stone-100/80 text-stone-600 border border-stone-200 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:text-amber-800 hover:border-amber-200 hover:shadow-md dark:bg-stone-800/50 dark:text-stone-300 dark:border-stone-700 dark:hover:from-amber-900/30 dark:hover:to-orange-900/20 dark:hover:text-amber-200 dark:hover:border-amber-700'
                                       }
-                                      disabled:opacity-50
+                                      disabled:opacity-50 disabled:cursor-not-allowed
                                     `}
                                   >
                                     {isSelected && <Check className="h-3 w-3 inline mr-1" />}
