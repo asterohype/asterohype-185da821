@@ -6,7 +6,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 
 const themes: { id: ThemeStyle; name: string; icon: React.ReactNode; description: string }[] = [
   {
@@ -33,18 +32,34 @@ export const ThemeSelector = () => {
   const { theme, setTheme } = useThemeStore();
   const currentTheme = themes.find((t) => t.id === theme) || themes[0];
 
+  const handleThemeChange = (themeId: ThemeStyle) => {
+    setTheme(themeId);
+    // Force immediate DOM update
+    const root = document.documentElement;
+    root.classList.remove('theme-default', 'theme-hype', 'theme-cute');
+    root.classList.add(`theme-${themeId}`);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
+        <button 
+          className="inline-flex items-center justify-center h-9 w-9 rounded-full hover:bg-secondary transition-colors"
+          style={{ 
+            background: 'transparent', 
+            border: 'none', 
+            boxShadow: 'none',
+            backdropFilter: 'none'
+          }}
+        >
           {currentTheme.icon}
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         {themes.map((t) => (
           <DropdownMenuItem
             key={t.id}
-            onClick={() => setTheme(t.id)}
+            onClick={() => handleThemeChange(t.id)}
             className="flex items-center gap-3 cursor-pointer"
           >
             <span className="flex-shrink-0">{t.icon}</span>
