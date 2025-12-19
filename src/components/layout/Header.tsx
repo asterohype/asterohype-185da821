@@ -24,6 +24,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { Input } from "@/components/ui/input";
+import { SearchModal } from "@/components/search/SearchModal";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -34,9 +35,10 @@ export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const { isAdmin } = useAdmin();
   
-  // Editing states
+  // States
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -183,38 +185,36 @@ export function Header() {
 
               {/* Right side actions */}
               <div className="flex items-center gap-3">
-                {/* Search Icon */}
-                <Link
-                  to="/products"
+                {/* Search Icon - Opens Modal */}
+                <button
+                  onClick={() => setSearchOpen(true)}
                   className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
                 >
                   <Search className="h-4 w-4 text-price-yellow" />
-                </Link>
+                </button>
 
                 {/* Admin Button with Hover Menu */}
                 {isAdmin && (
                   <HoverCard openDelay={100} closeDelay={200}>
                     <HoverCardTrigger asChild>
                       <button
+                        data-admin-button
+                        data-active={isAdminModeActive}
                         onClick={() => {
                           toggleAdminMode();
                           toast.success(isAdminModeActive ? 'Modo Admin desactivado' : 'Modo Admin activado');
                         }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300 ${
-                          isAdminModeActive 
-                            ? 'bg-amber-500 text-black border-amber-500 shadow-lg shadow-amber-500/30' 
-                            : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 hover:border-amber-500/50 text-amber-500'
-                        }`}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300"
                       >
-                        <Shield className={`h-4 w-4 ${isAdminModeActive ? 'text-black' : 'text-amber-500'}`} />
-                        <span className={`hidden sm:inline text-sm font-medium ${isAdminModeActive ? 'text-black' : 'text-amber-500'}`}>
+                        <Shield className="h-4 w-4" />
+                        <span className="hidden sm:inline text-sm font-medium">
                           Admin {isAdminModeActive && '✓'}
                         </span>
                       </button>
                     </HoverCardTrigger>
                     <HoverCardContent 
                       align="center" 
-                      className="w-48 p-2 bg-popover border border-border shadow-lg"
+                      className="w-48 p-2 bg-popover border border-border shadow-lg rounded-xl"
                       sideOffset={8}
                     >
                       <Link
@@ -335,6 +335,7 @@ export function Header() {
         </header>
       </div>
 
+      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       <CartDrawer />
     </>
   );

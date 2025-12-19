@@ -134,8 +134,8 @@ html.theme-default h6 {
 }
 
 /* Glass buttons for Clean theme */
-html.theme-default button,
-html.theme-default [role="button"],
+html.theme-default button:not([data-admin-button]),
+html.theme-default [role="button"]:not([data-admin-button]),
 html.theme-default a[class*="btn"] {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.85) 0%, 
@@ -149,8 +149,8 @@ html.theme-default a[class*="btn"] {
   color: hsl(222 47% 11%) !important;
 }
 
-html.theme-default button:hover,
-html.theme-default [role="button"]:hover {
+html.theme-default button:not([data-admin-button]):hover,
+html.theme-default [role="button"]:not([data-admin-button]):hover {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.95) 0%, 
     rgba(240, 248, 255, 0.9) 100%) !important;
@@ -158,6 +158,31 @@ html.theme-default [role="button"]:hover {
     0 8px 32px rgba(0, 100, 255, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   transform: translateY(-2px);
+}
+
+/* Admin button styles - consistent across all themes */
+[data-admin-button] {
+  background: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(40 100% 45%) 100%) !important;
+  color: hsl(0 0% 5%) !important;
+  border: 1px solid hsl(45 100% 55%) !important;
+  box-shadow: 0 4px 16px hsla(45, 100%, 50%, 0.3) !important;
+}
+
+[data-admin-button]:hover {
+  background: linear-gradient(135deg, hsl(45 100% 55%) 0%, hsl(40 100% 50%) 100%) !important;
+  box-shadow: 0 6px 24px hsla(45, 100%, 50%, 0.4) !important;
+}
+
+[data-admin-button][data-active="false"] {
+  background: hsla(45, 100%, 50%, 0.15) !important;
+  color: hsl(45 100% 50%) !important;
+  border: 1px solid hsla(45, 100%, 50%, 0.4) !important;
+  box-shadow: none !important;
+}
+
+[data-admin-button][data-active="false"]:hover {
+  background: hsla(45, 100%, 50%, 0.25) !important;
+  border-color: hsl(45 100% 50%) !important;
 }
 
 /* ============================================ */
@@ -207,8 +232,8 @@ html.theme-hype h3 {
 }
 
 /* Dark buttons for Hype theme */
-html.theme-hype button,
-html.theme-hype [role="button"],
+html.theme-hype button:not([data-admin-button]),
+html.theme-hype [role="button"]:not([data-admin-button]),
 html.theme-hype a[class*="btn"] {
   background: linear-gradient(135deg, 
     hsl(0 0% 12%) 0%, 
@@ -221,8 +246,8 @@ html.theme-hype a[class*="btn"] {
   color: hsl(0 0% 95%) !important;
 }
 
-html.theme-hype button:hover,
-html.theme-hype [role="button"]:hover {
+html.theme-hype button:not([data-admin-button]):hover,
+html.theme-hype [role="button"]:not([data-admin-button]):hover {
   background: linear-gradient(135deg, 
     hsl(0 0% 16%) 0%, 
     hsl(0 0% 12%) 100%) !important;
@@ -290,8 +315,8 @@ html.theme-cute h6 {
 }
 
 /* Soft buttons for Cute theme */
-html.theme-cute button,
-html.theme-cute [role="button"] {
+html.theme-cute button:not([data-admin-button]),
+html.theme-cute [role="button"]:not([data-admin-button]) {
   background: linear-gradient(135deg, 
     hsl(330 70% 65%) 0%, 
     hsl(330 60% 55%) 100%) !important;
@@ -300,8 +325,8 @@ html.theme-cute [role="button"] {
   color: white !important;
 }
 
-html.theme-cute button:hover,
-html.theme-cute [role="button"]:hover {
+html.theme-cute button:not([data-admin-button]):hover,
+html.theme-cute [role="button"]:not([data-admin-button]):hover {
   background: linear-gradient(135deg, 
     hsl(330 70% 70%) 0%, 
     hsl(330 60% 60%) 100%) !important;

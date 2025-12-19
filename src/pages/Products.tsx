@@ -129,11 +129,11 @@ const Products = () => {
             open={openSections[groupName]} 
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, [groupName]: open }))}
           >
-            <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-b border-border/50">
+            <CollapsibleTrigger className="flex items-center justify-between w-full py-3 text-left">
               <span className="font-semibold text-foreground">{groupName}</span>
-              {openSections[groupName] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {openSections[groupName] ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3">
+            <CollapsibleContent className="pt-3 pb-4">
               <div className="flex flex-wrap gap-1.5">
                 {groupTags.map((tag) => {
                   const isSelected = selectedTags.includes(tag.slug);
@@ -142,10 +142,10 @@ const Products = () => {
                       key={tag.id}
                       onClick={() => toggleTag(tag.slug)}
                       className={`
-                        text-xs px-3 py-1.5 rounded-full border transition-all
+                        text-xs px-3 py-1.5 rounded-full transition-all
                         ${isSelected 
-                          ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/50 dark:text-amber-100 dark:border-amber-700' 
-                          : 'bg-transparent text-muted-foreground border-border hover:border-amber-400/50 hover:text-amber-700 dark:hover:text-amber-300'
+                          ? 'bg-primary/20 text-primary border border-primary/30' 
+                          : 'bg-secondary/50 text-muted-foreground border border-transparent hover:border-border hover:text-foreground'
                         }
                       `}
                     >
