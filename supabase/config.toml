@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.test-cj-api]
 verify_jwt = false
+
+[functions.cj-my-products]
+verify_jwt = false
+
+[functions.cj-product-cost]
+verify_jwt = false
