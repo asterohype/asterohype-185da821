@@ -309,3 +309,23 @@ export async function updateProductTitle(productId: string, newTitle: string): P
     throw new Error(errorData.error || 'Failed to update product');
   }
 }
+
+// Update product variant price via Admin API (through edge function)
+export async function updateProductPrice(productId: string, variantId: string, newPrice: string): Promise<void> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ productId, variantId, price: newPrice }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to update price');
+  }
+}

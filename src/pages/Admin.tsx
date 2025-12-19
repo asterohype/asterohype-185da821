@@ -4,11 +4,11 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useProductTags, ProductTag } from '@/hooks/useProductTags';
-import { fetchProducts, ShopifyProduct, updateProductTitle } from '@/lib/shopify';
+import { fetchProducts, ShopifyProduct, updateProductTitle, updateProductPrice, formatPrice } from '@/lib/shopify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight, Pencil, X, Save } from 'lucide-react';
+import { Loader2, Plus, Tag, Search, Shield, Check, ChevronDown, ChevronRight, Pencil, X, Save, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Select,
@@ -33,6 +33,8 @@ export default function Admin() {
   const [savingProduct, setSavingProduct] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [editedTitle, setEditedTitle] = useState('');
+  const [editingPrice, setEditingPrice] = useState<string | null>(null);
+  const [editedPrice, setEditedPrice] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'General': true,
     'Ropa Detallado': false,
@@ -113,7 +115,6 @@ export default function Admin() {
     setSavingProduct(product.node.id);
     try {
       await updateProductTitle(product.node.id, editedTitle.trim());
-      // Update local state
       setProducts(prev => prev.map(p => 
         p.node.id === product.node.id 
           ? { ...p, node: { ...p.node, title: editedTitle.trim() } }
@@ -124,6 +125,59 @@ export default function Admin() {
     } catch (error) {
       console.error('Error updating product:', error);
       toast.error('Error al actualizar el nombre');
+    } finally {
+      setSavingProduct(null);
+    }
+  };
+
+  const startEditingPrice = (product: ShopifyProduct) => {
+    setEditingPrice(product.node.id);
+    setEditedPrice(product.node.priceRange.minVariantPrice.amount);
+  };
+
+  const cancelEditingPrice = () => {
+    setEditingPrice(null);
+    setEditedPrice('');
+  };
+
+  const savePrice = async (product: ShopifyProduct) => {
+    const currentPrice = product.node.priceRange.minVariantPrice.amount;
+    if (!editedPrice.trim() || editedPrice === currentPrice) {
+      cancelEditingPrice();
+      return;
+    }
+    
+    const firstVariant = product.node.variants.edges[0]?.node;
+    if (!firstVariant) {
+      toast.error('No se encontró variante del producto');
+      return;
+    }
+
+    setSavingProduct(product.node.id);
+    try {
+      await updateProductPrice(product.node.id, firstVariant.id, editedPrice.trim());
+      setProducts(prev => prev.map(p => 
+        p.node.id === product.node.id 
+          ? { 
+              ...p, 
+              node: { 
+                ...p.node, 
+                priceRange: {
+                  ...p.node.priceRange,
+                  minVariantPrice: {
+                    ...p.node.priceRange.minVariantPrice,
+                    amount: editedPrice.trim()
+                  }
+                }
+              } 
+            }
+          : p
+      ));
+      toast.success('Precio actualizado en Shopify');
+      cancelEditingPrice();
+    } catch (error) {
+      console.error('Error updating price:', error);
+      toast.error('Error al actualizar el precio');
     } finally {
       setSavingProduct(null);
     }
@@ -303,6 +357,55 @@ export default function Admin() {
                                 className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
                               >
                                 <Pencil className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                          {/* Price editing */}
+                          {editingPrice === product.node.id ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground">€</span>
+                              <Input
+                                value={editedPrice}
+                                onChange={(e) => setEditedPrice(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') savePrice(product);
+                                  if (e.key === 'Escape') cancelEditingPrice();
+                                }}
+                                className="h-6 text-xs w-20"
+                                type="number"
+                                step="0.01"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => savePrice(product)}
+                                disabled={isSaving}
+                                className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
+                              >
+                                <Save className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={cancelEditingPrice}
+                                className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs font-semibold text-price-yellow">
+                                {formatPrice(product.node.priceRange.minVariantPrice.amount, product.node.priceRange.minVariantPrice.currencyCode)}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEditingPrice(product)}
+                                className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
+                              >
+                                <Pencil className="h-2.5 w-2.5" />
                               </Button>
                             </div>
                           )}
