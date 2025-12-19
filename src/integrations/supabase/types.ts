@@ -121,6 +121,36 @@ export type Database = {
         }
         Relationships: []
       }
+      product_costs: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          product_cost: number
+          shipping_cost: number
+          shopify_product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_cost?: number
+          shipping_cost?: number
+          shopify_product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_cost?: number
+          shipping_cost?: number
+          shopify_product_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_tag_assignments: {
         Row: {
           created_at: string

@@ -11,8 +11,9 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
+import { useProductCosts } from "@/hooks/useProductCosts";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus } from "lucide-react";
+import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus, DollarSign, TrendingUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,8 +59,16 @@ const ProductDetail = () => {
   const { isAdmin } = useAdmin();
   const { isAdminModeActive } = useAdminModeStore();
   const { tags, getTagsForProduct, getTagsByGroup, assignTag, removeTag } = useProductTags();
+  const { getCostForProduct, saveCost, calculateProfit, loading: costsLoading } = useProductCosts();
   
   const showAdminControls = isAdmin && isAdminModeActive;
+  
+  // Cost editing states
+  const [editingCost, setEditingCost] = useState(false);
+  const [editedProductCost, setEditedProductCost] = useState('');
+  const [editedShippingCost, setEditedShippingCost] = useState('');
+  const [editedCostNotes, setEditedCostNotes] = useState('');
+  const [savingCost, setSavingCost] = useState(false);
 
   useEffect(() => {
     async function loadProduct() {
@@ -366,6 +375,37 @@ const ProductDetail = () => {
       toast.error('Error al eliminar el producto');
     } finally {
       setDeletingProduct(false);
+    }
+  };
+
+  // Cost management functions
+  const productCostData = product ? getCostForProduct(product.id) : undefined;
+  
+  const startEditingCost = () => {
+    setEditedProductCost(productCostData?.product_cost?.toString() || '');
+    setEditedShippingCost(productCostData?.shipping_cost?.toString() || '');
+    setEditedCostNotes(productCostData?.notes || '');
+    setEditingCost(true);
+  };
+
+  const handleSaveCost = async () => {
+    if (!product) return;
+    
+    setSavingCost(true);
+    try {
+      await saveCost(
+        product.id,
+        parseFloat(editedProductCost) || 0,
+        parseFloat(editedShippingCost) || 0,
+        editedCostNotes
+      );
+      toast.success('Costes actualizados');
+      setEditingCost(false);
+    } catch (error) {
+      console.error('Error saving cost:', error);
+      toast.error('Error al guardar los costes');
+    } finally {
+      setSavingCost(false);
     }
   };
 
@@ -764,6 +804,132 @@ const ProductDetail = () => {
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* Admin Cost/Profit Panel */}
+              {showAdminControls && (
+                <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border border-green-700/30 rounded-xl p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-green-400">
+                      <DollarSign className="h-4 w-4" />
+                      <span className="font-medium text-sm">Costes & Profit (Admin)</span>
+                    </div>
+                    {!editingCost && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={startEditingCost}
+                        className="h-7 px-2 text-green-400 hover:text-green-300 hover:bg-green-800/30"
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-1" />
+                        Editar
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {editingCost ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Coste Producto (€)</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editedProductCost}
+                            onChange={(e) => setEditedProductCost(e.target.value)}
+                            placeholder="0.00"
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Coste Envío (€)</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editedShippingCost}
+                            onChange={(e) => setEditedShippingCost(e.target.value)}
+                            placeholder="0.00"
+                            className="bg-background/50"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Notas (opcional)</label>
+                        <Input
+                          value={editedCostNotes}
+                          onChange={(e) => setEditedCostNotes(e.target.value)}
+                          placeholder="Ej: Proveedor CJ, SKU..."
+                          className="bg-background/50"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleSaveCost}
+                          disabled={savingCost}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {savingCost ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                          Guardar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingCost(false)}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(() => {
+                        const sellingPrice = parseFloat(price.amount);
+                        const { totalCost, profit, profitMargin } = calculateProfit(sellingPrice, productCostData);
+                        const hasData = productCostData && (productCostData.product_cost > 0 || productCostData.shipping_cost > 0);
+                        
+                        return hasData ? (
+                          <>
+                            <div className="grid grid-cols-3 gap-3 text-center">
+                              <div className="bg-background/30 rounded-lg p-3">
+                                <p className="text-xs text-muted-foreground mb-1">Coste Total</p>
+                                <p className="text-lg font-bold text-red-400">{totalCost.toFixed(2)}€</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {productCostData.product_cost.toFixed(2)}€ + {productCostData.shipping_cost.toFixed(2)}€
+                                </p>
+                              </div>
+                              <div className="bg-background/30 rounded-lg p-3">
+                                <p className="text-xs text-muted-foreground mb-1">Precio Venta</p>
+                                <p className="text-lg font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
+                              </div>
+                              <div className="bg-background/30 rounded-lg p-3">
+                                <p className="text-xs text-muted-foreground mb-1">Profit</p>
+                                <p className={`text-lg font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {profit >= 0 ? '+' : ''}{profit.toFixed(2)}€
+                                </p>
+                                <p className={`text-[10px] ${profitMargin >= 20 ? 'text-green-400' : profitMargin >= 10 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                  {profitMargin.toFixed(1)}% margen
+                                </p>
+                              </div>
+                            </div>
+                            {productCostData.notes && (
+                              <p className="text-xs text-muted-foreground italic">
+                                📝 {productCostData.notes}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-center py-3">
+                            <p className="text-sm text-muted-foreground">
+                              No hay datos de coste. Haz clic en "Editar" para añadir los costes del proveedor.
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
 
