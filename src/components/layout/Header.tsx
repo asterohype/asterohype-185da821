@@ -78,13 +78,15 @@ export function Header() {
     toast.success('Guardado');
   };
 
+  const showAdminControls = isAdmin && isAdminModeActive;
+
   const renderEditableText = (
     id: string,
     text: string,
     type: 'menu' | 'collections-label' | 'collection',
     className?: string
   ) => {
-    if (isAdminModeActive && editingItem === id) {
+    if (showAdminControls && editingItem === id) {
       return (
         <div className="flex items-center gap-1">
           <Input
@@ -110,7 +112,7 @@ export function Header() {
     return (
       <span className={`flex items-center gap-1 ${className || ''}`}>
         {text}
-        {isAdminModeActive && (
+        {showAdminControls && (
           <button
             onClick={(e) => {
               e.preventDefault();
