@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,52 @@ serve(async (req) => {
   }
 
   try {
+    // ========== AUTHENTICATION CHECK ==========
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("AUTH: No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "No autorizado: Falta el header de autorización" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("AUTH: Invalid token or user not found", authError);
+      return new Response(
+        JSON.stringify({ error: "No autorizado: Token inválido" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== ADMIN ROLE CHECK ==========
+    const { data: roleData, error: roleError } = await supabaseClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError || !roleData) {
+      console.error(`AUTH: User ${user.email} is not admin`, roleError);
+      return new Response(
+        JSON.stringify({ error: "Prohibido: Se requiere acceso de administrador" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`ADMIN ACTION: User ${user.email} (${user.id}) performing Shopify operation`);
+
+    // ========== PROCESS REQUEST ==========
     const { action, productId, title, description, price, variantId, imageId, imageUrl, imageAlt } = await req.json();
 
     if (!productId) {
@@ -32,6 +79,9 @@ serve(async (req) => {
       "Content-Type": "application/json",
       "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
     };
+
+    // Log the action for audit
+    console.log(`SHOPIFY OP: action=${action || 'update'}, productId=${numericProductId}, user=${user.email}`);
 
     // Update product fields (title, description)
     if (title || description !== undefined) {
@@ -76,6 +126,8 @@ serve(async (req) => {
 
     // Delete product
     if (action === "delete_product") {
+      console.log(`CRITICAL: Admin ${user.email} DELETING product ${numericProductId}`);
+      
       const response = await fetch(
         `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2025-01/products/${numericProductId}.json`,
         { method: "DELETE", headers }
