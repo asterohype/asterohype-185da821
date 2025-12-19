@@ -3,15 +3,16 @@ import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct, updateProductTitle, updateProductPrice } from "@/lib/shopify";
+import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct, updateProductTitle, updateProductPrice, updateProductDescription, deleteProductImage, addProductImage } from "@/lib/shopify";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useCartStore } from "@/stores/cartStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X } from "lucide-react";
+import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus } from "lucide-react";
 
 const FADE_MS = 280;
 const AUTOSLIDE_MS = 2200;
@@ -32,6 +33,10 @@ const ProductDetail = () => {
   const [editedTitle, setEditedTitle] = useState('');
   const [editingPrice, setEditingPrice] = useState(false);
   const [editedPrice, setEditedPrice] = useState('');
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState('');
+  const [newImageUrl, setNewImageUrl] = useState('');
+  const [showAddImage, setShowAddImage] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
@@ -246,6 +251,95 @@ const ProductDetail = () => {
     }
   };
 
+  const startEditingDescription = () => {
+    if (product) {
+      setEditedDescription(product.description || '');
+      setEditingDescription(true);
+    }
+  };
+
+  const saveDescription = async () => {
+    if (!product) {
+      setEditingDescription(false);
+      return;
+    }
+    
+    setSavingProduct(true);
+    try {
+      await updateProductDescription(product.id, editedDescription);
+      setProduct({ ...product, description: editedDescription });
+      toast.success('Descripción actualizada en Shopify');
+      setEditingDescription(false);
+    } catch (error) {
+      console.error('Error updating description:', error);
+      toast.error('Error al actualizar la descripción');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageUrl: string, index: number) => {
+    if (!product) return;
+    
+    // Get image ID from the product images array
+    const imageEdge = product.images.edges[index];
+    if (!imageEdge) return;
+    
+    // Extract image ID from URL or use index-based approach
+    // Shopify images have IDs in their URLs or we need to fetch them
+    const imageId = imageEdge.node.url.match(/\/(\d+)\//)?.[1];
+    
+    if (!imageId) {
+      toast.error('No se pudo identificar la imagen');
+      return;
+    }
+
+    setSavingProduct(true);
+    try {
+      await deleteProductImage(product.id, imageId);
+      // Update local state
+      const updatedImages = product.images.edges.filter((_, i) => i !== index);
+      setProduct({ ...product, images: { edges: updatedImages } });
+      if (selectedImage >= updatedImages.length) {
+        setSelectedImage(Math.max(0, updatedImages.length - 1));
+      }
+      toast.success('Imagen eliminada de Shopify');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error('Error al eliminar la imagen');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const handleAddImage = async () => {
+    if (!product || !newImageUrl.trim()) return;
+    
+    setSavingProduct(true);
+    try {
+      const result = await addProductImage(product.id, newImageUrl.trim());
+      // Update local state with new image
+      const newImage = {
+        node: {
+          url: newImageUrl.trim(),
+          altText: null
+        }
+      };
+      setProduct({ 
+        ...product, 
+        images: { edges: [...product.images.edges, newImage] } 
+      });
+      setNewImageUrl('');
+      setShowAddImage(false);
+      toast.success('Imagen añadida a Shopify');
+    } catch (error) {
+      console.error('Error adding image:', error);
+      toast.error('Error al añadir la imagen');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
   const tagsByGroup = getTagsByGroup();
   const productTags = product ? getTagsForProduct(product.id) : [];
 
@@ -322,36 +416,89 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Thumbnails - Auto-sliding with manual control */}
-              {images.length > 1 && (
-                <div 
-                  className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
-                  onMouseEnter={() => setAutoSlide(false)}
-                  onMouseLeave={() => setAutoSlide(true)}
-                >
-                  {images.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setSelectedImage(index);
-                        setAutoSlide(false);
-                        window.setTimeout(() => setAutoSlide(true), 10000);
-                      }}
-                      className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
-                        selectedImage === index
-                          ? "border-price-yellow shadow-lg shadow-price-yellow/20 scale-105"
-                          : "border-border/50 hover:border-muted-foreground opacity-70 hover:opacity-100"
-                      }`}
-                    >
-                      <img
-                        src={img.node.url}
-                        alt={img.node.altText || `${product.title} ${index + 1}`}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover"
+              {/* Thumbnails - Auto-sliding with manual control + Admin controls */}
+              {(images.length > 0 || showAdminControls) && (
+                <div className="space-y-3">
+                  <div 
+                    className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
+                    onMouseEnter={() => setAutoSlide(false)}
+                    onMouseLeave={() => setAutoSlide(true)}
+                  >
+                    {images.map((img, index) => (
+                      <div key={index} className="relative flex-shrink-0 group">
+                        <button
+                          onClick={() => {
+                            setSelectedImage(index);
+                            setAutoSlide(false);
+                            window.setTimeout(() => setAutoSlide(true), 10000);
+                          }}
+                          className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
+                            selectedImage === index
+                              ? "border-price-yellow shadow-lg shadow-price-yellow/20 scale-105"
+                              : "border-border/50 hover:border-muted-foreground opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          <img
+                            src={img.node.url}
+                            alt={img.node.altText || `${product.title} ${index + 1}`}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                        {/* Delete button for admin */}
+                        {showAdminControls && (
+                          <button
+                            onClick={() => handleDeleteImage(img.node.url, index)}
+                            disabled={savingProduct}
+                            className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {/* Add image button for admin */}
+                    {showAdminControls && (
+                      <button
+                        onClick={() => setShowAddImage(true)}
+                        className="flex-shrink-0 w-20 h-20 rounded-xl border-2 border-dashed border-price-yellow/50 hover:border-price-yellow flex items-center justify-center text-price-yellow/70 hover:text-price-yellow transition-all"
+                      >
+                        <ImagePlus className="h-6 w-6" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Add image form */}
+                  {showAdminControls && showAddImage && (
+                    <div className="bg-stone-200/80 dark:bg-stone-800/80 rounded-xl p-3 space-y-2">
+                      <Input
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="URL de la imagen..."
+                        className="text-sm"
                       />
-                    </button>
-                  ))}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleAddImage}
+                          disabled={savingProduct || !newImageUrl.trim()}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {savingProduct ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <ImagePlus className="h-3 w-3 mr-1" />}
+                          Añadir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setShowAddImage(false); setNewImageUrl(''); }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -461,11 +608,51 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Description */}
-              {product.description && (
-                <p className="text-muted-foreground leading-relaxed">
-                  {product.description}
-                </p>
+              {/* Description - Editable */}
+              {showAdminControls && editingDescription ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    className="min-h-[100px]"
+                    placeholder="Descripción del producto..."
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={saveDescription}
+                      disabled={savingProduct}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                      Guardar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingDescription(false)}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <p className="text-muted-foreground leading-relaxed flex-1">
+                    {product.description || (showAdminControls ? 'Sin descripción' : '')}
+                  </p>
+                  {showAdminControls && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={startEditingDescription}
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               )}
 
               {/* Admin Tag Editor */}
