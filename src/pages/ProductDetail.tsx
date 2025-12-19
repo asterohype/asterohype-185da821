@@ -13,8 +13,9 @@ import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus, DollarSign, TrendingUp } from "lucide-react";
+import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus, DollarSign, TrendingUp, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +72,8 @@ const ProductDetail = () => {
   const [editedShippingCost, setEditedShippingCost] = useState('');
   const [editedCostNotes, setEditedCostNotes] = useState('');
   const [savingCost, setSavingCost] = useState(false);
+  const [fetchingCJData, setFetchingCJData] = useState(false);
+  const [cjCostData, setCjCostData] = useState<{productCost: number; shippingCost: number; productName: string; sku: string} | null>(null);
 
   // Option name editing states
   const [editingOptionName, setEditingOptionName] = useState<string | null>(null);
@@ -415,6 +418,61 @@ const ProductDetail = () => {
       setSavingCost(false);
     }
   };
+
+  // Auto-fetch CJ costs when product loads and no cost data exists
+  const fetchCJCostsForProduct = async () => {
+    if (!product) return;
+    
+    setFetchingCJData(true);
+    try {
+      // Search for the product in CJ by name
+      const { data, error } = await supabase.functions.invoke('cj-product-cost', {
+        body: { productName: product.title }
+      });
+
+      if (error || !data.success || !data.products?.length) {
+        console.log('Product not found in CJ');
+        return;
+      }
+
+      const cjProduct = data.products[0];
+      
+      // Get shipping cost
+      if (cjProduct.variants?.length > 0) {
+        const firstVariant = cjProduct.variants[0];
+        const { data: freightData } = await supabase.functions.invoke('cj-freight', {
+          body: { vid: firstVariant.vid, quantity: 1, destCountry: 'ES' }
+        });
+
+        if (freightData?.success && freightData.cheapestOption) {
+          setCjCostData({
+            productCost: firstVariant.variantPrice || cjProduct.sellPrice,
+            shippingCost: freightData.cheapestOption.price,
+            productName: cjProduct.productName,
+            sku: cjProduct.sku
+          });
+        } else {
+          setCjCostData({
+            productCost: cjProduct.sellPrice || firstVariant.variantPrice,
+            shippingCost: 0,
+            productName: cjProduct.productName,
+            sku: cjProduct.sku
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching CJ costs:', err);
+    } finally {
+      setFetchingCJData(false);
+    }
+  };
+
+  // Auto-fetch CJ data when there's no saved cost data
+  useEffect(() => {
+    if (showAdminControls && product && !productCostData && !costsLoading && !fetchingCJData && !cjCostData) {
+      fetchCJCostsForProduct();
+    }
+  }, [showAdminControls, product, productCostData, costsLoading]);
 
   const tagsByGroup = getTagsByGroup();
   const productTags = product ? getTagsForProduct(product.id) : [];
@@ -897,6 +955,58 @@ const ProductDetail = () => {
                         const { totalCost, profit, profitMargin } = calculateProfit(sellingPrice, productCostData);
                         const hasData = productCostData && (productCostData.product_cost > 0 || productCostData.shipping_cost > 0);
                         
+                        // Show CJ data when available but not saved yet
+                        if (!hasData && cjCostData) {
+                          const cjTotalCost = cjCostData.productCost + cjCostData.shippingCost;
+                          const cjProfit = sellingPrice - cjTotalCost;
+                          const cjMargin = sellingPrice > 0 ? (cjProfit / sellingPrice) * 100 : 0;
+                          
+                          return (
+                            <>
+                              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 mb-2">
+                                <p className="text-xs text-blue-400 flex items-center gap-1">
+                                  <RefreshCw className="h-3 w-3" />
+                                  Datos de CJ (no guardados): {cjCostData.sku}
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-3 gap-3 text-center">
+                                <div className="bg-background/30 rounded-lg p-3">
+                                  <p className="text-xs text-muted-foreground mb-1">Coste CJ</p>
+                                  <p className="text-lg font-bold text-red-400">${cjTotalCost.toFixed(2)}</p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    ${cjCostData.productCost.toFixed(2)} + ${cjCostData.shippingCost.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className="bg-background/30 rounded-lg p-3">
+                                  <p className="text-xs text-muted-foreground mb-1">Precio Venta</p>
+                                  <p className="text-lg font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
+                                </div>
+                                <div className="bg-background/30 rounded-lg p-3">
+                                  <p className="text-xs text-muted-foreground mb-1">Profit Est.</p>
+                                  <p className={`text-lg font-bold ${cjProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    ~{cjProfit >= 0 ? '+' : ''}{cjProfit.toFixed(2)}€
+                                  </p>
+                                  <p className={`text-[10px] ${cjMargin >= 20 ? 'text-green-400' : cjMargin >= 10 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                    {cjMargin.toFixed(1)}% margen
+                                  </p>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        }
+                        
+                        // Show loading state
+                        if (!hasData && fetchingCJData) {
+                          return (
+                            <div className="text-center py-3">
+                              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-blue-400" />
+                              <p className="text-sm text-muted-foreground">
+                                Buscando en CJ...
+                              </p>
+                            </div>
+                          );
+                        }
+                        
                         return hasData ? (
                           <>
                             <div className="grid grid-cols-3 gap-3 text-center">
@@ -930,8 +1040,17 @@ const ProductDetail = () => {
                         ) : (
                           <div className="text-center py-3">
                             <p className="text-sm text-muted-foreground">
-                              No hay datos de coste. Haz clic en "Editar" para añadir los costes del proveedor.
+                              No encontrado en CJ. Haz clic en "Editar" para añadir manualmente.
                             </p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={fetchCJCostsForProduct}
+                              className="mt-2 text-blue-400 hover:text-blue-300"
+                            >
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Reintentar búsqueda CJ
+                            </Button>
                           </div>
                         );
                       })()}
