@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Menu, X, ShoppingBag, User, ChevronDown, Search } from "lucide-react";
+import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useState, useEffect } from "react";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PromoBanner } from "./PromoBanner";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const COLLECTIONS = [
   { name: "Fundas", query: "case" },
@@ -28,6 +29,7 @@ export function Header() {
   const setCartOpen = useCartStore((state) => state.setOpen);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -106,6 +108,17 @@ export function Header() {
                 >
                   <Search className="h-4 w-4 text-price-yellow" />
                 </Link>
+
+                {/* Admin Link */}
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-price-yellow/10 hover:bg-price-yellow/20 border border-price-yellow/30 hover:border-price-yellow/50 transition-all duration-300"
+                  >
+                    <Shield className="h-4 w-4 text-price-yellow" />
+                    <span className="hidden sm:inline text-sm text-price-yellow">Admin</span>
+                  </Link>
+                )}
 
                 {/* User Account */}
                 {user ? (

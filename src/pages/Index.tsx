@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -10,24 +10,18 @@ import { fetchProducts, ShopifyProduct, formatPrice } from "@/lib/shopify";
 import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useProductTags } from "@/hooks/useProductTags";
 
-const CATEGORIES = [
-  { id: "tech", label: "Tecnología", icon: Smartphone, keywords: ["phone case", "cable", "charger", "electronic", "gadget", "smart", "secador", "bluetooth"] },
-  { id: "accesorios", label: "Accesorios", icon: Headphones, keywords: ["case", "funda", "protector", "cover", "holder"] },
-  { id: "home", label: "Hogar", icon: Home, keywords: ["desk", "kitchen", "home", "tumbler", "organizer"] },
-  { id: "clothing", label: "Ropa", icon: Shirt, keywords: ["coat", "boots", "slippers", "cotton", "warm", "fashion"] },
-];
-
-// Shein-style category bubbles - all with unique names
-const SHEIN_CATEGORIES = [
-  { label: "Tecnología", query: "tech", productIndex: 0 },
-  { label: "Accesorios", query: "case", productIndex: 1 },
-  { label: "Hogar", query: "desk", productIndex: 2 },
-  { label: "Ropa", query: "clothing", productIndex: 3 },
-  { label: "Fundas", query: "funda", productIndex: 4 },
-  { label: "Gadgets", query: "gadget", productIndex: 5 },
-  { label: "Calzado", query: "boots", productIndex: 6 },
-  { label: "Electrónica", query: "electronic", productIndex: 7 },
+// Category definitions with slugs matching the database tags
+const DISPLAY_CATEGORIES = [
+  { slug: "tecnologia", label: "Tecnología", icon: Smartphone },
+  { slug: "accesorios", label: "Accesorios", icon: Headphones },
+  { slug: "hogar", label: "Hogar", icon: Home },
+  { slug: "ropa", label: "Ropa", icon: Shirt },
+  { slug: "fundas", label: "Fundas", icon: Smartphone },
+  { slug: "gadgets", label: "Gadgets", icon: Smartphone },
+  { slug: "calzado", label: "Calzado", icon: Shirt },
+  { slug: "electronica", label: "Electrónica", icon: Smartphone },
 ];
 
 // Animated Image Carousel Component
@@ -58,27 +52,15 @@ const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval
   );
 };
 
-// Get category for a product
-const getProductCategory = (product: ShopifyProduct) => {
-  const titleLower = product.node.title?.toLowerCase() || "";
-  const descLower = product.node.description?.toLowerCase() || "";
-  
-  for (const cat of CATEGORIES) {
-    if (cat.keywords.some(kw => titleLower.includes(kw) || descLower.includes(kw))) {
-      return cat;
-    }
-  }
-  return null;
-};
-
 const Index = () => {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const { tags, getTagsForProduct, getProductsForTag, loading: tagsLoading } = useProductTags();
 
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(30); // Reduced for faster loading
+        const data = await fetchProducts(50);
         setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);
@@ -89,16 +71,17 @@ const Index = () => {
     loadProducts();
   }, []);
 
-  const getProductsByCategory = useCallback((keywords: string[]) => {
-    return products.filter((product) => {
-      const titleLower = product.node.title?.toLowerCase() || "";
-      const descLower = product.node.description?.toLowerCase() || "";
-      return keywords.some(keyword => 
-        titleLower.includes(keyword.toLowerCase()) ||
-        descLower.includes(keyword.toLowerCase())
-      );
-    });
-  }, [products]);
+  // Get a product image for a category using DB tags
+  const getCategoryPreviewImage = useCallback((categorySlug: string) => {
+    const taggedProductIds = getProductsForTag(categorySlug);
+    if (taggedProductIds.length > 0) {
+      const taggedProduct = products.find(p => taggedProductIds.includes(p.node.id));
+      if (taggedProduct) {
+        return taggedProduct.node.images.edges[0]?.node.url;
+      }
+    }
+    return null;
+  }, [products, getProductsForTag]);
 
   // Get images for carousel from products
   const getCarouselImages = (startIdx: number, count: number) => {
@@ -251,19 +234,19 @@ const Index = () => {
             </div>
           ) : (
             <div className="flex justify-center gap-6 md:gap-10 lg:gap-12 flex-wrap">
-              {SHEIN_CATEGORIES.map((category, index) => {
-                const previewImage = products[category.productIndex]?.node.images.edges[0]?.node.url;
+              {DISPLAY_CATEGORIES.map((category) => {
+                const previewImage = getCategoryPreviewImage(category.slug);
                 return (
                   <Link
                     key={category.label}
-                    to={`/products?search=${category.query}`}
+                    to={`/products?tag=${category.slug}`}
                     className="flex flex-col items-center gap-3 group"
                   >
                     <div className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full border-2 border-border/50 flex items-center justify-center overflow-hidden group-hover:border-price-yellow transition-all duration-300 group-hover:scale-105 bg-secondary/30">
                       {previewImage ? (
                         <img src={previewImage} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <Smartphone className="h-10 w-10 text-foreground" />
+                        <category.icon className="h-10 w-10 text-foreground" />
                       )}
                     </div>
                     <span className="text-sm md:text-base text-center text-muted-foreground group-hover:text-foreground transition-colors font-medium">{category.label}</span>
@@ -302,8 +285,8 @@ const Index = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-                {products.slice(0, 10).map((product, index) => {
-                  const category = getProductCategory(product);
+              {products.slice(0, 10).map((product, index) => {
+                  const productTags = getTagsForProduct(product.node.id);
                   return (
                     <Link 
                       key={product.node.id}
@@ -317,10 +300,17 @@ const Index = () => {
                         DESTACADO
                       </div>
                       
-                      {/* Category label */}
-                      {category && (
-                        <div className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-2 py-0.5 rounded-full border border-border/50">
-                          {category.label}
+                      {/* Category labels from DB */}
+                      {productTags.length > 0 && (
+                        <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-1 justify-end max-w-[60%]">
+                          {productTags.slice(0, 2).map(tag => (
+                            <span 
+                              key={tag.id}
+                              className="bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-2 py-0.5 rounded-full border border-border/50"
+                            >
+                              {tag.name}
+                            </span>
+                          ))}
                         </div>
                       )}
                       
@@ -351,24 +341,25 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Category Sections with Products */}
-        {!loading && products.length > 0 && CATEGORIES.map((category) => {
-          const categoryProducts = getProductsByCategory(category.keywords).slice(0, 10);
+        {/* Category Sections with Products - using DB tags */}
+        {!loading && !tagsLoading && products.length > 0 && DISPLAY_CATEGORIES.slice(0, 4).map((category) => {
+          const taggedProductIds = getProductsForTag(category.slug);
+          const categoryProducts = products.filter(p => taggedProductIds.includes(p.node.id)).slice(0, 10);
           if (categoryProducts.length === 0) return null;
           return (
-            <section key={category.id} className="container mx-auto px-4 py-8">
+            <section key={category.slug} className="container mx-auto px-4 py-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <category.icon className="h-5 w-5 text-price-yellow" />
                   <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
                 </div>
-                <Link to={`/products?category=${category.id}`} className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
+                <Link to={`/products?tag=${category.slug}`} className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
                   Ver todo <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2 md:gap-3">
                 {categoryProducts.map((product) => (
-                  <ProductCard key={product.node.id} product={product} />
+                  <ProductCard key={product.node.id} product={product} tags={getTagsForProduct(product.node.id)} />
                 ))}
               </div>
             </section>
