@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.cj-product-cost]
 verify_jwt = false
+
+[functions.sync-cj-costs]
+verify_jwt = false
