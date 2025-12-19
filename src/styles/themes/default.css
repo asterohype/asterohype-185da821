@@ -3,6 +3,7 @@
 /* Typography: SF Pro / System UI */
 /* Colors: White, Black, Neutral grays */
 
+:root.theme-default,
 .theme-default {
   /* Light clean background */
   --background: 0 0% 100%;
@@ -87,6 +88,5 @@
 /* Glass effect - lighter */
 .theme-default .glass {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
   border-color: rgba(0, 0, 0, 0.05);
 }
