@@ -95,6 +95,7 @@ export function ProductCostManager({
     setError(null);
     
     try {
+      // Fetch product data
       const { data, error: fnError } = await supabase.functions.invoke('cj-product-cost', {
         body: { cjProductId: cjProductId.trim() }
       });
@@ -108,12 +109,33 @@ export function ProductCostManager({
 
       setCjData(data.product);
       
-      // Auto-fill the cost from CJ
+      // Auto-fill the product cost from CJ
       if (data.product.sellPrice) {
         setProductCostValue(data.product.sellPrice.toString());
       }
-      
-      toast.success('Datos de CJ obtenidos correctamente');
+
+      // Fetch shipping cost using first variant
+      if (data.product.variants && data.product.variants.length > 0) {
+        const firstVariant = data.product.variants[0];
+        
+        const { data: freightData, error: freightError } = await supabase.functions.invoke('cj-freight', {
+          body: { 
+            vid: firstVariant.vid, 
+            quantity: 1, 
+            destCountry: 'ES' // España por defecto
+          }
+        });
+
+        if (!freightError && freightData?.success && freightData.cheapestOption) {
+          const shippingCost = freightData.cheapestOption.logisticPrice;
+          setShippingCostValue(shippingCost.toString());
+          toast.success(`Producto: $${data.product.sellPrice} + Envío: $${shippingCost} (${freightData.cheapestOption.logisticName})`);
+        } else {
+          toast.success('Datos de producto obtenidos (envío no disponible)');
+        }
+      } else {
+        toast.success('Datos de CJ obtenidos correctamente');
+      }
     } catch (err) {
       console.error('Error fetching CJ data:', err);
       setError('Error al conectar con CJ');
