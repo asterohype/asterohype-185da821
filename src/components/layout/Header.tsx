@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { Input } from "@/components/ui/input";
 import { SearchModal } from "@/components/search/SearchModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -39,6 +40,7 @@ export function Header() {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -258,13 +260,13 @@ export function Header() {
                     <span className="hidden sm:inline text-sm text-muted-foreground">Salir</span>
                   </button>
                 ) : (
-                  <Link
-                    to="/auth"
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
                   >
                     <User className="h-4 w-4 text-price-yellow" />
-                    <span className="hidden sm:inline text-sm text-muted-foreground">Entrar</span>
-                  </Link>
+                    <span className="hidden sm:inline text-sm text-muted-foreground">Registrarme</span>
+                  </button>
                 )}
 
                 {/* Custom Cart Icon */}
@@ -346,6 +348,7 @@ export function Header() {
       </div>
 
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
       <CartDrawer />
     </>
   );

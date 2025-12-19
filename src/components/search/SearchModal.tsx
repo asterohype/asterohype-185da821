@@ -75,7 +75,10 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl p-0 gap-0 bg-popover border border-border rounded-2xl overflow-hidden">
+      <DialogContent 
+        className="sm:max-w-xl p-0 gap-0 bg-popover border border-border rounded-2xl overflow-hidden"
+        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+      >
         <div className="p-4 border-b border-border/50">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -84,7 +87,8 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="pl-12 pr-4 h-12 text-lg bg-transparent border-none focus-visible:ring-0 placeholder:text-muted-foreground/60"
+              className="pl-12 pr-4 h-12 text-lg bg-transparent placeholder:text-muted-foreground/60"
+              style={{ border: 'none', boxShadow: 'none', outline: 'none' }}
               autoFocus
             />
           </div>
