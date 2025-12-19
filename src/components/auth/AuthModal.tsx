@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, User, Phone, Chrome, RefreshCw } from "lucide-react";
+import { Loader2, Mail, Lock, User, Phone, Chrome } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -30,9 +30,6 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const [mode, setMode] = useState<"signup" | "login">("signup");
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [loading, setLoading] = useState(false);
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
-  const [confirmationEmail, setConfirmationEmail] = useState("");
-  const [resendLoading, setResendLoading] = useState(false);
   
   // Form fields
   const [email, setEmail] = useState("");
@@ -49,8 +46,6 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     setPhone("");
     setOtp("");
     setOtpSent(false);
-    setAwaitingConfirmation(false);
-    setConfirmationEmail("");
   };
 
   const handleGoogleAuth = async () => {
@@ -91,30 +86,11 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
         toast.error(error.message);
       }
     } else {
-      setConfirmationEmail(email);
-      setAwaitingConfirmation(true);
+      toast.success("¡Cuenta creada! Bienvenido a AsteroHype");
+      onOpenChange(false);
+      resetForm();
     }
     setLoading(false);
-  };
-
-  const handleResendEmail = async () => {
-    if (!confirmationEmail) return;
-    
-    setResendLoading(true);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: confirmationEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    });
-
-    if (error) {
-      toast.error("Error al reenviar email: " + error.message);
-    } else {
-      toast.success("Email de confirmación reenviado");
-    }
-    setResendLoading(false);
   };
 
   const handleEmailLogin = async () => {
@@ -130,12 +106,6 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     if (error) {
       if (error.message.includes("Invalid login credentials")) {
         toast.error("Credenciales inválidas");
-      } else if (error.message.includes("Email not confirmed")) {
-        // No permitir acceso hasta confirmar
-        setConfirmationEmail(email);
-        setAwaitingConfirmation(true);
-        setPassword("");
-        toast.error("Debes confirmar tu email antes de iniciar sesión");
       } else {
         toast.error(error.message);
       }
@@ -211,77 +181,6 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       }
     }
   };
-
-  // Pantalla de espera de confirmación
-  if (awaitingConfirmation) {
-    return (
-      <Dialog open={open} onOpenChange={(isOpen) => {
-        if (!isOpen) resetForm();
-        onOpenChange(isOpen);
-      }}>
-        <DialogContent 
-          className="sm:max-w-lg p-0 gap-0 bg-popover border border-border rounded-2xl overflow-hidden"
-          style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
-        >
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
-              <Mail className="w-8 h-8 text-primary" />
-            </div>
-            
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              Confirma tu registro
-            </h2>
-            
-            <p className="text-muted-foreground mb-2">
-              Hemos enviado un email de confirmación a:
-            </p>
-            
-            <p className="text-foreground font-medium mb-6">
-              {confirmationEmail}
-            </p>
-            
-            <div className="bg-secondary/30 rounded-xl p-4 mb-6">
-              <p className="text-sm text-muted-foreground">
-                Revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta. 
-                También revisa la carpeta de spam.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <Button
-                onClick={handleResendEmail}
-                disabled={resendLoading}
-                variant="outline"
-                className="w-full rounded-xl py-5"
-              >
-                {resendLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                )}
-                Reenviar email
-              </Button>
-              
-              <Button
-                onClick={() => {
-                  // Volver al login pero manteniendo el email para poder reenviar
-                  setAwaitingConfirmation(false);
-                  setMode("login");
-                  setMethod("email");
-                  setEmail(confirmationEmail);
-                  setPassword("");
-                }}
-                variant="ghost"
-                className="w-full text-muted-foreground"
-              >
-                Volver a iniciar sesión
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
