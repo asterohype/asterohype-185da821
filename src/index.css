@@ -259,67 +259,74 @@ html.theme-default [role="button"]:not([data-nav-trigger]):not([data-filter-trig
 
 /* ============================================ */
 /* THEME: HYPE                                 */
-/* Dark, Minimalist, Resend-inspired           */
-/* Typography: Inter (clean sans-serif)        */
+/* Dark Premium with Light Effects             */
+/* Maintains AsteroHype gold identity          */
 /* ============================================ */
 
 html.theme-hype {
-  --background: 0 0% 5%;
-  --foreground: 0 0% 92%;
-  --card: 0 0% 9%;
-  --card-foreground: 0 0% 92%;
-  --popover: 0 0% 9%;
-  --popover-foreground: 0 0% 92%;
-  --primary: 0 0% 100%;
-  --primary-foreground: 0 0% 5%;
-  --secondary: 0 0% 13%;
-  --secondary-foreground: 0 0% 80%;
-  --muted: 0 0% 16%;
-  --muted-foreground: 0 0% 50%;
-  --accent: 0 0% 18%;
-  --accent-foreground: 0 0% 92%;
+  --background: 0 0% 4%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 45 100% 50%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 85%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 55%;
+  --accent: 45 90% 50%;
+  --accent-foreground: 0 0% 4%;
   --border: 0 0% 18%;
-  --input: 0 0% 12%;
-  --ring: 0 0% 40%;
-  --gold: 0 0% 95%;
-  --gold-light: 0 0% 100%;
-  --surface-elevated: 0 0% 11%;
-  --title-blue: 0 0% 100%;
-  --price-yellow: 0 0% 100%;
+  --input: 0 0% 10%;
+  --ring: 45 100% 50%;
+  --gold: 45 100% 50%;
+  --gold-light: 45 100% 65%;
+  --surface-elevated: 0 0% 9%;
+  --title-blue: 45 100% 50%;
+  --price-yellow: 45 100% 50%;
 }
 
 html.theme-hype,
 html.theme-hype body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   background: 
-    radial-gradient(ellipse 80% 60% at 100% 0%, hsla(0, 0%, 25%, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 80% at 0% 100%, hsla(0, 0%, 30%, 0.12) 0%, transparent 50%),
-    hsl(0 0% 5%) !important;
-  color: hsl(0 0% 92%) !important;
+    radial-gradient(ellipse 120% 80% at 110% -10%, hsla(45, 80%, 50%, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 100% at -10% 110%, hsla(45, 60%, 45%, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 105% 50%, hsla(0, 0%, 30%, 0.12) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 80% at -5% 50%, hsla(0, 0%, 25%, 0.1) 0%, transparent 40%),
+    linear-gradient(180deg, hsl(0 0% 4%) 0%, hsl(0 0% 3%) 100%) !important;
+  color: hsl(0 0% 95%) !important;
   min-height: 100vh;
 }
 
 html.theme-hype h1,
 html.theme-hype h2,
-html.theme-hype h3,
+html.theme-hype h3 {
+  font-family: 'Russo One', 'Inter', sans-serif !important;
+  font-style: italic !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+}
+
 html.theme-hype h4,
 html.theme-hype h5,
 html.theme-hype h6 {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-weight: 600 !important;
-  font-style: normal !important;
-  text-transform: none !important;
-  letter-spacing: -0.02em !important;
 }
 
-/* Elegant dark buttons for Hype theme */
+/* Premium dark buttons for Hype theme */
 html.theme-hype button:not([data-nav-trigger]):not([data-filter-trigger]),
 html.theme-hype [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]),
 html.theme-hype a[class*="btn"] {
-  background: hsl(0 0% 12%) !important;
+  background: linear-gradient(180deg, hsl(0 0% 14%) 0%, hsl(0 0% 10%) 100%) !important;
   backdrop-filter: none !important;
-  border: 1px solid hsl(0 0% 20%) !important;
-  box-shadow: none !important;
+  border: 1px solid hsl(0 0% 22%) !important;
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
   color: hsl(0 0% 92%) !important;
   font-weight: 500 !important;
   transition: all 0.2s ease !important;
@@ -327,54 +334,65 @@ html.theme-hype a[class*="btn"] {
 
 html.theme-hype button:not([data-nav-trigger]):not([data-filter-trigger]):hover,
 html.theme-hype [role="button"]:not([data-nav-trigger]):not([data-filter-trigger]):hover {
-  background: hsl(0 0% 18%) !important;
-  border-color: hsl(0 0% 28%) !important;
-  transform: none !important;
+  background: linear-gradient(180deg, hsl(0 0% 18%) 0%, hsl(0 0% 14%) 100%) !important;
+  border-color: hsl(45 80% 50%) !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 20px hsla(45, 100%, 50%, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Primary/CTA buttons in Hype - white/light */
-html.theme-hype button[class*="primary"],
-html.theme-hype [data-variant="primary"] {
-  background: hsl(0 0% 100%) !important;
-  color: hsl(0 0% 5%) !important;
+/* Gold accent buttons */
+html.theme-hype .bg-price-yellow,
+html.theme-hype [class*="bg-primary"] {
+  background: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(40 100% 45%) 100%) !important;
+  color: hsl(0 0% 4%) !important;
   border: none !important;
+  box-shadow: 0 4px 20px hsla(45, 100%, 50%, 0.3) !important;
 }
 
-html.theme-hype button[class*="primary"]:hover,
-html.theme-hype [data-variant="primary"]:hover {
-  background: hsl(0 0% 90%) !important;
+html.theme-hype .bg-price-yellow:hover,
+html.theme-hype [class*="bg-primary"]:hover {
+  background: linear-gradient(135deg, hsl(45 100% 55%) 0%, hsl(40 100% 50%) 100%) !important;
+  box-shadow: 0 6px 30px hsla(45, 100%, 50%, 0.4) !important;
 }
 
-/* Inputs for Hype theme */
-html.theme-hype input,
+/* Premium inputs for Hype theme */
+html.theme-hype input:not([type="checkbox"]):not([type="radio"]),
 html.theme-hype textarea,
 html.theme-hype select {
-  background: hsl(0 0% 10%) !important;
-  border: 1px solid hsl(0 0% 20%) !important;
-  color: hsl(0 0% 92%) !important;
+  background: linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 6%) 100%) !important;
+  border: 1px solid hsl(0 0% 18%) !important;
+  color: hsl(0 0% 95%) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s ease !important;
 }
 
-html.theme-hype input:focus,
+html.theme-hype input:not([type="checkbox"]):not([type="radio"]):focus,
 html.theme-hype textarea:focus,
 html.theme-hype select:focus {
-  border-color: hsl(0 0% 35%) !important;
+  border-color: hsl(45 80% 50%) !important;
   outline: none !important;
-  box-shadow: 0 0 0 2px hsla(0, 0%, 40%, 0.15) !important;
+  box-shadow: 
+    inset 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 0 0 3px hsla(45, 100%, 50%, 0.15) !important;
 }
 
 html.theme-hype input::placeholder,
 html.theme-hype textarea::placeholder {
-  color: hsl(0 0% 45%) !important;
+  color: hsl(0 0% 40%) !important;
 }
 
-/* Cards and elevated surfaces */
+/* Cards with subtle glow */
 html.theme-hype [class*="bg-card"],
 html.theme-hype .card {
-  background: hsl(0 0% 9%) !important;
-  border: 1px solid hsl(0 0% 16%) !important;
+  background: linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 6%) 100%) !important;
+  border: 1px solid hsl(0 0% 14%) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Override backgrounds for Hype - keep the gradient on body */
+/* Override backgrounds - keep gradient on body */
 html.theme-hype main,
 html.theme-hype section,
 html.theme-hype header,
@@ -383,8 +401,16 @@ html.theme-hype nav {
   background-color: transparent !important;
 }
 
-html.theme-hype div[class*="bg-background"]:not(body) {
-  background-color: hsl(0 0% 5%) !important;
+/* Gold text accents */
+html.theme-hype .text-price-yellow,
+html.theme-hype .text-primary {
+  color: hsl(45 100% 55%) !important;
+  text-shadow: 0 0 30px hsla(45, 100%, 50%, 0.3) !important;
+}
+
+/* Badges and tags */
+html.theme-hype .tag-destacados.selected {
+  box-shadow: 0 2px 15px hsla(45, 100%, 50%, 0.5) !important;
 }
 
 /* ============================================ */
