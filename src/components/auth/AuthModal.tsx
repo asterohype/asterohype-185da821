@@ -131,6 +131,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       if (error.message.includes("Invalid login credentials")) {
         toast.error("Credenciales inválidas");
       } else if (error.message.includes("Email not confirmed")) {
+        // No permitir acceso hasta confirmar
+        setConfirmationEmail(email);
+        setAwaitingConfirmation(true);
+        setPassword("");
         toast.error("Debes confirmar tu email antes de iniciar sesión");
       } else {
         toast.error(error.message);
@@ -260,13 +264,17 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
               
               <Button
                 onClick={() => {
-                  resetForm();
+                  // Volver al login pero manteniendo el email para poder reenviar
+                  setAwaitingConfirmation(false);
                   setMode("login");
+                  setMethod("email");
+                  setEmail(confirmationEmail);
+                  setPassword("");
                 }}
                 variant="ghost"
                 className="w-full text-muted-foreground"
               >
-                Ya confirmé, iniciar sesión
+                Volver a iniciar sesión
               </Button>
             </div>
           </div>
