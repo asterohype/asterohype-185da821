@@ -272,7 +272,7 @@ const ProductDetail = () => {
     try {
       await updateProductTitle(product.id, editedTitle.trim());
       setProduct({ ...product, title: editedTitle.trim() });
-      toast.success('Nombre actualizado en Shopify');
+      toast.success('Nombre actualizado');
       setEditingTitle(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -316,7 +316,7 @@ const ProductDetail = () => {
           minVariantPrice: { ...product.priceRange.minVariantPrice, amount: editedPrice.trim() } 
         }
       });
-      toast.success('Precio actualizado en Shopify');
+      toast.success('Precio actualizado');
       setEditingPrice(false);
     } catch (error) {
       console.error('Error updating price:', error);
@@ -343,7 +343,7 @@ const ProductDetail = () => {
     try {
       await updateProductDescription(product.id, editedDescription);
       setProduct({ ...product, description: editedDescription });
-      toast.success('Descripción actualizada en Shopify');
+      toast.success('Descripción actualizada');
       setEditingDescription(false);
     } catch (error) {
       console.error('Error updating description:', error);
@@ -374,7 +374,7 @@ const ProductDetail = () => {
       if (selectedImage >= updatedImages.length) {
         setSelectedImage(Math.max(0, updatedImages.length - 1));
       }
-      toast.success('Imagen eliminada de Shopify');
+      toast.success('Imagen eliminada');
     } catch (error) {
       console.error('Error deleting image:', error);
       toast.error('Error al eliminar la imagen');
@@ -401,7 +401,7 @@ const ProductDetail = () => {
       });
       setNewImageUrl('');
       setShowAddImage(false);
-      toast.success('Imagen añadida a Shopify');
+      toast.success('Imagen añadida');
     } catch (error) {
       console.error('Error adding image:', error);
       toast.error('Error al añadir la imagen');
