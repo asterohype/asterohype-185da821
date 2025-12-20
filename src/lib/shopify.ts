@@ -315,8 +315,9 @@ export async function updateProductTitle(productId: string, newTitle: string): P
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to update product');
+    const errorData = await response.json().catch(() => ({} as any));
+    const msg = errorData.error || 'No se pudo actualizar el producto.';
+    throw new Error(msg);
   }
 }
 
@@ -336,8 +337,9 @@ export async function updateProductPrice(productId: string, variantId: string, n
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to update price');
+    const errorData = await response.json().catch(() => ({} as any));
+    const msg = errorData.error || 'No se pudo actualizar el precio.';
+    throw new Error(msg);
   }
 }
 
@@ -357,8 +359,9 @@ export async function updateProductDescription(productId: string, description: s
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to update description');
+    const errorData = await response.json().catch(() => ({} as any));
+    const msg = errorData.error || 'No se pudo actualizar la descripción.';
+    throw new Error(msg);
   }
 }
 
@@ -378,8 +381,9 @@ export async function deleteProductImage(productId: string, imageId: string): Pr
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to delete image');
+    const errorData = await response.json().catch(() => ({} as any));
+    const msg = errorData.error || 'No se pudo eliminar la imagen.';
+    throw new Error(msg);
   }
 }
 
@@ -399,8 +403,9 @@ export async function addProductImage(productId: string, imageUrl: string, image
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to add image');
+    const errorData = await response.json().catch(() => ({} as any));
+    const msg = errorData.error || 'No se pudo añadir la imagen.';
+    throw new Error(msg);
   }
 
   return response.json();
@@ -422,7 +427,8 @@ export async function deleteProduct(productId: string): Promise<void> {
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to delete product');
+    const errorData = await response.json().catch(() => ({} as any));
+    const msg = errorData.error || 'No se pudo eliminar el producto.';
+    throw new Error(msg);
   }
 }

@@ -111,7 +111,31 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Shopify API error (product):", errorText);
-        throw new Error(`Shopify API error: ${response.status}`);
+
+        // Most common cause: wrong token type (Storefront token) or invalid Admin token
+        if (response.status === 401) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "No autorizado para editar productos (token de administrador inválido).",
+            }),
+            {
+              status: 401,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            error: `Shopify API error: ${response.status}`,
+            details: errorText,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
     }
 
@@ -130,7 +154,30 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Shopify API error (variant):", errorText);
-        throw new Error(`Shopify API error updating price: ${response.status}`);
+
+        if (response.status === 401) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "No autorizado para editar precios (token de administrador inválido).",
+            }),
+            {
+              status: 401,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            error: `Shopify API error updating price: ${response.status}`,
+            details: errorText,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
     }
 
@@ -226,6 +273,9 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error updating product:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+    // If we already returned a specific HTTP response above, we won't land here.
+    // Keep this as a true unexpected-error fallback.
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
