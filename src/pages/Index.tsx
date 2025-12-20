@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -24,6 +24,48 @@ import { useMenuConfigStore } from "@/stores/menuConfigStore";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { CategoryCarousel } from "@/components/home/CategoryCarousel";
+
+// Scroll animation hook
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          if (ref.current) observer.unobserve(ref.current);
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+}
+
+// Animated Section Wrapper
+function AnimatedSection({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const { ref, isVisible } = useScrollReveal();
+  
+  return (
+    <div 
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${className}`}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(40px)',
+        transitionDelay: `${delay}ms`
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
@@ -291,8 +333,8 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Marketing Cards Grid - Amazon Style */}
-        <section className="container mx-auto px-4 py-8">
+        {/* Marketing Cards Grid - Amazon Style with scroll animations */}
+        <AnimatedSection className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
               // Skeleton loaders
@@ -410,7 +452,7 @@ const Index = () => {
               </>
             )}
           </div>
-        </section>
+        </AnimatedSection>
 
         {/* Category Quick Access - Shein Style Circles */}
         <section className="container mx-auto px-4 py-8">
@@ -518,8 +560,8 @@ const Index = () => {
           )}
         </section>
 
-        {/* PRODUCTOS DESTACADOS - Special highlighted section */}
-        <section className="py-10 bg-gradient-to-r from-price-yellow/5 via-price-yellow/10 to-price-yellow/5 border-y border-price-yellow/20">
+        {/* PRODUCTOS DESTACADOS - Special highlighted section with scroll animation */}
+        <AnimatedSection className="py-10 bg-gradient-to-r from-price-yellow/5 via-price-yellow/10 to-price-yellow/5 border-y border-price-yellow/20">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -550,31 +592,37 @@ const Index = () => {
               <p className="text-center text-muted-foreground py-8">No hay productos destacados aún</p>
             )}
           </div>
-        </section>
+        </AnimatedSection>
 
-        {/* Category Sections with Products - using DB tags */}
-        {!loading && !tagsLoading && products.length > 0 && categories.slice(0, 4).map((category) => {
+        {/* Category Sections with Auto-scrolling Carousels */}
+        {!loading && !tagsLoading && products.length > 0 && categories.slice(0, 6).map((category, categoryIndex) => {
           const taggedProductIds = getProductsForTag(category.slug);
-          const categoryProducts = products.filter(p => taggedProductIds.includes(p.node.id)).slice(0, 10);
+          const categoryProducts = products.filter(p => taggedProductIds.includes(p.node.id)).slice(0, 15);
           if (categoryProducts.length === 0) return null;
           const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
           return (
-            <section key={category.slug} className="container mx-auto px-4 py-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-5 w-5 text-price-yellow" />
-                  <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
+            <AnimatedSection 
+              key={category.slug} 
+              delay={categoryIndex * 100}
+              className="py-8"
+            >
+              <div className="container mx-auto px-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-5 w-5 text-price-yellow" />
+                    <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
+                  </div>
+                  <Link to={`/products?tag=${category.slug}`} className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
+                    Ver todo <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </div>
-                <Link to={`/products?tag=${category.slug}`} className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
-                  Ver todo <ArrowRight className="h-4 w-4" />
-                </Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2 md:gap-3">
-                {categoryProducts.map((product) => (
-                  <ProductCard key={product.node.id} product={product} tags={getTagsForProduct(product.node.id)} />
-                ))}
-              </div>
-            </section>
+              <CategoryCarousel 
+                products={categoryProducts} 
+                categorySlug={category.slug}
+                getTagsForProduct={getTagsForProduct}
+              />
+            </AnimatedSection>
           );
         })}
 

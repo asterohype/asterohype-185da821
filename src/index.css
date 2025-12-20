@@ -562,3 +562,12 @@ html.theme-cute [role="button"]:not([data-nav-trigger]):not([data-filter-trigger
   border-color: hsl(330 50% 75%) !important;
   transform: translateY(-1px);
 }
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
