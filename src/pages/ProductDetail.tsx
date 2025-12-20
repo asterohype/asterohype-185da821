@@ -1551,11 +1551,20 @@ const ProductDetail = () => {
               </div>
               {product.descriptionHtml ? (
                 <div 
-                  className="prose prose-lg max-w-none
+                  className="product-description-styled max-w-4xl mx-auto
                     [&_img]:rounded-2xl [&_img]:shadow-xl [&_img]:mx-auto [&_img]:max-w-full [&_img]:my-8
-                    [&_p]:text-center [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_p]:text-base [&_p]:max-w-3xl [&_p]:mx-auto
-                    [&_strong]:text-foreground [&_strong]:font-bold
-                    [&>p:first-child]:hidden"
+                    [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mb-4 [&_h1]:mt-8 [&_h1]:flex [&_h1]:items-center [&_h1]:gap-2
+                    [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2 [&_h2]:border-b [&_h2]:border-border/50 [&_h2]:pb-2
+                    [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mb-2 [&_h3]:mt-4
+                    [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_p]:text-base [&_p]:mb-4
+                    [&_strong]:text-foreground [&_strong]:font-semibold
+                    [&_em]:text-primary [&_em]:not-italic [&_em]:font-medium
+                    [&_ul]:space-y-2 [&_ul]:my-4 [&_ul]:pl-0
+                    [&_li]:text-muted-foreground [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:list-none [&_li]:pl-0
+                    [&_li::before]:content-[''] [&_li]:relative
+                    [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a:hover]:text-primary/80
+                    [&>p:first-child]:hidden
+                    [&_hr]:my-6 [&_hr]:border-border/30"
                   dangerouslySetInnerHTML={{ 
                     __html: product.descriptionHtml
                       .replace(/Product description:/gi, '')

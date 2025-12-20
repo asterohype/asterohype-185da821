@@ -158,6 +158,87 @@
     border-color: transparent;
     box-shadow: 0 2px 12px hsla(45, 100%, 50%, 0.5);
   }
+
+  /* ============================================ */
+  /* Product Description Styling                  */
+  /* Beautiful formatting for product descriptions */
+  /* ============================================ */
+  
+  .product-description-styled {
+    @apply text-left;
+  }
+  
+  /* Section headers with emojis - make them stand out */
+  .product-description-styled h1,
+  .product-description-styled h2,
+  .product-description-styled h3 {
+    @apply font-bold mb-3 mt-6 flex items-center gap-2 text-foreground;
+    font-style: normal !important;
+    text-transform: none !important;
+  }
+  
+  .product-description-styled h2 {
+    @apply text-xl pb-2 border-b border-border/40;
+  }
+  
+  .product-description-styled h3 {
+    @apply text-lg font-semibold text-foreground/90;
+  }
+  
+  /* Paragraphs - clean and readable */
+  .product-description-styled p {
+    @apply text-muted-foreground leading-relaxed mb-4 text-base;
+  }
+  
+  /* Bold text - make it pop */
+  .product-description-styled strong,
+  .product-description-styled b {
+    @apply text-foreground font-semibold;
+  }
+  
+  /* Lists - styled with better spacing */
+  .product-description-styled ul,
+  .product-description-styled ol {
+    @apply space-y-2 my-4 pl-0;
+  }
+  
+  .product-description-styled li {
+    @apply text-muted-foreground flex items-start gap-2 list-none pl-0 leading-relaxed;
+  }
+  
+  /* Images - nice rounded corners with shadow */
+  .product-description-styled img {
+    @apply rounded-2xl shadow-lg mx-auto my-6 max-w-full;
+  }
+  
+  /* Horizontal rules - subtle dividers */
+  .product-description-styled hr {
+    @apply my-6 border-border/30;
+  }
+  
+  /* Links - styled nicely */
+  .product-description-styled a {
+    @apply text-primary underline underline-offset-2;
+  }
+  
+  .product-description-styled a:hover {
+    @apply text-primary/80;
+  }
+  
+  /* Emphasized text - can use for highlights */
+  .product-description-styled em {
+    @apply text-primary not-italic font-medium;
+  }
+  
+  /* Feature boxes/cards if wrapped in divs */
+  .product-description-styled > div {
+    @apply bg-muted/30 rounded-xl p-4 my-4 border border-border/20;
+  }
+  
+  /* Checkmarks and benefit lists styling */
+  .product-description-styled p:has(span:first-child) {
+    @apply flex flex-wrap items-center gap-x-1 gap-y-1;
+  }
 }
 
 @keyframes float {
