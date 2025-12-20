@@ -163,8 +163,11 @@ export default function Admin() {
       toast.success('Nombre actualizado en Shopify');
       cancelEditing();
     } catch (error) {
-      console.error('Error updating product:', error);
-      toast.error('Error al actualizar el nombre');
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('No autorizado para editar productos')) {
+        console.error('Error updating product:', error);
+      }
+      toast.error(message.includes('No autorizado') ? message : 'Error al actualizar el nombre');
     } finally {
       setSavingProduct(null);
     }

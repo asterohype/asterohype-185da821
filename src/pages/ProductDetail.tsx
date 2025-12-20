@@ -212,8 +212,12 @@ const ProductDetail = () => {
       toast.success('Nombre actualizado en Shopify');
       setEditingTitle(false);
     } catch (error) {
-      console.error('Error updating title:', error);
-      toast.error('Error al actualizar el nombre');
+      const message = error instanceof Error ? error.message : String(error);
+      // Avoid noisy console errors for expected auth/permission failures.
+      if (!message.includes('No autorizado para editar productos')) {
+        console.error('Error updating title:', error);
+      }
+      toast.error(message.includes('No autorizado') ? message : 'Error al actualizar el nombre');
     } finally {
       setSavingProduct(false);
     }
