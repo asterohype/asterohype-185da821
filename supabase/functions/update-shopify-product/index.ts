@@ -24,15 +24,25 @@ serve(async (req) => {
       );
     }
 
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+      console.error("AUTH: Empty bearer token");
+      return new Response(
+        JSON.stringify({ error: "No autorizado: Token vacío" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
+    // IMPORTANT: In edge/runtime there is no persisted session; pass the token explicitly
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
     if (authError || !user) {
       console.error("AUTH: Invalid token or user not found", authError);
       return new Response(
