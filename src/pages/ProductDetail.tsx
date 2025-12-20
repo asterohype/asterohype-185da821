@@ -3,7 +3,18 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { fetchProductByHandle, fetchProducts, formatPrice, ShopifyProduct, updateProductTitle, updateProductPrice, updateProductDescription, deleteProductImage, addProductImage, deleteProduct } from "@/lib/shopify";
+import {
+  fetchProductByHandle,
+  fetchProducts,
+  formatPrice,
+  ShopifyProduct,
+  updateProductTitle,
+  updateProductPrice,
+  updateProductDescription,
+  deleteProductImage,
+  addProductImage,
+  deleteProduct,
+} from "@/lib/shopify";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCartStore } from "@/stores/cartStore";
@@ -13,9 +24,29 @@ import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
+import { useProductOverride } from "@/hooks/useProductOverrides";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, ChevronRight, Minus, Plus, ShoppingBag, Check, Tag, Pencil, Save, X, Trash2, ImagePlus, TrendingUp, RefreshCw, Truck, Shield, RotateCcw } from "lucide-react";
+import {
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Check,
+  Tag,
+  Pencil,
+  Save,
+  X,
+  Trash2,
+  ImagePlus,
+  TrendingUp,
+  RefreshCw,
+  Truck,
+  Shield,
+  RotateCcw,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -107,16 +138,48 @@ const ProductDetail = () => {
     loadProduct();
   }, [handle]);
 
+  const { data: override } = useProductOverride(product?.id);
+
+  const productWithOverride = useMemo(() => {
+    if (!product) return null;
+    if (!override) return product;
+
+    return {
+      ...product,
+      title: override.title ?? product.title,
+      description: override.description ?? product.description,
+      priceRange: {
+        ...product.priceRange,
+        minVariantPrice:
+          override.price != null
+            ? { ...product.priceRange.minVariantPrice, amount: String(override.price) }
+            : product.priceRange.minVariantPrice,
+      },
+    };
+  }, [product, override]);
+
   const selectedVariant = product?.variants.edges.find((v) => {
     return v.node.selectedOptions.every(
       (opt) => selectedOptions[opt.name] === opt.value
     );
   })?.node;
 
+  const displayTitle = productWithOverride?.title ?? product?.title;
+  const displayDescription = productWithOverride?.description ?? product?.description;
+  const displayPriceAmount =
+    override?.price != null
+      ? String(override.price)
+      : selectedVariant?.price.amount || product?.priceRange.minVariantPrice.amount;
+  const displayCurrency =
+    selectedVariant?.price.currencyCode ||
+    product?.priceRange.minVariantPrice.currencyCode ||
+    "USD";
+
   const matchingImageIndex = useMemo(() => {
     if (!product) return 0;
-    
-    const colorOption = selectedOptions["Color"] || selectedOptions["color"] || selectedOptions["Colour"];
+
+    const colorOption =
+      selectedOptions["Color"] || selectedOptions["color"] || selectedOptions["Colour"];
     if (!colorOption) return selectedImage;
 
     const matchIndex = product.images.edges.findIndex((img) => {
@@ -517,11 +580,11 @@ const ProductDetail = () => {
   }
 
   const images = product.images.edges;
-  const price = selectedVariant?.price || product.priceRange.minVariantPrice;
+  const price = { amount: displayPriceAmount || "0", currencyCode: displayCurrency };
 
   // Convert description to bullet points
-  const descriptionBullets = product.description
-    ? product.description.split(/[.!?]+/).filter(s => s.trim().length > 10).slice(0, 5)
+  const descriptionBullets = displayDescription
+    ? displayDescription.split(/[.!?]+/).filter((s) => s.trim().length > 10).slice(0, 5)
     : [];
 
   return (
@@ -535,7 +598,7 @@ const ProductDetail = () => {
             <span>/</span>
             <Link to="/products" className="hover:text-primary transition-colors">Productos</Link>
             <span>/</span>
-            <span className="text-foreground truncate max-w-[200px]">{product.title}</span>
+            <span className="text-foreground truncate max-w-[200px]">{displayTitle}</span>
           </nav>
 
           {/* Main Product Section - Amazon Style Layout */}
@@ -677,7 +740,7 @@ const ProductDetail = () => {
               ) : (
                 <div className="flex items-start gap-2">
                   <h1 className="text-xl md:text-2xl font-semibold text-foreground leading-tight">
-                    {product.title}
+                    {displayTitle}
                   </h1>
                   {showAdminControls && (
                     <div className="flex gap-1 flex-shrink-0">
@@ -808,7 +871,7 @@ const ProductDetail = () => {
                       </ul>
                     ) : (
                       <p className="text-sm text-muted-foreground">
-                        {product.description || (showAdminControls ? 'Sin descripción - haz clic para añadir' : 'Sin descripción disponible')}
+                        {displayDescription || (showAdminControls ? 'Sin descripción - haz clic para añadir' : 'Sin descripción disponible')}
                       </p>
                     )}
                     {showAdminControls && (

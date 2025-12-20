@@ -292,75 +292,62 @@ export function formatPrice(amount: string, currencyCode: string = 'USD'): strin
 }
 
 // ============================================================
-// Admin operations via backend function (Shopify Admin API)
+// Local Product Overrides (stored in database)
 // ============================================================
 
-type UpdateShopifyProductPayload = {
-  action?: "delete_product" | "delete_image" | "add_image" | "update_image";
-  productId: string;
-  title?: string;
-  description?: string;
-  price?: string;
-  variantId?: string;
-  imageId?: string;
-  imageUrl?: string;
-  imageAlt?: string;
-};
+async function upsertProductOverride(
+  shopifyProductId: string,
+  patch: { title?: string | null; description?: string | null; price?: number | null }
+) {
+  const { error } = await supabase
+    .from("product_overrides")
+    .upsert(
+      {
+        shopify_product_id: shopifyProductId,
+        title: patch.title ?? null,
+        description: patch.description ?? null,
+        price: patch.price ?? null,
+      },
+      { onConflict: "shopify_product_id" }
+    );
 
-async function invokeUpdateShopifyProduct(payload: UpdateShopifyProductPayload) {
-  const { data, error } = await supabase.functions.invoke("update-shopify-product", {
-    body: payload,
-  });
-
-  if (error) {
-    // Edge functions return a FunctionsHttpError with useful context in message.
-    throw new Error(error.message);
-  }
-
-  // Some implementations return { error } in JSON too.
-  if (data && typeof data === "object" && "error" in (data as Record<string, unknown>)) {
-    const msg = String((data as Record<string, unknown>).error);
-    throw new Error(msg);
-  }
-
-  return data;
+  if (error) throw new Error(error.message);
 }
 
 export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ productId, title: newTitle });
+  await upsertProductOverride(productId, { title: newTitle });
 }
 
 export async function updateProductPrice(
   productId: string,
-  variantId: string,
+  _variantId: string,
   newPrice: string
 ): Promise<void> {
-  await invokeUpdateShopifyProduct({ productId, variantId, price: newPrice });
+  const parsed = Number(newPrice);
+  if (!Number.isFinite(parsed)) {
+    throw new Error("Precio inválido");
+  }
+  await upsertProductOverride(productId, { price: parsed });
 }
 
 export async function updateProductDescription(productId: string, description: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ productId, description });
+  await upsertProductOverride(productId, { description });
 }
 
-export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ action: "delete_image", productId, imageId });
+// NOTE: Image/product deletion require Shopify Admin API (not available in this project).
+export async function deleteProductImage(_productId: string, _imageId: string): Promise<void> {
+  throw new Error("Esta acción requiere permisos de edición en Shopify (no disponible).");
 }
 
 export async function addProductImage(
-  productId: string,
-  imageUrl: string,
-  imageAlt?: string
+  _productId: string,
+  _imageUrl: string,
+  _imageAlt?: string
 ): Promise<unknown> {
-  const data = await invokeUpdateShopifyProduct({
-    action: "add_image",
-    productId,
-    imageUrl,
-    imageAlt,
-  });
-  return data;
+  throw new Error("Esta acción requiere permisos de edición en Shopify (no disponible).");
 }
 
-export async function deleteProduct(productId: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ action: "delete_product", productId });
+export async function deleteProduct(_productId: string): Promise<void> {
+  throw new Error("Esta acción requiere permisos de edición en Shopify (no disponible).");
 }
 
