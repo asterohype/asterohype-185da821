@@ -34,7 +34,7 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-24 pb-16">
+      <main className="pt-32 pb-16">
         <div className="container mx-auto px-6">
           {/* Hero */}
           <div className="text-center max-w-2xl mx-auto mb-16 animate-fade-up">
@@ -132,7 +132,9 @@ const Contact = () => {
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-medium text-foreground mb-2">Email</h3>
-                    <p className="text-muted-foreground">contacto@asterohype.com</p>
+                    <a href="mailto:asterohype@gmail.com" className="text-muted-foreground hover:text-price-yellow transition-colors">
+                      asterohype@gmail.com
+                    </a>
                   </div>
                   
                   <div>
