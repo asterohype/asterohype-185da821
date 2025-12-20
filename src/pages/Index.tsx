@@ -3,16 +3,26 @@ import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Sponsors } from "@/components/home/Sponsors";
-import lifestyleImg1 from "@/assets/lifestyle-shopping-1.jpg";
-import lifestyleImg2 from "@/assets/lifestyle-shopping-2.jpg";
-import shoppingBags1 from "@/assets/shopping-bags-1.jpg";
-import giftBoxes1 from "@/assets/gift-boxes-1.jpg";
-import deliveryBoxes1 from "@/assets/delivery-boxes-1.jpg";
-import shoppingCart1 from "@/assets/shopping-cart-1.jpg";
-import premiumBags1 from "@/assets/premium-bags-1.jpg";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct, formatPrice } from "@/lib/shopify";
-import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Truck, Shield, Star, ArrowRight, Sparkles, Pencil, Check, ImagePlus } from "lucide-react";
+import {
+  Smartphone,
+  Home,
+  Shirt,
+  Headphones,
+  ChevronRight,
+  Flame,
+  Zap,
+  Gift,
+  Truck,
+  Shield,
+  Star,
+  ArrowRight,
+  Sparkles,
+  Pencil,
+  Check,
+  ImagePlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductTags } from "@/hooks/useProductTags";
@@ -27,6 +37,7 @@ import { toast } from "sonner";
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
 import { ChristmasBanner } from "@/components/home/ChristmasBanner";
+import { HolidayTopBanners } from "@/components/home/HolidayTopBanners";
 
 // Scroll animation hook
 function useScrollReveal() {
@@ -41,7 +52,7 @@ function useScrollReveal() {
           if (ref.current) observer.unobserve(ref.current);
         }
       },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
@@ -51,17 +62,25 @@ function useScrollReveal() {
 }
 
 // Animated Section Wrapper
-function AnimatedSection({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+function AnimatedSection({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
   const { ref, isVisible } = useScrollReveal();
-  
+
   return (
-    <div 
+    <div
       ref={ref}
       className={`transition-all duration-700 ease-out ${className}`}
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(40px)',
-        transitionDelay: `${delay}ms`
+        transform: isVisible ? "translateY(0)" : "translateY(40px)",
+        transitionDelay: `${delay}ms`,
       }}
     >
       {children}
@@ -81,40 +100,6 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
   electronica: Smartphone,
 };
 
-// Banner images arrays - realistic product photos without text
-const LIFESTYLE_BANNER_IMAGES = [lifestyleImg1, shoppingBags1, deliveryBoxes1, shoppingCart1];
-const OFFERS_BANNER_IMAGES = [lifestyleImg2, giftBoxes1, premiumBags1];
-
-// Banner Carousel Component with clean blur transitions
-const BannerCarousel = ({ images, interval = 4000 }: { images: string[], interval?: number }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    if (images.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, interval);
-    return () => clearInterval(timer);
-  }, [images.length, interval]);
-
-  return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {images.map((url, i) => (
-        <img
-          key={i}
-          src={url}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-[1500ms] ease-in-out group-hover:scale-105"
-          style={{
-            opacity: i === currentIndex ? 1 : 0,
-            filter: i === currentIndex ? 'blur(0px)' : 'blur(12px)',
-            transform: i === currentIndex ? 'scale(1)' : 'scale(1.02)',
-          }}
-        />
-      ))}
-    </div>
-  );
-};
 
 // Animated Image Carousel Component for product cards
 const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval?: number }) => {
@@ -251,7 +236,7 @@ const Index = () => {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(50);
+        const data = await fetchProducts(200);
         setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);
@@ -261,6 +246,7 @@ const Index = () => {
     }
     loadProducts();
   }, []);
+
 
   // Filter products by special tags
   const topProducts = useMemo(() => {
@@ -304,37 +290,9 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-32 pb-24 md:pb-8">
-        {/* Lifestyle Banner with Carousel */}
-        <section className="container mx-auto px-4 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[300px] md:h-[400px]">
-            <div className="relative rounded-2xl overflow-hidden group">
-              <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5000} />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent z-10" />
-              <div className="absolute bottom-6 left-6 right-6 z-20">
-                <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">Compra con Confianza</h2>
-                <p className="text-muted-foreground text-sm md:text-base">Miles de clientes satisfechos</p>
-                <Link to="/products">
-                  <Button variant="hero" size="lg" className="mt-4 rounded-full">
-                    Explorar Tienda
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <div className="relative rounded-2xl overflow-hidden group">
-              <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4000} />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent z-10" />
-              <div className="absolute bottom-6 left-6 right-6 z-20">
-                <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">Ofertas Exclusivas</h2>
-                <p className="text-muted-foreground text-sm md:text-base">Descuentos especiales cada día</p>
-                <Link to="/products">
-                  <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
-                    Ver Ofertas
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Banner superior navideño (doble) */}
+        <HolidayTopBanners />
+
 
         {/* Marketing Cards Grid - Amazon Style with scroll animations */}
         <AnimatedSection className="container mx-auto px-4 py-8">
@@ -615,20 +573,12 @@ const Index = () => {
 
         {/* Category Sections with Auto-scrolling Carousels */}
         {!loading && !tagsLoading && products.length > 0 && (() => {
-          // Avoid showing the same product across multiple category carousels (tags can overlap)
-          const used = new Set<string>();
           const visibleCategories = categories.slice(0, 6);
 
           return visibleCategories.map((category, categoryIndex) => {
             const taggedProductIds = getProductsForTag(category.slug);
             const categoryProducts = products
-              .filter((p) => taggedProductIds.includes(p.node.id))
-              .filter((p) => {
-                if (used.has(p.node.id)) return false;
-                used.add(p.node.id);
-                return true;
-              })
-              .slice(0, 15);
+              .filter((p) => taggedProductIds.includes(p.node.id));
 
             if (categoryProducts.length === 0) return null;
             const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
@@ -639,7 +589,9 @@ const Index = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Icon className="h-5 w-5 text-price-yellow" />
-                      <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
+                      <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">
+                        {category.label}
+                      </h2>
                     </div>
                     <Link
                       to={`/products?tag=${category.slug}`}
@@ -649,11 +601,18 @@ const Index = () => {
                     </Link>
                   </div>
                 </div>
-                <CategoryCarousel products={categoryProducts} categorySlug={category.slug} getTagsForProduct={getTagsForProduct} />
+
+                <CategoryCarousel
+                  products={categoryProducts}
+                  categorySlug={category.slug}
+                  getTagsForProduct={getTagsForProduct}
+                  direction={categoryIndex % 2 === 0 ? "right" : "left"}
+                />
               </AnimatedSection>
             );
           });
         })()}
+
 
         {/* Sponsors section with products */}
         <Sponsors products={products.slice(12, 20)} />
