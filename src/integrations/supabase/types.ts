@@ -181,6 +181,57 @@ export type Database = {
         }
         Relationships: []
       }
+      product_offers: {
+        Row: {
+          created_at: string
+          discount_percent: number | null
+          id: string
+          low_stock_active: boolean | null
+          low_stock_threshold: number | null
+          offer_active: boolean | null
+          offer_end_date: string | null
+          offer_text: string | null
+          original_price: number | null
+          promo_active: boolean | null
+          promo_subtext: string | null
+          promo_text: string | null
+          shopify_product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          low_stock_active?: boolean | null
+          low_stock_threshold?: number | null
+          offer_active?: boolean | null
+          offer_end_date?: string | null
+          offer_text?: string | null
+          original_price?: number | null
+          promo_active?: boolean | null
+          promo_subtext?: string | null
+          promo_text?: string | null
+          shopify_product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          low_stock_active?: boolean | null
+          low_stock_threshold?: number | null
+          offer_active?: boolean | null
+          offer_end_date?: string | null
+          offer_text?: string | null
+          original_price?: number | null
+          promo_active?: boolean | null
+          promo_subtext?: string | null
+          promo_text?: string | null
+          shopify_product_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_option_aliases: {
         Row: {
           created_at: string
@@ -235,6 +286,45 @@ export type Database = {
           shopify_product_id?: string
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      product_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          shopify_product_id: string
+          title: string | null
+          updated_at: string
+          user_id: string | null
+          user_name: string
+          verified_purchase: boolean | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          shopify_product_id: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          user_name: string
+          verified_purchase?: boolean | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          shopify_product_id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          user_name?: string
+          verified_purchase?: boolean | null
         }
         Relationships: []
       }
