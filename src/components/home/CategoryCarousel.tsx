@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, forwardRef } from "react";
 import { Link } from "react-router-dom";
 import { ShopifyProduct, formatPrice } from "@/lib/shopify";
 import { useProductOverrides } from "@/hooks/useProductOverrides";
@@ -14,26 +14,27 @@ interface CategoryCarouselProps {
 
 const ASPECT_CATEGORIES = new Set(["tecnologia", "accesorios"]);
 
-function ProductImage916({
-  src,
-  alt,
-  mode,
-}: {
-  src?: string;
-  alt: string;
-  mode: "cover" | "contain-filled";
-}) {
+const ProductImage916 = forwardRef<
+  HTMLDivElement,
+  {
+    src?: string;
+    alt: string;
+    mode: "cover" | "contain-filled";
+  }
+>(function ProductImage916({ src, alt, mode }, ref) {
   return (
-    <div className="aspect-[9/16] overflow-hidden relative bg-secondary/30">
+    <div ref={ref} className="aspect-[9/16] overflow-hidden relative bg-secondary/30">
       {mode === "contain-filled" && src ? (
         <>
+          {/* Fondo: cover SIN blur para evitar bandas grises/blancas */}
           <img
             src={src}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-70"
+            className="absolute inset-0 w-full h-full object-cover scale-110 opacity-90"
             loading="lazy"
           />
+          {/* Imagen real: intacta (sin recorte) */}
           <img
             src={src}
             alt={alt}
@@ -50,10 +51,10 @@ function ProductImage916({
         />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/10 to-transparent" />
     </div>
   );
-}
+});
 
 function SmallCard({ product, imageMode }: { product: ShopifyProduct; imageMode: "cover" | "contain-filled" }) {
   const { data: overrides } = useProductOverrides();
