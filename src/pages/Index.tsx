@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
+import { ChristmasBanner } from "@/components/home/ChristmasBanner";
 
 // Scroll animation hook
 function useScrollReveal() {
@@ -571,6 +572,11 @@ const Index = () => {
               categoryName={imageSelectorCategory.label}
             />
           )}
+        </section>
+
+        {/* Christmas Banner - debajo de categorías */}
+        <section className="container mx-auto px-4">
+          <ChristmasBanner />
         </section>
 
         {/* PRODUCTOS DESTACADOS - Special highlighted section with scroll animation */}
