@@ -42,6 +42,9 @@
     --price-yellow: 211 100% 45%;
     --sale-red: 0 72% 50%;
     --sale-original: 215 16% 55%;
+
+    /* Always-dark overlay for image readability (prevents white wash on light theme) */
+    --overlay: 0 0% 0%;
   }
 
   * {

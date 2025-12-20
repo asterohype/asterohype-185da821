@@ -43,18 +43,14 @@ const ProductImage916 = forwardRef<
           />
         </>
       ) : (
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-overlay/70 via-overlay/10 to-transparent" />
     </div>
   );
 });
+
 
 function SmallCard({ product, imageMode }: { product: ShopifyProduct; imageMode: "cover" | "contain-filled" }) {
   const { data: overrides } = useProductOverrides();
