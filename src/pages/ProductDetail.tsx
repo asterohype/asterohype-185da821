@@ -1451,6 +1451,20 @@ const ProductDetail = () => {
             </div>
           </div>
 
+          {/* Full HTML Description with Images (like Amazon) */}
+          {product.descriptionHtml && (
+            <section className="mt-12 pt-8 border-t border-border">
+              <h2 className="text-lg font-semibold text-foreground mb-6">Descripción del producto</h2>
+              <div 
+                className="prose prose-sm max-w-none text-muted-foreground
+                  [&_img]:rounded-xl [&_img]:shadow-lg [&_img]:mx-auto [&_img]:max-w-full [&_img]:my-6
+                  [&_p]:text-muted-foreground [&_p]:leading-relaxed
+                  [&_strong]:text-foreground"
+                dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+              />
+            </section>
+          )}
+
           {/* Reviews Section */}
           <section className="mt-12 pt-8 border-t border-border">
             <div className="flex items-center justify-between mb-6">
