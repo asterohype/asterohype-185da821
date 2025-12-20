@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
 import { useProductTags } from "@/hooks/useProductTags";
+import { useCollections } from "@/hooks/useCollections";
 import { Loader2, Search, ChevronDown, ChevronUp, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const Products = () => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const { tags, getTagsByGroup, getTagsForProduct, loading: tagsLoading } = useProductTags();
+  const { collections, getProductsForCollection } = useCollections();
 
   useEffect(() => {
     async function loadProducts() {
@@ -52,8 +54,11 @@ const Products = () => {
   useEffect(() => {
     const search = searchParams.get("search");
     const tag = searchParams.get("tag");
+    const collection = searchParams.get("collection");
     if (search) {
       setSearchQuery(search);
+    } else if (!collection) {
+      setSearchQuery("");
     }
     if (tag) {
       setSelectedTags([tag]);
@@ -74,9 +79,23 @@ const Products = () => {
 
   const tagsByGroup = getTagsByGroup();
 
+  // Get collection filter from URL
+  const collectionSlug = searchParams.get("collection");
+  const activeCollection = collections.find(c => c.slug === collectionSlug);
+  const collectionProductIds = activeCollection 
+    ? getProductsForCollection(activeCollection.id)
+    : null;
+
   const filteredProducts = products.filter((product) => {
     const titleLower = product.node.title?.toLowerCase() || "";
     const descLower = product.node.description?.toLowerCase() || "";
+
+    // Collection filter - if collection is selected, only show products in that collection
+    if (collectionProductIds !== null) {
+      if (!collectionProductIds.includes(product.node.id)) {
+        return false;
+      }
+    }
 
     // Search filter
     const matchesSearch =
@@ -94,7 +113,7 @@ const Products = () => {
     return matchesSearch && matchesTags;
   });
 
-  const hasActiveFilters = selectedTags.length > 0 || searchQuery !== "";
+  const hasActiveFilters = selectedTags.length > 0 || searchQuery !== "" || collectionSlug !== null;
 
   const FilterSidebar = () => (
     <div className="space-y-6">
