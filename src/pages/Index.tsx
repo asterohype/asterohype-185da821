@@ -25,6 +25,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
+import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
 
 // Scroll animation hook
 function useScrollReveal() {
@@ -230,9 +231,10 @@ const Index = () => {
   const { isAdmin } = useAdmin();
   const { isAdminModeActive } = useAdminModeStore();
   const showAdminControls = isAdmin && isAdminModeActive;
-  const { categories, updateCategory, updateCategoryImage } = useMenuConfigStore();
+  const { categories, updateCategory, updateCategoryImage, clearCategoryImage } = useMenuConfigStore();
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [imageSelectorCategory, setImageSelectorCategory] = useState<{ id: string; label: string; customImage?: string } | null>(null);
 
   // Authentication state
   useEffect(() => {
@@ -481,16 +483,14 @@ const Index = () => {
                 
                 return (
                   <div key={category.id} className="flex flex-col items-center gap-3 group relative">
-                    {/* Admin edit overlay for image */}
+                    {/* Admin edit overlay for image - opens modal instead of prompt */}
                     {showAdminControls && (
                       <button
-                        onClick={() => {
-                          const url = prompt('URL de la imagen:', category.customImage || '');
-                          if (url !== null) {
-                            updateCategoryImage(category.id, url);
-                            toast.success('Imagen actualizada');
-                          }
-                        }}
+                        onClick={() => setImageSelectorCategory({
+                          id: category.id,
+                          label: category.label,
+                          customImage: category.customImage,
+                        })}
                         className="absolute top-0 right-0 z-10 p-1.5 rounded-full bg-primary/90 text-primary-foreground shadow-lg hover:bg-primary transition-colors"
                       >
                         <ImagePlus className="h-3.5 w-3.5" />
@@ -557,6 +557,19 @@ const Index = () => {
                 );
               })}
             </div>
+          )}
+
+          {/* Category Image Selector Modal */}
+          {imageSelectorCategory && (
+            <CategoryImageSelector
+              isOpen={!!imageSelectorCategory}
+              onClose={() => setImageSelectorCategory(null)}
+              onSelectImage={(url) => updateCategoryImage(imageSelectorCategory.id, url)}
+              onClearImage={() => clearCategoryImage(imageSelectorCategory.id)}
+              products={products}
+              currentImage={imageSelectorCategory.customImage}
+              categoryName={imageSelectorCategory.label}
+            />
           )}
         </section>
 
