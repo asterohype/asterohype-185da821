@@ -715,122 +715,183 @@ const ProductDetail = () => {
             <span className="text-foreground truncate max-w-[200px]">{displayTitle}</span>
           </nav>
 
-          {/* Main Product Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Product Section - 2 columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            {/* Left Column - Images */}
-            <div className="lg:col-span-6 flex gap-3">
-              {/* Vertical Thumbnails */}
-              <div className="hidden md:flex flex-col gap-2 w-16 flex-shrink-0">
-                {images.slice(0, 7).map((img, index) => (
-                  <div key={index} className="relative group">
-                    <button
-                      onClick={() => setSelectedImage(index)}
-                      onMouseEnter={() => setSelectedImage(index)}
-                      className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                        selectedImage === index
-                          ? "border-primary ring-1 ring-primary"
-                          : "border-border hover:border-muted-foreground"
-                      }`}
-                    >
-                      <img
-                        src={img.node.url}
-                        alt={img.node.altText || `${product.title} ${index + 1}`}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                    {showAdminControls && (
+            {/* Left Column - Images + Variant Selection */}
+            <div className="space-y-6">
+              {/* Images Section */}
+              <div className="flex gap-3">
+                {/* Vertical Thumbnails */}
+                <div className="hidden md:flex flex-col gap-2 w-16 flex-shrink-0">
+                  {images.slice(0, 7).map((img, index) => (
+                    <div key={index} className="relative group">
                       <button
-                        onClick={() => handleDeleteImage(img.node.url, index)}
-                        disabled={savingProduct}
-                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px]"
+                        onClick={() => setSelectedImage(index)}
+                        onMouseEnter={() => setSelectedImage(index)}
+                        className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                          selectedImage === index
+                            ? "border-primary ring-1 ring-primary"
+                            : "border-border hover:border-muted-foreground"
+                        }`}
                       >
-                        ×
+                        <img
+                          src={img.node.url}
+                          alt={img.node.altText || `${product.title} ${index + 1}`}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
                       </button>
-                    )}
-                  </div>
-                ))}
-                {showAdminControls && (
-                  <button
-                    onClick={() => setShowAddImage(true)}
-                    className="w-14 h-14 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <ImagePlus className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Main Image */}
-              <div className="flex-1">
-                <div className="aspect-square rounded-xl overflow-hidden bg-card border border-border relative">
-                  {images.length > 0 ? (
-                    <img
-                      src={images[selectedImage]?.node.url}
-                      alt={images[selectedImage]?.node.altText || product.title}
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      Sin imagen
+                      {showAdminControls && (
+                        <button
+                          onClick={() => handleDeleteImage(img.node.url, index)}
+                          disabled={savingProduct}
+                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px]"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
+                  ))}
+                  {showAdminControls && (
+                    <button
+                      onClick={() => setShowAddImage(true)}
+                      className="w-14 h-14 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                    </button>
                   )}
                 </div>
 
-                {/* Mobile Thumbnails */}
-                <div className="flex md:hidden gap-2 mt-3 overflow-x-auto pb-2 scrollbar-hide">
-                  {images.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                        selectedImage === index
-                          ? "border-primary"
-                          : "border-border"
-                      }`}
-                    >
+                {/* Main Image */}
+                <div className="flex-1">
+                  <div className="aspect-square rounded-xl overflow-hidden bg-card border border-border relative">
+                    {images.length > 0 ? (
                       <img
-                        src={img.node.url}
-                        alt={img.node.altText || `${product.title} ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        src={images[selectedImage]?.node.url}
+                        alt={images[selectedImage]?.node.altText || product.title}
+                        className="w-full h-full object-contain"
                       />
-                    </button>
-                  ))}
-                </div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                        Sin imagen
+                      </div>
+                    )}
+                  </div>
 
-                {/* Add image form */}
-                {showAdminControls && showAddImage && (
-                  <div className="mt-3 bg-muted rounded-lg p-3 space-y-2">
-                    <Input
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="URL de la imagen..."
-                      className="text-sm"
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleAddImage}
-                        disabled={savingProduct || !newImageUrl.trim()}
+                  {/* Mobile Thumbnails */}
+                  <div className="flex md:hidden gap-2 mt-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {images.map((img, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                          selectedImage === index
+                            ? "border-primary"
+                            : "border-border"
+                        }`}
                       >
-                        {savingProduct ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <ImagePlus className="h-3 w-3 mr-1" />}
-                        Añadir
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setShowAddImage(false); setNewImageUrl(''); }}
-                      >
-                        Cancelar
-                      </Button>
+                        <img
+                          src={img.node.url}
+                          alt={img.node.altText || `${product.title} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Add image form */}
+                  {showAdminControls && showAddImage && (
+                    <div className="mt-3 bg-muted rounded-lg p-3 space-y-2">
+                      <Input
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="URL de la imagen..."
+                        className="text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleAddImage}
+                          disabled={savingProduct || !newImageUrl.trim()}
+                        >
+                          {savingProduct ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <ImagePlus className="h-3 w-3 mr-1" />}
+                          Añadir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setShowAddImage(false); setNewImageUrl(''); }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Variant Selection - Below images */}
+              <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+                {/* Stock Urgency - Only if configured */}
+                {productOffer?.low_stock_active && productOffer?.low_stock_threshold && (
+                  <div className="flex items-center gap-2 text-sm text-amber-600">
+                    <span className="animate-pulse">🔥</span>
+                    ¡Solo quedan {productOffer.low_stock_threshold} unidades!
                   </div>
                 )}
+
+                {/* Variant Selection */}
+                {product.options.filter(opt => opt.values.length > 1).map((option) => (
+                  <div key={option.name} className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      {getDisplayName(product.id, option.name)}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {option.values.map((value) => {
+                        const isSelected = selectedOptions[option.name] === value;
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => handleOptionChange(option.name, value)}
+                            className={`px-3 py-2 text-sm rounded-full border transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary"
+                                : "border-border hover:border-muted-foreground text-foreground"
+                            }`}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Quantity */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Cantidad</label>
+                  <div className="flex items-center border border-border rounded-full overflow-hidden w-fit">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-4 py-2 hover:bg-muted transition-colors"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="px-6 font-medium">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="px-4 py-2 hover:bg-muted transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Middle Column - Product Info */}
-            <div className="lg:col-span-4 space-y-4">
+            {/* Right Column - Product Info */}
+            <div className="space-y-6">
               {/* Rating - Real data */}
               {reviewStats.totalReviews > 0 && (
                 <div className="flex items-center gap-2">
@@ -1216,252 +1277,217 @@ const ProductDetail = () => {
                   <p className="text-xs text-muted-foreground">Sin etiquetas asignadas</p>
                 )}
               </div>
-            </div>
 
-            {/* Right Column - Buy Box (simplified, no duplicates) */}
-            <div className="lg:col-span-2">
-              <div className="sticky top-24 bg-card border border-border rounded-xl p-4 space-y-4">
-                {/* Stock Urgency - Only if configured */}
-                {productOffer?.low_stock_active && productOffer?.low_stock_threshold && (
-                  <div className="flex items-center gap-2 text-sm text-amber-600">
-                    <span className="animate-pulse">🔥</span>
-                    ¡Solo quedan {productOffer.low_stock_threshold} unidades!
+              {/* Add to Cart Button - Large and prominent */}
+              <button
+                onClick={handleAddToCart}
+                disabled={!selectedVariant?.availableForSale}
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl bg-primary text-primary-foreground text-lg font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                Añadir al Carrito
+              </button>
+
+              {/* Urgency Section - Only if configured with real date */}
+              {offerTimeLeft && productOffer?.offer_text && (
+                <div className="bg-gradient-to-r from-red-600 to-amber-500 rounded-xl p-4 space-y-2 text-white">
+                  <div className="flex items-center gap-2 font-bold">
+                    <Clock className="h-5 w-5 animate-pulse" />
+                    {productOffer.offer_text}
                   </div>
-                )}
-
-                {/* Variant Selection */}
-                {product.options.filter(opt => opt.values.length > 1).map((option) => (
-                  <div key={option.name} className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      {getDisplayName(product.id, option.name)}
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {option.values.map((value, idx) => {
-                        const isSelected = selectedOptions[option.name] === value;
-                        return (
-                          <button
-                            key={value}
-                            onClick={() => handleOptionChange(option.name, value)}
-                            className={`px-2.5 py-1.5 text-xs rounded-full border transition-all ${
-                              isSelected
-                                ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary"
-                                : "border-border hover:border-muted-foreground text-foreground"
-                            }`}
-                          >
-                            {value}
-                          </button>
-                        );
-                      })}
+                  <div className="flex gap-3 text-sm">
+                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
+                      <span className="font-bold text-xl">{offerTimeLeft.days}</span>
+                      <p className="text-xs">días</p>
                     </div>
-                  </div>
-                ))}
-
-                {/* Quantity */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">Cantidad</label>
-                  <div className="flex items-center border border-border rounded-full overflow-hidden">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-4 py-2 hover:bg-muted transition-colors rounded-l-full"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="flex-1 text-center font-medium min-w-[40px]">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="px-4 py-2 hover:bg-muted transition-colors rounded-r-full"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
+                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
+                      <span className="font-bold text-xl">{offerTimeLeft.hours}</span>
+                      <p className="text-xs">hrs</p>
+                    </div>
+                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
+                      <span className="font-bold text-xl">{offerTimeLeft.minutes}</span>
+                      <p className="text-xs">min</p>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Add to Cart Button */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={!selectedVariant?.availableForSale}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ShoppingBag className="h-4 w-4" />
-                  Añadir al Carrito
-                </button>
-
-                {/* Urgency Section - Only if configured with real date */}
-                {offerTimeLeft && productOffer?.offer_text && (
-                  <div className="bg-gradient-to-r from-red-600 to-amber-500 rounded-xl p-3 space-y-2 text-white">
-                    <div className="flex items-center gap-2 font-bold">
-                      <Clock className="h-4 w-4 animate-pulse" />
-                      {productOffer.offer_text}
+              {/* Admin Profit Analysis - Only visible in admin mode */}
+              {showAdminControls && (
+                <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <TrendingUp className="h-4 w-4" />
+                      Profit Analysis
                     </div>
-                    <div className="flex gap-2 text-xs">
-                      <div className="bg-white/20 rounded px-2 py-1 text-center">
-                        <span className="font-bold text-lg">{offerTimeLeft.days}</span>
-                        <p className="text-[10px]">días</p>
-                      </div>
-                      <div className="bg-white/20 rounded px-2 py-1 text-center">
-                        <span className="font-bold text-lg">{offerTimeLeft.hours}</span>
-                        <p className="text-[10px]">hrs</p>
-                      </div>
-                      <div className="bg-white/20 rounded px-2 py-1 text-center">
-                        <span className="font-bold text-lg">{offerTimeLeft.minutes}</span>
-                        <p className="text-[10px]">min</p>
-                      </div>
-                    </div>
+                    {!editingCost && (
+                      <Button size="sm" variant="ghost" onClick={startEditingCost} className="h-7 text-xs">
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Editar
+                      </Button>
+                    )}
                   </div>
-                )}
-
-                {/* Admin Cost Section */}
-                {showAdminControls && (
-                  <div className="pt-3 border-t border-border">
-                    <div className="bg-muted/50 rounded-lg p-3 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-medium">
-                          <TrendingUp className="h-3.5 w-3.5" />
-                          Profit Analysis
-                        </div>
-                        {!editingCost && (
-                          <Button size="sm" variant="ghost" onClick={startEditingCost} className="h-6 text-xs">
-                            <Pencil className="h-3 w-3 mr-1" />
-                            Editar
-                          </Button>
-                        )}
-                      </div>
-                      
-                      {editingCost ? (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] text-muted-foreground">Coste producto</label>
-                              <Input
-                                value={editedProductCost}
-                                onChange={(e) => setEditedProductCost(e.target.value)}
-                                type="number"
-                                step="0.01"
-                                className="h-7 text-xs"
-                                placeholder="0.00"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-muted-foreground">Coste envío</label>
-                              <Input
-                                value={editedShippingCost}
-                                onChange={(e) => setEditedShippingCost(e.target.value)}
-                                type="number"
-                                step="0.01"
-                                className="h-7 text-xs"
-                                placeholder="0.00"
-                              />
-                            </div>
-                          </div>
+                  
+                  {editingCost ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Coste producto</label>
                           <Input
-                            value={editedCostNotes}
-                            onChange={(e) => setEditedCostNotes(e.target.value)}
-                            className="h-7 text-xs"
-                            placeholder="Notas..."
+                            value={editedProductCost}
+                            onChange={(e) => setEditedProductCost(e.target.value)}
+                            type="number"
+                            step="0.01"
+                            className="h-8 text-sm"
+                            placeholder="0.00"
                           />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={handleSaveCost} disabled={savingCost} className="h-6 text-xs flex-1">
-                              {savingCost ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingCost(false)} className="h-6 text-xs">
-                              Cancelar
-                            </Button>
-                          </div>
                         </div>
-                      ) : (
-                        (() => {
-                          const hasData = productCostData && (productCostData.product_cost > 0 || productCostData.shipping_cost > 0);
-                          const sellingPrice = parseFloat(price.amount);
-                          
-                          if (cjCostData && !hasData) {
-                            const cjTotalCost = cjCostData.productCost + cjCostData.shippingCost;
-                            const cjProfit = sellingPrice - cjTotalCost * 0.92;
-                            
-                            return (
-                              <div className="space-y-2 text-xs">
-                                <p className="text-[10px] text-muted-foreground">CJ (no guardado)</p>
-                                <div className="grid grid-cols-3 gap-1 text-center">
-                                  <div className="bg-background/50 rounded p-1.5">
-                                    <p className="text-[10px] text-muted-foreground">Coste</p>
-                                    <p className="font-bold text-destructive">${cjTotalCost.toFixed(2)}</p>
-                                  </div>
-                                  <div className="bg-background/50 rounded p-1.5">
-                                    <p className="text-[10px] text-muted-foreground">Venta</p>
-                                    <p className="font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
-                                  </div>
-                                  <div className="bg-background/50 rounded p-1.5">
-                                    <p className="text-[10px] text-muted-foreground">Profit</p>
-                                    <p className={`font-bold ${cjProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                                      ~{cjProfit.toFixed(2)}€
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          }
-                          
-                          if (fetchingCJData) {
-                            return (
-                              <div className="text-center py-2">
-                                <Loader2 className="h-4 w-4 animate-spin mx-auto mb-1" />
-                                <p className="text-[10px] text-muted-foreground">Buscando en CJ...</p>
-                              </div>
-                            );
-                          }
-                          
-                          if (hasData) {
-                            const totalCost = productCostData.product_cost + productCostData.shipping_cost;
-                            const profit = sellingPrice - totalCost;
-                            
-                            return (
-                              <div className="grid grid-cols-3 gap-1 text-center text-xs">
-                                <div className="bg-background/50 rounded p-1.5">
-                                  <p className="text-[10px] text-muted-foreground">Coste</p>
-                                  <p className="font-bold text-destructive">{totalCost.toFixed(2)}€</p>
-                                </div>
-                                <div className="bg-background/50 rounded p-1.5">
-                                  <p className="text-[10px] text-muted-foreground">Venta</p>
-                                  <p className="font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
-                                </div>
-                                <div className="bg-background/50 rounded p-1.5">
-                                  <p className="text-[10px] text-muted-foreground">Profit</p>
-                                  <p className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                                    {profit >= 0 ? '+' : ''}{profit.toFixed(2)}€
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          }
-                          
-                          return (
-                            <div className="text-center py-2">
-                              <p className="text-[10px] text-muted-foreground mb-1">No hay datos de coste</p>
-                              <Button size="sm" variant="ghost" onClick={fetchCJCostsForProduct} className="h-5 text-[10px]">
-                                <RefreshCw className="h-2.5 w-2.5 mr-1" />
-                                Buscar en CJ
-                              </Button>
-                            </div>
-                          );
-                        })()
-                      )}
+                        <div>
+                          <label className="text-xs text-muted-foreground">Coste envío</label>
+                          <Input
+                            value={editedShippingCost}
+                            onChange={(e) => setEditedShippingCost(e.target.value)}
+                            type="number"
+                            step="0.01"
+                            className="h-8 text-sm"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
+                      <Input
+                        value={editedCostNotes}
+                        onChange={(e) => setEditedCostNotes(e.target.value)}
+                        className="h-8 text-sm"
+                        placeholder="Notas..."
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleSaveCost} disabled={savingCost} className="h-7 text-xs flex-1">
+                          {savingCost ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingCost(false)} className="h-7 text-xs">
+                          Cancelar
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    (() => {
+                      const hasData = productCostData && (productCostData.product_cost > 0 || productCostData.shipping_cost > 0);
+                      const sellingPrice = parseFloat(price.amount);
+                      
+                      if (cjCostData && !hasData) {
+                        const cjTotalCost = cjCostData.productCost + cjCostData.shippingCost;
+                        const cjProfit = sellingPrice - cjTotalCost * 0.92;
+                        
+                        return (
+                          <div className="space-y-2 text-sm">
+                            <p className="text-xs text-muted-foreground">CJ (no guardado)</p>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="bg-background/50 rounded-lg p-2">
+                                <p className="text-xs text-muted-foreground">Coste</p>
+                                <p className="font-bold text-destructive">${cjTotalCost.toFixed(2)}</p>
+                              </div>
+                              <div className="bg-background/50 rounded-lg p-2">
+                                <p className="text-xs text-muted-foreground">Venta</p>
+                                <p className="font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
+                              </div>
+                              <div className="bg-background/50 rounded-lg p-2">
+                                <p className="text-xs text-muted-foreground">Profit</p>
+                                <p className={`font-bold ${cjProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                                  ~{cjProfit.toFixed(2)}€
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if (fetchingCJData) {
+                        return (
+                          <div className="text-center py-3">
+                            <Loader2 className="h-5 w-5 animate-spin mx-auto mb-1" />
+                            <p className="text-xs text-muted-foreground">Buscando en CJ...</p>
+                          </div>
+                        );
+                      }
+                      
+                      if (hasData) {
+                        const totalCost = productCostData.product_cost + productCostData.shipping_cost;
+                        const profit = sellingPrice - totalCost;
+                        
+                        return (
+                          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                            <div className="bg-background/50 rounded-lg p-2">
+                              <p className="text-xs text-muted-foreground">Coste</p>
+                              <p className="font-bold text-destructive">{totalCost.toFixed(2)}€</p>
+                            </div>
+                            <div className="bg-background/50 rounded-lg p-2">
+                              <p className="text-xs text-muted-foreground">Venta</p>
+                              <p className="font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
+                            </div>
+                            <div className="bg-background/50 rounded-lg p-2">
+                              <p className="text-xs text-muted-foreground">Profit</p>
+                              <p className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                                {profit >= 0 ? '+' : ''}{profit.toFixed(2)}€
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="text-center py-3">
+                          <p className="text-xs text-muted-foreground mb-2">No hay datos de coste</p>
+                          <Button size="sm" variant="ghost" onClick={fetchCJCostsForProduct} className="h-6 text-xs">
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Buscar en CJ
+                          </Button>
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Full HTML Description with Images (like Amazon) */}
-          {product.descriptionHtml && (
+          {(product.descriptionHtml || showAdminControls) && (
             <section className="mt-12 pt-8 border-t border-border">
-              <h2 className="text-lg font-semibold text-foreground mb-6">Descripción del producto</h2>
-              <div 
-                className="prose prose-sm max-w-none text-muted-foreground
-                  [&_img]:rounded-xl [&_img]:shadow-lg [&_img]:mx-auto [&_img]:max-w-full [&_img]:my-6
-                  [&_p]:text-muted-foreground [&_p]:leading-relaxed
-                  [&_strong]:text-foreground"
-                dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
-              />
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-foreground">Descripción del producto</h2>
+                {showAdminControls && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      // Open Shopify admin to edit description
+                      const productId = product.id.replace('gid://shopify/Product/', '');
+                      window.open(`https://admin.shopify.com/store/astero-2/products/${productId}`, '_blank');
+                    }}
+                  >
+                    <Pencil className="h-3 w-3 mr-2" />
+                    Editar en Shopify
+                  </Button>
+                )}
+              </div>
+              {product.descriptionHtml ? (
+                <div 
+                  className="prose prose-lg max-w-none
+                    [&_img]:rounded-2xl [&_img]:shadow-xl [&_img]:mx-auto [&_img]:max-w-full [&_img]:my-8
+                    [&_p]:text-center [&_p]:text-muted-foreground [&_p]:leading-relaxed [&_p]:text-base [&_p]:max-w-3xl [&_p]:mx-auto
+                    [&_strong]:text-foreground [&_strong]:font-bold
+                    [&>p:first-child]:hidden"
+                  dangerouslySetInnerHTML={{ 
+                    __html: product.descriptionHtml
+                      .replace(/Product description:/gi, '')
+                      .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '<br/>')
+                  }}
+                />
+              ) : (
+                <p className="text-center text-muted-foreground">
+                  No hay descripción disponible. Añádela desde Shopify.
+                </p>
+              )}
             </section>
           )}
 
