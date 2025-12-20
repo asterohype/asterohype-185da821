@@ -26,6 +26,7 @@ import { ThemeSelector } from "@/components/ThemeSelector";
 import { Input } from "@/components/ui/input";
 import { SearchModal } from "@/components/search/SearchModal";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { MobileNavBar } from "@/components/layout/MobileNavBar";
 
 export function Header() {
   const totalItems = useCartStore((state) => state.getTotalItems());
@@ -352,6 +353,7 @@ export function Header() {
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
       <CartDrawer />
+      <MobileNavBar onSearchClick={() => setSearchOpen(true)} />
     </>
   );
 }

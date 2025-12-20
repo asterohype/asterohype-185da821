@@ -178,7 +178,7 @@ const Products = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-32 pb-16">
+      <main className="pt-32 pb-24 md:pb-16">
         <div className="container mx-auto px-4 md:px-6">
           {/* Header */}
           <div className="mb-6 animate-fade-up">
@@ -204,11 +204,12 @@ const Products = () => {
               </div>
             </aside>
 
-            {/* Mobile Filter Button */}
-            <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40">
+            {/* Mobile Filter Button - positioned above bottom nav */}
+            <div className="lg:hidden fixed bottom-20 left-4 right-4 z-40">
               <Button
                 onClick={() => setMobileFiltersOpen(true)}
-                className="w-full bg-price-yellow text-background hover:bg-price-yellow/90"
+                data-filter-trigger
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg"
               >
                 Filtros {hasActiveFilters && `(${selectedTags.length})`}
               </Button>
