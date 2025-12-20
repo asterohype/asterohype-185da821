@@ -15,7 +15,7 @@ import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ChevronLeft, Minus, Plus, ShoppingBag, Check, Truck, Shield, RotateCcw, Tag, Pencil, Save, X, Trash2, ImagePlus, DollarSign, TrendingUp, RefreshCw } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Minus, Plus, ShoppingBag, Check, Tag, Pencil, Save, X, Trash2, ImagePlus, TrendingUp, RefreshCw, Truck, Shield, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,9 +28,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const FADE_MS = 280;
-const AUTOSLIDE_MS = 2200;
-
 const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
 
 const ProductDetail = () => {
@@ -42,7 +39,6 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
-  const [autoSlide, setAutoSlide] = useState(true);
   const [savingTag, setSavingTag] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
@@ -54,6 +50,7 @@ const ProductDetail = () => {
   const [showAddImage, setShowAddImage] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState(false);
+  const [relatedScrollPos, setRelatedScrollPos] = useState(0);
 
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
@@ -86,7 +83,6 @@ const ProductDetail = () => {
       try {
         const data = await fetchProductByHandle(handle);
         setProduct(data);
-        // Initialize selected options with first values
         if (data?.options) {
           const initialOptions: Record<string, string> = {};
           data.options.forEach((option) => {
@@ -97,12 +93,10 @@ const ProductDetail = () => {
           setSelectedOptions(initialOptions);
         }
         
-        // Fetch related products
         const allProducts = await fetchProducts(20);
-        // Filter to show products that are not the current one
         const related = allProducts
           .filter((p) => p.node.handle !== handle)
-          .slice(0, 4);
+          .slice(0, 8);
         setRelatedProducts(related);
       } catch (error) {
         console.error("Failed to load product:", error);
@@ -113,22 +107,18 @@ const ProductDetail = () => {
     loadProduct();
   }, [handle]);
 
-  // Find selected variant
   const selectedVariant = product?.variants.edges.find((v) => {
     return v.node.selectedOptions.every(
       (opt) => selectedOptions[opt.name] === opt.value
     );
   })?.node;
 
-  // Find matching image based on selected color/variant
   const matchingImageIndex = useMemo(() => {
     if (!product) return 0;
     
-    // Look for color option
     const colorOption = selectedOptions["Color"] || selectedOptions["color"] || selectedOptions["Colour"];
     if (!colorOption) return selectedImage;
 
-    // Try to find an image that matches the color in alt text
     const matchIndex = product.images.edges.findIndex((img) => {
       const altText = img.node.altText?.toLowerCase() || "";
       return altText.includes(colorOption.toLowerCase());
@@ -137,14 +127,12 @@ const ProductDetail = () => {
     return matchIndex >= 0 ? matchIndex : selectedImage;
   }, [product, selectedOptions, selectedImage]);
 
-  // Update selected image when variant changes
   useEffect(() => {
     if (matchingImageIndex !== selectedImage) {
       setSelectedImage(matchingImageIndex);
     }
   }, [matchingImageIndex]);
 
-  // Preload images for smooth/fast transitions
   useEffect(() => {
     if (!product) return;
     const urls = product.images.edges.map((e) => e.node.url).filter(Boolean);
@@ -154,17 +142,6 @@ const ProductDetail = () => {
       img.src = url;
     });
   }, [product]);
-
-  // Auto-slide images (fast + clean)
-  useEffect(() => {
-    if (!product || !autoSlide || product.images.edges.length <= 1) return;
-
-    const timer = window.setInterval(() => {
-      setSelectedImage((prev) => (prev + 1) % product.images.edges.length);
-    }, AUTOSLIDE_MS);
-
-    return () => window.clearInterval(timer);
-  }, [product, autoSlide]);
 
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({
@@ -259,7 +236,6 @@ const ProductDetail = () => {
     setSavingProduct(true);
     try {
       await updateProductPrice(product.id, selectedVariant.id, editedPrice.trim());
-      // Update local product state
       const updatedVariants = product.variants.edges.map(v => 
         v.node.id === selectedVariant.id 
           ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: editedPrice.trim() } } }
@@ -313,12 +289,9 @@ const ProductDetail = () => {
   const handleDeleteImage = async (imageUrl: string, index: number) => {
     if (!product) return;
     
-    // Get image ID from the product images array
     const imageEdge = product.images.edges[index];
     if (!imageEdge) return;
     
-    // Extract image ID from URL or use index-based approach
-    // Shopify images have IDs in their URLs or we need to fetch them
     const imageId = imageEdge.node.url.match(/\/(\d+)\//)?.[1];
     
     if (!imageId) {
@@ -329,7 +302,6 @@ const ProductDetail = () => {
     setSavingProduct(true);
     try {
       await deleteProductImage(product.id, imageId);
-      // Update local state
       const updatedImages = product.images.edges.filter((_, i) => i !== index);
       setProduct({ ...product, images: { edges: updatedImages } });
       if (selectedImage >= updatedImages.length) {
@@ -350,7 +322,6 @@ const ProductDetail = () => {
     setSavingProduct(true);
     try {
       const result = await addProductImage(product.id, newImageUrl.trim());
-      // Update local state with new image
       const newImage = {
         node: {
           url: newImageUrl.trim(),
@@ -388,7 +359,6 @@ const ProductDetail = () => {
     }
   };
 
-  // Cost management functions
   const productCostData = product ? getCostForProduct(product.id) : undefined;
   
   const startEditingCost = () => {
@@ -419,13 +389,11 @@ const ProductDetail = () => {
     }
   };
 
-  // Auto-fetch CJ costs when product loads and no cost data exists
   const fetchCJCostsForProduct = async () => {
     if (!product) return;
     
     setFetchingCJData(true);
     try {
-      // Search for the product in CJ by name
       const { data, error } = await supabase.functions.invoke('cj-product-cost', {
         body: { productName: product.title }
       });
@@ -435,11 +403,9 @@ const ProductDetail = () => {
         return;
       }
 
-      // Handle searchResults from the search endpoint
       if (data.searchResults && data.searchResults.length > 0) {
         const cjProduct = data.searchResults[0];
         
-        // Now fetch full product details to get variants
         const { data: detailData } = await supabase.functions.invoke('cj-product-cost', {
           body: { cjProductId: cjProduct.productId }
         });
@@ -447,7 +413,6 @@ const ProductDetail = () => {
         if (detailData?.success && detailData.product) {
           const fullProduct = detailData.product;
           
-          // Get shipping cost
           if (fullProduct.variants?.length > 0) {
             const firstVariant = fullProduct.variants[0];
             const { data: freightData } = await supabase.functions.invoke('cj-freight', {
@@ -468,7 +433,6 @@ const ProductDetail = () => {
         return;
       }
 
-      // Handle direct product response (when searching by ID)
       if (data.success && data.product) {
         const cjProduct = data.product;
         
@@ -496,7 +460,6 @@ const ProductDetail = () => {
     }
   };
 
-  // Auto-fetch CJ data when there's no saved cost data
   useEffect(() => {
     if (showAdminControls && product && !productCostData && !costsLoading && !fetchingCJData && !cjCostData) {
       fetchCJCostsForProduct();
@@ -505,6 +468,19 @@ const ProductDetail = () => {
 
   const tagsByGroup = getTagsByGroup();
   const productTags = product ? getTagsForProduct(product.id) : [];
+
+  // Related products scroll handlers
+  const scrollRelated = (direction: 'left' | 'right') => {
+    const container = document.getElementById('related-products-container');
+    if (container) {
+      const scrollAmount = 300;
+      const newPos = direction === 'left' 
+        ? Math.max(0, relatedScrollPos - scrollAmount)
+        : relatedScrollPos + scrollAmount;
+      container.scrollTo({ left: newPos, behavior: 'smooth' });
+      setRelatedScrollPos(newPos);
+    }
+  };
 
   if (loading) {
     return (
@@ -539,224 +515,202 @@ const ProductDetail = () => {
   const images = product.images.edges;
   const price = selectedVariant?.price || product.priceRange.minVariantPrice;
 
+  // Convert description to bullet points
+  const descriptionBullets = product.description
+    ? product.description.split(/[.!?]+/).filter(s => s.trim().length > 10).slice(0, 5)
+    : [];
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-32 pb-16">
-        <div className="container mx-auto px-4 md:px-6">
+      <main className="pt-24 pb-12">
+        <div className="max-w-7xl mx-auto px-4">
           {/* Breadcrumb */}
-          <Link
-            to="/products"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-price-yellow transition-colors duration-300 mb-8 group"
-          >
-            <ChevronLeft className="h-4 w-4 mr-1 transition-transform group-hover:-translate-x-1" />
-            Volver a Productos
-          </Link>
+          <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+            <Link to="/" className="hover:text-primary transition-colors">Inicio</Link>
+            <span>/</span>
+            <Link to="/products" className="hover:text-primary transition-colors">Productos</Link>
+            <span>/</span>
+            <span className="text-foreground truncate max-w-[200px]">{product.title}</span>
+          </nav>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-            {/* Images */}
-            <div className="space-y-4 animate-fade-up">
-              {/* Main Image (fade carousel) */}
-              <div className="aspect-square rounded-2xl overflow-hidden bg-card border border-border relative">
-                {images.length > 0 ? (
-                  images.map((img, idx) => (
-                    <img
-                      key={img.node.url}
-                      src={img.node.url}
-                      alt={img.node.altText || product.title}
-                      loading={idx === 0 ? "eager" : "lazy"}
-                      decoding="async"
-                      className={`absolute inset-0 w-full h-full object-cover transition-opacity ease-out ${
-                        idx === selectedImage ? "opacity-100" : "opacity-0"
+          {/* Main Product Section - Amazon Style Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Left Column - Images (Thumbnails + Main) */}
+            <div className="lg:col-span-6 flex gap-3">
+              {/* Vertical Thumbnails */}
+              <div className="hidden md:flex flex-col gap-2 w-16 flex-shrink-0">
+                {images.slice(0, 7).map((img, index) => (
+                  <div key={index} className="relative group">
+                    <button
+                      onClick={() => setSelectedImage(index)}
+                      onMouseEnter={() => setSelectedImage(index)}
+                      className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                        selectedImage === index
+                          ? "border-primary ring-1 ring-primary"
+                          : "border-border hover:border-muted-foreground"
                       }`}
-                      style={{ transitionDuration: `${FADE_MS}ms` }}
-                    />
-                  ))
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    Sin imagen
-                  </div>
-                )}
-              </div>
-
-              {/* Thumbnails - Auto-sliding with manual control + Admin controls */}
-              {(images.length > 0 || showAdminControls) && (
-                <div className="space-y-3">
-                  <div 
-                    className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
-                    onMouseEnter={() => setAutoSlide(false)}
-                    onMouseLeave={() => setAutoSlide(true)}
-                  >
-                    {images.map((img, index) => (
-                      <div key={index} className="relative flex-shrink-0 group">
-                        <button
-                          onClick={() => {
-                            setSelectedImage(index);
-                            setAutoSlide(false);
-                            window.setTimeout(() => setAutoSlide(true), 10000);
-                          }}
-                          className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
-                            selectedImage === index
-                              ? "border-price-yellow shadow-lg shadow-price-yellow/20 scale-105"
-                              : "border-border/50 hover:border-muted-foreground opacity-70 hover:opacity-100"
-                          }`}
-                        >
-                          <img
-                            src={img.node.url}
-                            alt={img.node.altText || `${product.title} ${index + 1}`}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                        {/* Delete button for admin */}
-                        {showAdminControls && (
-                          <button
-                            onClick={() => handleDeleteImage(img.node.url, index)}
-                            disabled={savingProduct}
-                            className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    
-                    {/* Add image button for admin */}
+                    >
+                      <img
+                        src={img.node.url}
+                        alt={img.node.altText || `${product.title} ${index + 1}`}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
                     {showAdminControls && (
                       <button
-                        onClick={() => setShowAddImage(true)}
-                        className="flex-shrink-0 w-20 h-20 rounded-xl border-2 border-dashed border-price-yellow/50 hover:border-price-yellow flex items-center justify-center text-price-yellow/70 hover:text-price-yellow transition-all"
+                        onClick={() => handleDeleteImage(img.node.url, index)}
+                        disabled={savingProduct}
+                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px]"
                       >
-                        <ImagePlus className="h-6 w-6" />
+                        ×
                       </button>
                     )}
                   </div>
-                  
-                  {/* Add image form */}
-                  {showAdminControls && showAddImage && (
-                    <div className="bg-stone-200/80 dark:bg-stone-800/80 rounded-xl p-3 space-y-2">
-                      <Input
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        placeholder="URL de la imagen..."
-                        className="text-sm"
+                ))}
+                {showAdminControls && (
+                  <button
+                    onClick={() => setShowAddImage(true)}
+                    className="w-14 h-14 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Main Image */}
+              <div className="flex-1">
+                <div className="aspect-square rounded-xl overflow-hidden bg-card border border-border relative">
+                  {images.length > 0 ? (
+                    <img
+                      src={images[selectedImage]?.node.url}
+                      alt={images[selectedImage]?.node.altText || product.title}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      Sin imagen
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile Thumbnails */}
+                <div className="flex md:hidden gap-2 mt-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {images.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedImage === index
+                          ? "border-primary"
+                          : "border-border"
+                      }`}
+                    >
+                      <img
+                        src={img.node.url}
+                        alt={img.node.altText || `${product.title} ${index + 1}`}
+                        className="w-full h-full object-cover"
                       />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleAddImage}
-                          disabled={savingProduct || !newImageUrl.trim()}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          {savingProduct ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <ImagePlus className="h-3 w-3 mr-1" />}
-                          Añadir
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => { setShowAddImage(false); setNewImageUrl(''); }}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Add image form */}
+                {showAdminControls && showAddImage && (
+                  <div className="mt-3 bg-muted rounded-lg p-3 space-y-2">
+                    <Input
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder="URL de la imagen..."
+                      className="text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleAddImage}
+                        disabled={savingProduct || !newImageUrl.trim()}
+                      >
+                        {savingProduct ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <ImagePlus className="h-3 w-3 mr-1" />}
+                        Añadir
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setShowAddImage(false); setNewImageUrl(''); }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Middle Column - Product Info */}
+            <div className="lg:col-span-4 space-y-4">
+              {/* Title */}
+              {showAdminControls && editingTitle ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveTitle();
+                      if (e.key === 'Escape') setEditingTitle(false);
+                    }}
+                    className="text-lg font-semibold"
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" onClick={saveTitle} disabled={savingProduct} className="h-8 w-8 text-green-600">
+                    {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)} className="h-8 w-8 text-destructive">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <h1 className="text-xl md:text-2xl font-semibold text-foreground leading-tight">
+                    {product.title}
+                  </h1>
+                  {showAdminControls && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button size="icon" variant="ghost" onClick={startEditingTitle} className="h-6 w-6">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" disabled={deletingProduct} className="h-6 w-6 text-destructive">
+                            {deletingProduct ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción no se puede deshacer. El producto "{product.title}" será eliminado permanentemente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteProduct} className="bg-destructive hover:bg-destructive/90">
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   )}
                 </div>
               )}
-            </div>
 
-            {/* Product Info */}
-            <div className="lg:sticky lg:top-36 lg:self-start space-y-6 animate-fade-up" style={{ animationDelay: "150ms" }}>
-              <div>
-                {/* Editable Title */}
-                {showAdminControls && editingTitle ? (
-                  <div className="flex items-center gap-2 mb-3">
-                    <Input
-                      value={editedTitle}
-                      onChange={(e) => setEditedTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveTitle();
-                        if (e.key === 'Escape') setEditingTitle(false);
-                      }}
-                      className="text-xl font-display italic uppercase"
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={saveTitle}
-                      disabled={savingProduct}
-                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
-                    >
-                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingTitle(false)}
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 mb-3">
-                    <h1 className="text-2xl md:text-3xl font-display italic uppercase text-foreground tracking-wide">
-                      {product.title}
-                    </h1>
-                    {showAdminControls && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={startEditingTitle}
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={deletingProduct}
-                              className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-100"
-                            >
-                              {deletingProduct ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. El producto "{product.title}" será eliminado permanentemente de Shopify.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={handleDeleteProduct}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
-                  </div>
-                )}
-                
-                {/* Editable Price */}
+              {/* Price Section */}
+              <div className="border-b border-border pb-4">
                 {showAdminControls && editingPrice ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xl text-price-yellow">€</span>
+                    <span className="text-lg">€</span>
                     <Input
                       value={editedPrice}
                       onChange={(e) => setEditedPrice(e.target.value)}
@@ -764,418 +718,181 @@ const ProductDetail = () => {
                         if (e.key === 'Enter') savePrice();
                         if (e.key === 'Escape') setEditingPrice(false);
                       }}
-                      className="text-xl font-bold w-32"
+                      className="w-24 text-lg font-bold"
                       type="number"
                       step="0.01"
                       autoFocus
                     />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={savePrice}
-                      disabled={savingProduct}
-                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
-                    >
+                    <Button size="icon" variant="ghost" onClick={savePrice} disabled={savingProduct} className="h-8 w-8 text-green-600">
                       {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingPrice(false)}
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
-                    >
+                    <Button size="icon" variant="ghost" onClick={() => setEditingPrice(false)} className="h-8 w-8 text-destructive">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="text-2xl md:text-3xl font-bold text-price-yellow">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-bold text-price-yellow">
                       {formatPrice(price.amount, price.currencyCode)}
-                    </p>
+                    </span>
                     {showAdminControls && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={startEditingPrice}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-price-yellow"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
+                      <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                  <Truck className="h-4 w-4 text-green-600" />
+                  <span className="text-green-600 font-medium">Envío gratis</span>
+                </div>
+              </div>
+
+              {/* Product Specs Table */}
+              <div className="space-y-2">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {product.options.filter(opt => opt.values.length > 0).slice(0, 3).map((option) => (
+                      <tr key={option.name} className="border-b border-border/50">
+                        <td className="py-2 font-medium text-muted-foreground w-28">{getDisplayName(product.id, option.name)}</td>
+                        <td className="py-2 text-foreground">{selectedOptions[option.name]}</td>
+                      </tr>
+                    ))}
+                    {selectedVariant?.availableForSale !== undefined && (
+                      <tr className="border-b border-border/50">
+                        <td className="py-2 font-medium text-muted-foreground w-28">Disponibilidad</td>
+                        <td className={`py-2 font-medium ${selectedVariant.availableForSale ? 'text-green-600' : 'text-destructive'}`}>
+                          {selectedVariant.availableForSale ? 'En stock' : 'Agotado'}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Description Bullets */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-foreground">Acerca de este producto</h3>
+                {showAdminControls && editingDescription ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={editedDescription}
+                      onChange={(e) => setEditedDescription(e.target.value)}
+                      className="min-h-[120px]"
+                      placeholder="Descripción del producto..."
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={saveDescription} disabled={savingProduct}>
+                        {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                        Guardar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingDescription(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {descriptionBullets.length > 0 ? (
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        {descriptionBullets.map((bullet, idx) => (
+                          <li key={idx} className="flex gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            <span>{bullet.trim()}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {product.description || (showAdminControls ? 'Sin descripción - haz clic para añadir' : 'Sin descripción disponible')}
+                      </p>
+                    )}
+                    {showAdminControls && (
+                      <Button size="icon" variant="ghost" onClick={startEditingDescription} className="absolute top-0 right-0 h-6 w-6">
+                        <Pencil className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Description - Editable */}
-              {showAdminControls && editingDescription ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={editedDescription}
-                    onChange={(e) => setEditedDescription(e.target.value)}
-                    className="min-h-[100px]"
-                    placeholder="Descripción del producto..."
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={saveDescription}
-                      disabled={savingProduct}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
-                      Guardar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingDescription(false)}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2">
-                  <p className="text-muted-foreground leading-relaxed flex-1">
-                    {product.description || (showAdminControls ? 'Sin descripción' : '')}
-                  </p>
-                  {showAdminControls && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={startEditingDescription}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              )}
-
               {/* Admin Tag Editor */}
               {showAdminControls && (
-                <div className="bg-stone-200/80 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
                     <Tag className="h-4 w-4" />
-                    <span className="font-medium text-sm">Gestionar Etiquetas (Admin)</span>
+                    <span>Etiquetas</span>
                     {savingTag && <Loader2 className="h-3 w-3 animate-spin" />}
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {TAG_GROUPS.map(group => {
                       const groupTags = tagsByGroup[group] || [];
                       if (groupTags.length === 0) return null;
                       
                       return (
-                        <div key={group} className="flex flex-wrap items-start gap-2">
-                          <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-700 dark:text-amber-400 w-24 flex-shrink-0 pt-1.5">
-                            {group}:
-                          </span>
-                          <div className="flex flex-wrap gap-1.5 flex-1">
-                            {groupTags.map(tag => {
-                              const isSelected = productTags.some(t => t.id === tag.id);
-                              return (
-                                <button
-                                  key={tag.id}
-                                  onClick={() => handleToggleTag(tag)}
-                                  disabled={savingTag}
-                                  className={`
-                                    text-xs px-3 py-1.5 rounded-full font-medium transition-all
-                                    ${isSelected 
-                                      ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900 border border-amber-300 shadow-sm' 
-                                      : 'bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-300 dark:border-stone-600 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 dark:hover:bg-amber-900/30 dark:hover:text-amber-200 dark:hover:border-amber-700'
-                                    }
-                                    disabled:opacity-50 disabled:cursor-not-allowed
-                                  `}
-                                >
-                                  {isSelected && <Check className="h-3 w-3 inline mr-1" />}
-                                  {tag.name}
-                                </button>
-                              );
-                            })}
-                          </div>
+                        <div key={group} className="flex flex-wrap gap-1">
+                          {groupTags.map(tag => {
+                            const isSelected = productTags.some(t => t.id === tag.id);
+                            return (
+                              <button
+                                key={tag.id}
+                                onClick={() => handleToggleTag(tag)}
+                                disabled={savingTag}
+                                className={`text-xs px-2 py-1 rounded-full transition-all ${
+                                  isSelected 
+                                    ? 'bg-primary text-primary-foreground' 
+                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                }`}
+                              >
+                                {tag.name}
+                              </button>
+                            );
+                          })}
                         </div>
                       );
                     })}
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Admin Cost/Profit Panel */}
-              {showAdminControls && (
-                <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border border-green-700/30 rounded-xl p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-green-400">
-                      <DollarSign className="h-4 w-4" />
-                      <span className="font-medium text-sm">Costes & Profit (Admin)</span>
-                    </div>
-                    {!editingCost && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={startEditingCost}
-                        className="h-7 px-2 text-green-400 hover:text-green-300 hover:bg-green-800/30"
-                      >
-                        <Pencil className="h-3.5 w-3.5 mr-1" />
-                        Editar
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {editingCost ? (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">Coste Producto (€)</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editedProductCost}
-                            onChange={(e) => setEditedProductCost(e.target.value)}
-                            placeholder="0.00"
-                            className="bg-background/50"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">Coste Envío (€)</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editedShippingCost}
-                            onChange={(e) => setEditedShippingCost(e.target.value)}
-                            placeholder="0.00"
-                            className="bg-background/50"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Notas (opcional)</label>
-                        <Input
-                          value={editedCostNotes}
-                          onChange={(e) => setEditedCostNotes(e.target.value)}
-                          placeholder="Ej: Proveedor CJ, SKU..."
-                          className="bg-background/50"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleSaveCost}
-                          disabled={savingCost}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          {savingCost ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
-                          Guardar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditingCost(false)}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {(() => {
-                        const sellingPrice = parseFloat(price.amount);
-                        const { totalCost, profit, profitMargin } = calculateProfit(sellingPrice, productCostData);
-                        const hasData = productCostData && (productCostData.product_cost > 0 || productCostData.shipping_cost > 0);
-                        
-                        // Show CJ data when available but not saved yet
-                        if (!hasData && cjCostData) {
-                          const cjTotalCost = cjCostData.productCost + cjCostData.shippingCost;
-                          const cjProfit = sellingPrice - cjTotalCost;
-                          const cjMargin = sellingPrice > 0 ? (cjProfit / sellingPrice) * 100 : 0;
-                          
-                          return (
-                            <>
-                              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 mb-2">
-                                <p className="text-xs text-blue-400 flex items-center gap-1">
-                                  <RefreshCw className="h-3 w-3" />
-                                  Datos de CJ (no guardados): {cjCostData.sku}
-                                </p>
-                              </div>
-                              <div className="grid grid-cols-3 gap-3 text-center">
-                                <div className="bg-background/30 rounded-lg p-3">
-                                  <p className="text-xs text-muted-foreground mb-1">Coste CJ</p>
-                                  <p className="text-lg font-bold text-red-400">${cjTotalCost.toFixed(2)}</p>
-                                  <p className="text-[10px] text-muted-foreground">
-                                    ${cjCostData.productCost.toFixed(2)} + ${cjCostData.shippingCost.toFixed(2)}
-                                  </p>
-                                </div>
-                                <div className="bg-background/30 rounded-lg p-3">
-                                  <p className="text-xs text-muted-foreground mb-1">Precio Venta</p>
-                                  <p className="text-lg font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
-                                </div>
-                                <div className="bg-background/30 rounded-lg p-3">
-                                  <p className="text-xs text-muted-foreground mb-1">Profit Est.</p>
-                                  <p className={`text-lg font-bold ${cjProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    ~{cjProfit >= 0 ? '+' : ''}{cjProfit.toFixed(2)}€
-                                  </p>
-                                  <p className={`text-[10px] ${cjMargin >= 20 ? 'text-green-400' : cjMargin >= 10 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                    {cjMargin.toFixed(1)}% margen
-                                  </p>
-                                </div>
-                              </div>
-                            </>
-                          );
-                        }
-                        
-                        // Show loading state
-                        if (!hasData && fetchingCJData) {
-                          return (
-                            <div className="text-center py-3">
-                              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-blue-400" />
-                              <p className="text-sm text-muted-foreground">
-                                Buscando en CJ...
-                              </p>
-                            </div>
-                          );
-                        }
-                        
-                        return hasData ? (
-                          <>
-                            <div className="grid grid-cols-3 gap-3 text-center">
-                              <div className="bg-background/30 rounded-lg p-3">
-                                <p className="text-xs text-muted-foreground mb-1">Coste Total</p>
-                                <p className="text-lg font-bold text-red-400">{totalCost.toFixed(2)}€</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {productCostData.product_cost.toFixed(2)}€ + {productCostData.shipping_cost.toFixed(2)}€
-                                </p>
-                              </div>
-                              <div className="bg-background/30 rounded-lg p-3">
-                                <p className="text-xs text-muted-foreground mb-1">Precio Venta</p>
-                                <p className="text-lg font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
-                              </div>
-                              <div className="bg-background/30 rounded-lg p-3">
-                                <p className="text-xs text-muted-foreground mb-1">Profit</p>
-                                <p className={`text-lg font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  {profit >= 0 ? '+' : ''}{profit.toFixed(2)}€
-                                </p>
-                                <p className={`text-[10px] ${profitMargin >= 20 ? 'text-green-400' : profitMargin >= 10 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                  {profitMargin.toFixed(1)}% margen
-                                </p>
-                              </div>
-                            </div>
-                            {productCostData.notes && (
-                              <p className="text-xs text-muted-foreground italic">
-                                📝 {productCostData.notes}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-center py-3">
-                            <p className="text-sm text-muted-foreground">
-                              No encontrado en CJ. Haz clic en "Editar" para añadir manualmente.
-                            </p>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={fetchCJCostsForProduct}
-                              className="mt-2 text-blue-400 hover:text-blue-300"
-                            >
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Reintentar búsqueda CJ
-                            </Button>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+            {/* Right Column - Buy Box */}
+            <div className="lg:col-span-2">
+              <div className="lg:sticky lg:top-24 bg-card border border-border rounded-xl p-4 space-y-4">
+                {/* Price in buy box */}
+                <div className="text-2xl font-bold text-price-yellow">
+                  {formatPrice(price.amount, price.currencyCode)}
                 </div>
-              )}
 
-              {/* Options */}
-              {product.options.map((option) => {
-                const displayName = getDisplayName(product.id, option.name);
-                const isEditingThis = editingOptionName === option.name;
-                
-                return (
-                  <div key={option.name}>
-                    <div className="flex items-center gap-2 mb-3">
-                      {showAdminControls && isEditingThis ? (
-                        <>
-                          <Input
-                            value={editedOptionName}
-                            onChange={(e) => setEditedOptionName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                setSavingOptionName(true);
-                                saveAlias(product.id, option.name, editedOptionName.trim() || option.name)
-                                  .then(() => {
-                                    toast.success('Nombre de opción actualizado');
-                                    setEditingOptionName(null);
-                                  })
-                                  .catch(() => toast.error('Error al guardar'))
-                                  .finally(() => setSavingOptionName(false));
-                              }
-                              if (e.key === 'Escape') setEditingOptionName(null);
-                            }}
-                            className="font-medium w-40"
-                            autoFocus
-                          />
-                          <span className="text-muted-foreground">:</span>
-                          <span className="text-price-yellow">{selectedOptions[option.name]}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setSavingOptionName(true);
-                              saveAlias(product.id, option.name, editedOptionName.trim() || option.name)
-                                .then(() => {
-                                  toast.success('Nombre de opción actualizado');
-                                  setEditingOptionName(null);
-                                })
-                                .catch(() => toast.error('Error al guardar'))
-                                .finally(() => setSavingOptionName(false));
-                            }}
-                            disabled={savingOptionName}
-                            className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
-                          >
-                            {savingOptionName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingOptionName(null)}
-                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <h3 className="font-medium text-foreground">
-                            {displayName}: <span className="text-price-yellow">{selectedOptions[option.name]}</span>
-                          </h3>
-                          {showAdminControls && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditedOptionName(displayName);
-                                setEditingOptionName(option.name);
-                              }}
-                              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
+                {/* Delivery Info */}
+                <div className="text-sm space-y-1">
+                  <div className="flex items-center gap-2 text-green-600 font-medium">
+                    <Truck className="h-4 w-4" />
+                    Envío GRATIS
+                  </div>
+                  <p className="text-muted-foreground text-xs">Entrega estimada: 7-15 días</p>
+                </div>
+
+                {/* Availability */}
+                <p className={`text-sm font-medium ${selectedVariant?.availableForSale ? 'text-green-600' : 'text-destructive'}`}>
+                  {selectedVariant?.availableForSale ? 'En stock' : 'No disponible'}
+                </p>
+
+                {/* Options in buy box */}
+                {product.options.map((option) => (
+                  <div key={option.name} className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      {getDisplayName(product.id, option.name)}
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
                       {option.values.map((value) => (
                         <button
                           key={value}
                           onClick={() => handleOptionChange(option.name, value)}
-                          className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                          className={`px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
                             selectedOptions[option.name] === value
-                              ? "bg-price-yellow text-background shadow-lg shadow-price-yellow/30"
-                              : "bg-secondary text-foreground hover:bg-secondary/80 hover:scale-105"
+                              ? "border-primary bg-primary/10 text-primary font-medium"
+                              : "border-border hover:border-muted-foreground text-foreground"
                           }`}
                         >
                           {value}
@@ -1183,76 +900,229 @@ const ProductDetail = () => {
                       ))}
                     </div>
                   </div>
-                );
-              })}
+                ))}
 
-              {/* Quantity */}
-              <div>
-                <h3 className="font-medium text-foreground mb-3">Cantidad</h3>
-                <div className="inline-flex items-center gap-1 bg-secondary rounded-xl p-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-lg hover:bg-background transition-colors"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-12 text-center font-semibold text-foreground">{quantity}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-lg hover:bg-background transition-colors"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                {/* Quantity */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">Cantidad</label>
+                  <div className="flex items-center border border-border rounded-lg">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-3 py-2 hover:bg-muted transition-colors"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="flex-1 text-center font-medium">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="px-3 py-2 hover:bg-muted transition-colors"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Add to Cart */}
-              <div className="space-y-4">
+                {/* Add to Cart Button */}
                 <Button
                   onClick={handleAddToCart}
-                  variant="hero"
-                  size="xl"
-                  className="w-full group"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                  size="lg"
                   disabled={!selectedVariant?.availableForSale}
                 >
-                  <ShoppingBag className="h-5 w-5 mr-2 transition-transform group-hover:scale-110" />
-                  {selectedVariant?.availableForSale
-                    ? "Añadir al Carrito"
-                    : "Agotado"}
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Añadir al Carrito
                 </Button>
 
-                {/* Features */}
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-price-yellow" />
-                    Envío Gratis
+                {/* Trust badges */}
+                <div className="pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-3.5 w-3.5 text-green-600" />
+                    Pago 100% seguro
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-price-yellow" />
-                    30 Días Devolución
+                  <div className="flex items-center gap-2">
+                    <RotateCcw className="h-3.5 w-3.5 text-green-600" />
+                    30 días de devolución
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-price-yellow" />
-                    Pago Seguro
+                  <div className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-green-600" />
+                    Garantía incluida
                   </div>
                 </div>
+
+                {/* Admin Cost Section */}
+                {showAdminControls && (
+                  <div className="pt-3 border-t border-border">
+                    <div className="bg-muted/50 rounded-lg p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-medium">
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          Profit Analysis
+                        </div>
+                        {!editingCost && (
+                          <Button size="sm" variant="ghost" onClick={startEditingCost} className="h-6 text-xs">
+                            <Pencil className="h-3 w-3 mr-1" />
+                            Editar
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {editingCost ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-muted-foreground">Coste producto</label>
+                              <Input
+                                value={editedProductCost}
+                                onChange={(e) => setEditedProductCost(e.target.value)}
+                                type="number"
+                                step="0.01"
+                                className="h-7 text-xs"
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-muted-foreground">Coste envío</label>
+                              <Input
+                                value={editedShippingCost}
+                                onChange={(e) => setEditedShippingCost(e.target.value)}
+                                type="number"
+                                step="0.01"
+                                className="h-7 text-xs"
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <Input
+                            value={editedCostNotes}
+                            onChange={(e) => setEditedCostNotes(e.target.value)}
+                            className="h-7 text-xs"
+                            placeholder="Notas..."
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={handleSaveCost} disabled={savingCost} className="h-6 text-xs flex-1">
+                              {savingCost ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingCost(false)} className="h-6 text-xs">
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        (() => {
+                          const hasData = productCostData && (productCostData.product_cost > 0 || productCostData.shipping_cost > 0);
+                          const sellingPrice = parseFloat(price.amount);
+                          
+                          if (cjCostData && !hasData) {
+                            const cjTotalCost = cjCostData.productCost + cjCostData.shippingCost;
+                            const cjProfit = sellingPrice - cjTotalCost * 0.92;
+                            const cjMargin = (cjProfit / sellingPrice) * 100;
+                            
+                            return (
+                              <div className="space-y-2 text-xs">
+                                <p className="text-[10px] text-muted-foreground">CJ (no guardado)</p>
+                                <div className="grid grid-cols-3 gap-1 text-center">
+                                  <div className="bg-background/50 rounded p-1.5">
+                                    <p className="text-[10px] text-muted-foreground">Coste</p>
+                                    <p className="font-bold text-destructive">${cjTotalCost.toFixed(2)}</p>
+                                  </div>
+                                  <div className="bg-background/50 rounded p-1.5">
+                                    <p className="text-[10px] text-muted-foreground">Venta</p>
+                                    <p className="font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
+                                  </div>
+                                  <div className="bg-background/50 rounded p-1.5">
+                                    <p className="text-[10px] text-muted-foreground">Profit</p>
+                                    <p className={`font-bold ${cjProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                                      ~{cjProfit.toFixed(2)}€
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          if (fetchingCJData) {
+                            return (
+                              <div className="text-center py-2">
+                                <Loader2 className="h-4 w-4 animate-spin mx-auto mb-1" />
+                                <p className="text-[10px] text-muted-foreground">Buscando en CJ...</p>
+                              </div>
+                            );
+                          }
+                          
+                          if (hasData) {
+                            const totalCost = productCostData.product_cost + productCostData.shipping_cost;
+                            const profit = sellingPrice - totalCost;
+                            const margin = (profit / sellingPrice) * 100;
+                            
+                            return (
+                              <div className="grid grid-cols-3 gap-1 text-center text-xs">
+                                <div className="bg-background/50 rounded p-1.5">
+                                  <p className="text-[10px] text-muted-foreground">Coste</p>
+                                  <p className="font-bold text-destructive">{totalCost.toFixed(2)}€</p>
+                                </div>
+                                <div className="bg-background/50 rounded p-1.5">
+                                  <p className="text-[10px] text-muted-foreground">Venta</p>
+                                  <p className="font-bold text-price-yellow">{sellingPrice.toFixed(2)}€</p>
+                                </div>
+                                <div className="bg-background/50 rounded p-1.5">
+                                  <p className="text-[10px] text-muted-foreground">Profit</p>
+                                  <p className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                                    {profit >= 0 ? '+' : ''}{profit.toFixed(2)}€
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <div className="text-center py-2">
+                              <p className="text-[10px] text-muted-foreground mb-1">No hay datos de coste</p>
+                              <Button size="sm" variant="ghost" onClick={fetchCJCostsForProduct} className="h-5 text-[10px]">
+                                <RefreshCw className="h-2.5 w-2.5 mr-1" />
+                                Buscar en CJ
+                              </Button>
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Related Products */}
+          {/* Related Products - Carousel Style */}
           {relatedProducts.length > 0 && (
-            <section className="mt-20 pt-16 border-t border-border">
-              <h2 className="text-2xl md:text-3xl font-display italic uppercase text-foreground mb-8">
-                También te puede gustar
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <section className="mt-12 pt-8 border-t border-border">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Productos relacionados
+                </h2>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => scrollRelated('left')}
+                    className="p-2 rounded-full border border-border hover:bg-muted transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollRelated('right')}
+                    className="p-2 rounded-full border border-border hover:bg-muted transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div 
+                id="related-products-container"
+                className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+                onScroll={(e) => setRelatedScrollPos(e.currentTarget.scrollLeft)}
+              >
                 {relatedProducts.map((product) => (
-                  <ProductCard key={product.node.id} product={product} />
+                  <div key={product.node.id} className="flex-shrink-0 w-[180px]">
+                    <ProductCard product={product} />
+                  </div>
                 ))}
               </div>
             </section>
