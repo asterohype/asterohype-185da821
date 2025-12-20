@@ -382,6 +382,39 @@ export type Database = {
         }
         Relationships: []
       }
+      product_size_conversions: {
+        Row: {
+          asian_size: string
+          created_at: string
+          id: string
+          local_size: string
+          notes: string | null
+          shopify_product_id: string
+          size_type: string
+          updated_at: string
+        }
+        Insert: {
+          asian_size: string
+          created_at?: string
+          id?: string
+          local_size: string
+          notes?: string | null
+          shopify_product_id: string
+          size_type?: string
+          updated_at?: string
+        }
+        Update: {
+          asian_size?: string
+          created_at?: string
+          id?: string
+          local_size?: string
+          notes?: string | null
+          shopify_product_id?: string
+          size_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_tag_assignments: {
         Row: {
           created_at: string
