@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { ProductTag } from "@/hooks/useProductTags";
+import { useProductOverrides } from "@/hooks/useProductOverrides";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -16,10 +17,20 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
   const { node } = product;
+  
+  // Get overrides from Supabase
+  const { data: overrides } = useProductOverrides();
+  const override = overrides?.find(o => o.shopify_product_id === node.id);
 
   const imageUrl = node.images.edges[0]?.node.url;
   const price = node.priceRange.minVariantPrice;
   const firstVariant = node.variants.edges[0]?.node;
+  
+  // Apply overrides if they exist
+  const displayTitle = override?.title || node.title;
+  const displayPrice = override?.price 
+    ? { amount: override.price.toString(), currencyCode: price.currencyCode }
+    : price;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -37,7 +48,7 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
     });
 
     toast.success("Añadido al carrito", {
-      description: node.title,
+      description: displayTitle,
       action: {
         label: "Ver Carrito",
         onClick: () => setCartOpen(true),
@@ -77,7 +88,7 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={node.images.edges[0]?.node.altText || node.title}
+              alt={node.images.edges[0]?.node.altText || displayTitle}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
@@ -100,10 +111,15 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
         {/* Info inside card */}
         <div className="p-3 space-y-1">
           <h3 className="font-medium text-foreground line-clamp-2 leading-tight group-hover:text-price-yellow transition-colors duration-300 text-sm">
-            {node.title}
+            {displayTitle}
           </h3>
+          {override?.subtitle && (
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {override.subtitle}
+            </p>
+          )}
           <p className="text-price-yellow font-bold text-base">
-            {formatPrice(price.amount, price.currencyCode)}
+            {formatPrice(displayPrice.amount, displayPrice.currencyCode)}
           </p>
         </div>
       </div>
