@@ -1,39 +1,48 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Zap } from "lucide-react";
 
+type TimeLeft = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+};
+
+function clampToNonNegativeInt(n: number) {
+  return Math.max(0, Math.floor(n));
+}
+
+function secondsToTimeLeft(totalSeconds: number): TimeLeft {
+  const clamped = clampToNonNegativeInt(totalSeconds);
+  const days = Math.floor(clamped / (24 * 3600));
+  const hours = Math.floor((clamped % (24 * 3600)) / 3600);
+  const minutes = Math.floor((clamped % 3600) / 60);
+  const seconds = clamped % 60;
+  return { days, hours, minutes, seconds };
+}
+
 export function PromoBanner() {
-  const [timeLeft, setTimeLeft] = useState({
-    days: 21,
-    hours: 2,
-    minutes: 20,
-    seconds: 23,
+  // Static demo countdown (keeps UI stable and avoids “looping” at 0).
+  // You can later swap this for a real campaign end date.
+  const endAtRef = useRef<number>(Date.now() + 21 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000 + 20 * 60 * 1000 + 23 * 1000);
+
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => {
+    const diffSeconds = Math.ceil((endAtRef.current - Date.now()) / 1000);
+    return secondsToTimeLeft(diffSeconds);
   });
 
   useEffect(() => {
     const timer = setInterval(() => {
+      const diffSeconds = Math.ceil((endAtRef.current - Date.now()) / 1000);
       setTimeLeft((prev) => {
-        let { days, hours, minutes, seconds } = prev;
-        
-        if (seconds > 0) {
-          seconds--;
-        } else {
-          seconds = 59;
-          if (minutes > 0) {
-            minutes--;
-          } else {
-            minutes = 59;
-            if (hours > 0) {
-              hours--;
-            } else {
-              hours = 23;
-              if (days > 0) {
-                days--;
-              }
-            }
-          }
-        }
-        
-        return { days, hours, minutes, seconds };
+        const next = secondsToTimeLeft(diffSeconds);
+        // Avoid useless state updates once the countdown reaches 0.
+        const isSame =
+          prev.days === next.days &&
+          prev.hours === next.hours &&
+          prev.minutes === next.minutes &&
+          prev.seconds === next.seconds;
+        return isSame ? prev : next;
       });
     }, 1000);
 
@@ -49,22 +58,31 @@ export function PromoBanner() {
           <Zap className="h-4 w-4 fill-white" />
           <span className="font-bold uppercase tracking-wide">Rebajas y Descuentos</span>
         </div>
-        
-        <div className="flex items-center gap-2 font-mono">
+
+        {/* Use fixed widths + tabular numbers to prevent layout shift / “jitter” */}
+        <div className="flex items-center gap-2 font-mono tabular-nums">
           <div className="flex items-center gap-1">
-            <span className="bg-white/20 px-2 py-0.5 rounded font-bold">{formatNumber(timeLeft.days)}</span>
+            <span className="bg-white/20 w-9 text-center px-2 py-0.5 rounded font-bold inline-block">
+              {formatNumber(timeLeft.days)}
+            </span>
             <span className="text-xs text-white/80">Días</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="bg-white/20 px-2 py-0.5 rounded font-bold">{formatNumber(timeLeft.hours)}</span>
+            <span className="bg-white/20 w-9 text-center px-2 py-0.5 rounded font-bold inline-block">
+              {formatNumber(timeLeft.hours)}
+            </span>
             <span className="text-xs text-white/80">Horas</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="bg-white/20 px-2 py-0.5 rounded font-bold">{formatNumber(timeLeft.minutes)}</span>
+            <span className="bg-white/20 w-9 text-center px-2 py-0.5 rounded font-bold inline-block">
+              {formatNumber(timeLeft.minutes)}
+            </span>
             <span className="text-xs text-white/80">Min</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="bg-white/20 px-2 py-0.5 rounded font-bold">{formatNumber(timeLeft.seconds)}</span>
+            <span className="bg-white/20 w-9 text-center px-2 py-0.5 rounded font-bold inline-block">
+              {formatNumber(timeLeft.seconds)}
+            </span>
             <span className="text-xs text-white/80">Seg</span>
           </div>
         </div>
