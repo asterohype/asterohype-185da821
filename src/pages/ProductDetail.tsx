@@ -8,9 +8,6 @@ import {
   fetchProducts,
   formatPrice,
   ShopifyProduct,
-  updateProductTitle,
-  updateProductPrice,
-  updateProductDescription,
   deleteProductImage,
   addProductImage,
   deleteProduct,
@@ -24,6 +21,7 @@ import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
+import { useProductOverride, useUpsertOverride } from "@/hooks/useProductOverrides";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -91,6 +89,10 @@ const ProductDetail = () => {
   const { tags, getTagsForProduct, getTagsByGroup, assignTag, removeTag } = useProductTags();
   const { getCostForProduct, saveCost, calculateProfit, loading: costsLoading } = useProductCosts();
   const { getDisplayName, saveAlias } = useOptionAliases();
+
+  // Override hooks for local edits (no Shopify token required)
+  const { data: productOverride, isLoading: overrideLoading } = useProductOverride(product?.id);
+  const upsertOverride = useUpsertOverride();
   
   const showAdminControls = isAdmin && isAdminModeActive;
   
@@ -144,10 +146,12 @@ const ProductDetail = () => {
     );
   })?.node;
 
-  const displayTitle = product?.title;
-  const displayDescription = product?.description;
-  const displayPriceAmount =
-    selectedVariant?.price.amount || product?.priceRange.minVariantPrice.amount;
+  // Use local override if available, otherwise fallback to Shopify data
+  const displayTitle = productOverride?.title ?? product?.title;
+  const displayDescription = productOverride?.description ?? product?.description;
+  const displayPriceAmount = productOverride?.price 
+    ? productOverride.price.toString() 
+    : (selectedVariant?.price.amount || product?.priceRange.minVariantPrice.amount);
   const displayCurrency =
     selectedVariant?.price.currencyCode ||
     product?.priceRange.minVariantPrice.currencyCode ||
@@ -235,30 +239,30 @@ const ProductDetail = () => {
 
   const startEditingTitle = () => {
     if (product) {
-      setEditedTitle(product.title);
+      setEditedTitle(displayTitle || product.title);
       setEditingTitle(true);
     }
   };
 
   const saveTitle = async () => {
-    if (!product || !editedTitle.trim() || editedTitle === product.title) {
+    if (!product || !editedTitle.trim()) {
       setEditingTitle(false);
       return;
     }
     
     setSavingProduct(true);
     try {
-      await updateProductTitle(product.id, editedTitle.trim());
-      setProduct({ ...product, title: editedTitle.trim() });
-      toast.success('Nombre actualizado');
+      await upsertOverride.mutateAsync({
+        shopify_product_id: product.id,
+        title: editedTitle.trim(),
+        description: productOverride?.description,
+        price: productOverride?.price,
+      });
+      toast.success('Nombre actualizado (local)');
       setEditingTitle(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      // Avoid noisy console errors for expected auth/permission failures.
-      if (!message.includes('No autorizado para editar productos')) {
-        console.error('Error updating title:', error);
-      }
-      toast.error(message.includes('No autorizado') ? message : 'Error al actualizar el nombre');
+      console.error('Error updating title:', error);
+      toast.error('Error al actualizar el nombre');
     } finally {
       setSavingProduct(false);
     }
@@ -266,35 +270,26 @@ const ProductDetail = () => {
 
   const startEditingPrice = () => {
     if (product) {
-      const currentPrice = selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount;
-      setEditedPrice(currentPrice);
+      setEditedPrice(displayPriceAmount || '0');
       setEditingPrice(true);
     }
   };
 
   const savePrice = async () => {
-    if (!product || !selectedVariant || !editedPrice.trim()) {
+    if (!product || !editedPrice.trim()) {
       setEditingPrice(false);
       return;
     }
     
     setSavingProduct(true);
     try {
-      await updateProductPrice(product.id, selectedVariant.id, editedPrice.trim());
-      const updatedVariants = product.variants.edges.map(v => 
-        v.node.id === selectedVariant.id 
-          ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: editedPrice.trim() } } }
-          : v
-      );
-      setProduct({ 
-        ...product, 
-        variants: { edges: updatedVariants },
-        priceRange: { 
-          ...product.priceRange, 
-          minVariantPrice: { ...product.priceRange.minVariantPrice, amount: editedPrice.trim() } 
-        }
+      await upsertOverride.mutateAsync({
+        shopify_product_id: product.id,
+        title: productOverride?.title,
+        description: productOverride?.description,
+        price: parseFloat(editedPrice.trim()),
       });
-      toast.success('Precio actualizado');
+      toast.success('Precio actualizado (local)');
       setEditingPrice(false);
     } catch (error) {
       console.error('Error updating price:', error);
@@ -306,7 +301,7 @@ const ProductDetail = () => {
 
   const startEditingDescription = () => {
     if (product) {
-      setEditedDescription(product.description || '');
+      setEditedDescription(displayDescription || '');
       setEditingDescription(true);
     }
   };
@@ -319,9 +314,13 @@ const ProductDetail = () => {
     
     setSavingProduct(true);
     try {
-      await updateProductDescription(product.id, editedDescription);
-      setProduct({ ...product, description: editedDescription });
-      toast.success('Descripción actualizada');
+      await upsertOverride.mutateAsync({
+        shopify_product_id: product.id,
+        title: productOverride?.title,
+        description: editedDescription,
+        price: productOverride?.price,
+      });
+      toast.success('Descripción actualizada (local)');
       setEditingDescription(false);
     } catch (error) {
       console.error('Error updating description:', error);
