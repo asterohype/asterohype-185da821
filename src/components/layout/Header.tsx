@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag, Package, Pencil, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
@@ -28,7 +28,13 @@ import { SearchModal } from "@/components/search/SearchModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
 
-export function Header() {
+interface HeaderProps {
+  onMobileFilterClick?: () => void;
+}
+
+export function Header({ onMobileFilterClick }: HeaderProps = {}) {
+  const location = useLocation();
+  const isProductsPage = location.pathname === '/products';
   const totalItems = useCartStore((state) => state.getTotalItems());
   const setCartOpen = useCartStore((state) => state.setOpen);
   const { isAdminModeActive, toggleAdminMode } = useAdminModeStore();
@@ -353,7 +359,11 @@ export function Header() {
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
       <CartDrawer />
-      <MobileNavBar onSearchClick={() => setSearchOpen(true)} />
+      <MobileNavBar 
+        onSearchClick={() => setSearchOpen(true)} 
+        onFilterClick={onMobileFilterClick}
+        showFilters={isProductsPage && !!onMobileFilterClick}
+      />
     </>
   );
 }
