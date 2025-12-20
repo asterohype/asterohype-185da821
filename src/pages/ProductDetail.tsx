@@ -24,7 +24,7 @@ import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
-import { useProductOverride } from "@/hooks/useProductOverrides";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -138,38 +138,16 @@ const ProductDetail = () => {
     loadProduct();
   }, [handle]);
 
-  const { data: override } = useProductOverride(product?.id);
-
-  const productWithOverride = useMemo(() => {
-    if (!product) return null;
-    if (!override) return product;
-
-    return {
-      ...product,
-      title: override.title ?? product.title,
-      description: override.description ?? product.description,
-      priceRange: {
-        ...product.priceRange,
-        minVariantPrice:
-          override.price != null
-            ? { ...product.priceRange.minVariantPrice, amount: String(override.price) }
-            : product.priceRange.minVariantPrice,
-      },
-    };
-  }, [product, override]);
-
   const selectedVariant = product?.variants.edges.find((v) => {
     return v.node.selectedOptions.every(
       (opt) => selectedOptions[opt.name] === opt.value
     );
   })?.node;
 
-  const displayTitle = productWithOverride?.title ?? product?.title;
-  const displayDescription = productWithOverride?.description ?? product?.description;
+  const displayTitle = product?.title;
+  const displayDescription = product?.description;
   const displayPriceAmount =
-    override?.price != null
-      ? String(override.price)
-      : selectedVariant?.price.amount || product?.priceRange.minVariantPrice.amount;
+    selectedVariant?.price.amount || product?.priceRange.minVariantPrice.amount;
   const displayCurrency =
     selectedVariant?.price.currencyCode ||
     product?.priceRange.minVariantPrice.currencyCode ||

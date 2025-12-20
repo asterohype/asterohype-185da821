@@ -245,21 +245,16 @@ export async function storefrontApiRequest(query: string, variables: Record<stri
   return data;
 }
 
-// Fetch all products (with local overrides applied)
+// Fetch all products
 export async function fetchProducts(first: number = 20, query?: string): Promise<ShopifyProduct[]> {
   const data = await storefrontApiRequest(STOREFRONT_QUERY, { first, query });
-  const products = data.data.products.edges as ShopifyProduct[];
-  return applyLocalOverrides(products);
+  return data.data.products.edges as ShopifyProduct[];
 }
 
-// Fetch single product by handle (with local override applied)
+// Fetch single product by handle
 export async function fetchProductByHandle(handle: string): Promise<ShopifyProduct['node'] | null> {
   const data = await storefrontApiRequest(PRODUCT_BY_HANDLE_QUERY, { handle });
-  const product = data.data.product as ShopifyProduct["node"] | null;
-  if (!product) return null;
-
-  const [patched] = await applyLocalOverrides([{ node: product } as ShopifyProduct]);
-  return patched?.node ?? product;
+  return (data.data.product as ShopifyProduct["node"] | null) ?? null;
 }
 
 // Create checkout
@@ -278,7 +273,7 @@ export async function createStorefrontCheckout(items: CartItem[]): Promise<strin
   }
 
   const cart = cartData.data.cartCreate.cart;
-  
+
   if (!cart.checkoutUrl) {
     throw new Error('No checkout URL returned from Shopify');
   }
@@ -297,122 +292,58 @@ export function formatPrice(amount: string, currencyCode: string = 'USD'): strin
 }
 
 // ============================================================
-// Local Product Overrides (stored in database)
+// Admin product updates (writes to Shopify via backend function)
 // ============================================================
 
-type ProductOverridePatch = {
-  title?: string | null;
-  description?: string | null;
-  price?: number | null;
-};
+type UpdateShopifyProductAction =
+  | { action: 'update_title'; productId: string; title: string }
+  | { action: 'update_description'; productId: string; description: string }
+  | { action: 'update_variant_price'; productId: string; variantId: string; price: string }
+  | { action: 'delete_product_image'; productId: string; imageId: string }
+  | { action: 'add_product_image'; productId: string; imageUrl: string; altText?: string }
+  | { action: 'delete_product'; productId: string };
 
-async function upsertProductOverride(shopifyProductId: string, patch: ProductOverridePatch) {
-  // Only update fields that are provided (avoid overwriting other fields with null).
-  const updatePayload: Record<string, unknown> = {};
-  if ("title" in patch) updatePayload.title = patch.title;
-  if ("description" in patch) updatePayload.description = patch.description;
-  if ("price" in patch) updatePayload.price = patch.price;
+async function invokeUpdateShopifyProduct(payload: UpdateShopifyProductAction) {
+  const { data, error } = await supabase.functions.invoke('update-shopify-product', {
+    body: payload,
+  });
 
-  const { data: existing, error: findError } = await supabase
-    .from("product_overrides")
-    .select("id")
-    .eq("shopify_product_id", shopifyProductId)
-    .maybeSingle();
-
-  if (findError) throw new Error(findError.message);
-
-  if (existing?.id) {
-    const { error } = await supabase
-      .from("product_overrides")
-      .update(updatePayload)
-      .eq("shopify_product_id", shopifyProductId);
-    if (error) throw new Error(error.message);
-    return;
-  }
-
-  const { error } = await supabase
-    .from("product_overrides")
-    .insert({ shopify_product_id: shopifyProductId, ...updatePayload });
   if (error) throw new Error(error.message);
-}
+  if (data?.error) throw new Error(data.error);
 
-async function applyLocalOverrides(products: ShopifyProduct[]): Promise<ShopifyProduct[]> {
-  const ids = products.map((p) => p.node.id).filter(Boolean);
-  if (ids.length === 0) return products;
-
-  const { data, error } = await supabase
-    .from("product_overrides")
-    .select("shopify_product_id,title,description,price")
-    .in("shopify_product_id", ids);
-
-  if (error) {
-    // Fail open: show Shopify data if overrides cannot be fetched.
-    return products;
-  }
-
-  const byId = new Map<string, { title: string | null; description: string | null; price: number | null }>();
-  (data || []).forEach((o) => {
-    byId.set(o.shopify_product_id, {
-      title: o.title,
-      description: o.description,
-      price: o.price,
-    });
-  });
-
-  return products.map((p) => {
-    const ov = byId.get(p.node.id);
-    if (!ov) return p;
-
-    return {
-      ...p,
-      node: {
-        ...p.node,
-        title: ov.title ?? p.node.title,
-        description: ov.description ?? p.node.description,
-        priceRange: {
-          ...p.node.priceRange,
-          minVariantPrice:
-            ov.price != null
-              ? { ...p.node.priceRange.minVariantPrice, amount: String(ov.price) }
-              : p.node.priceRange.minVariantPrice,
-        },
-      },
-    } as ShopifyProduct;
-  });
+  return data;
 }
 
 export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
-  await upsertProductOverride(productId, { title: newTitle });
+  await invokeUpdateShopifyProduct({ action: 'update_title', productId, title: newTitle });
 }
 
 export async function updateProductPrice(
   productId: string,
-  _variantId: string,
+  variantId: string,
   newPrice: string
 ): Promise<void> {
-  const parsed = Number(newPrice);
-  if (!Number.isFinite(parsed)) throw new Error("Precio inválido");
-  await upsertProductOverride(productId, { price: parsed });
+  await invokeUpdateShopifyProduct({ action: 'update_variant_price', productId, variantId, price: newPrice });
 }
 
 export async function updateProductDescription(productId: string, description: string): Promise<void> {
-  await upsertProductOverride(productId, { description });
+  await invokeUpdateShopifyProduct({ action: 'update_description', productId, description });
 }
 
-// NOTE: Image/product deletion require Shopify Admin API (not available in this project).
-export async function deleteProductImage(_productId: string, _imageId: string): Promise<void> {
-  throw new Error("Esta acción requiere permisos de edición en Shopify (no disponible).");
+export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
+  await invokeUpdateShopifyProduct({ action: 'delete_product_image', productId, imageId });
 }
 
 export async function addProductImage(
-  _productId: string,
-  _imageUrl: string,
-  _imageAlt?: string
+  productId: string,
+  imageUrl: string,
+  imageAlt?: string
 ): Promise<unknown> {
-  throw new Error("Esta acción requiere permisos de edición en Shopify (no disponible).");
+  return invokeUpdateShopifyProduct({ action: 'add_product_image', productId, imageUrl, altText: imageAlt });
 }
 
-export async function deleteProduct(_productId: string): Promise<void> {
-  throw new Error("Esta acción requiere permisos de edición en Shopify (no disponible).");
+export async function deleteProduct(productId: string): Promise<void> {
+  await invokeUpdateShopifyProduct({ action: 'delete_product', productId });
 }
+
 

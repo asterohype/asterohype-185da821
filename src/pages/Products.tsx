@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
 import { useProductTags } from "@/hooks/useProductTags";
-import { useProductOverrides } from "@/hooks/useProductOverrides";
 import { Loader2, Search, ChevronDown, ChevronUp, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,7 @@ const Products = () => {
     'Destacados': false,
   });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  
+
   const { tags, getTagsByGroup, getTagsForProduct, loading: tagsLoading } = useProductTags();
 
   useEffect(() => {
@@ -75,42 +74,7 @@ const Products = () => {
 
   const tagsByGroup = getTagsByGroup();
 
-  const { data: overrides = [] } = useProductOverrides();
-  const overridesByProductId = useMemo(() => {
-    const map = new Map<string, { title: string | null; description: string | null; price: number | null }>();
-    overrides.forEach((o) => {
-      map.set(o.shopify_product_id, {
-        title: o.title,
-        description: o.description,
-        price: o.price,
-      });
-    });
-    return map;
-  }, [overrides]);
-
-  const productsWithOverrides = useMemo(() => {
-    return products.map((p) => {
-      const ov = overridesByProductId.get(p.node.id);
-      if (!ov) return p;
-
-      return {
-        ...p,
-        node: {
-          ...p.node,
-          title: ov.title ?? p.node.title,
-          description: ov.description ?? p.node.description,
-          priceRange: {
-            ...p.node.priceRange,
-            minVariantPrice: ov.price != null
-              ? { ...p.node.priceRange.minVariantPrice, amount: String(ov.price) }
-              : p.node.priceRange.minVariantPrice,
-          },
-        },
-      } as ShopifyProduct;
-    });
-  }, [products, overridesByProductId]);
-
-  const filteredProducts = productsWithOverrides.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     const titleLower = product.node.title?.toLowerCase() || "";
     const descLower = product.node.description?.toLowerCase() || "";
 
