@@ -53,13 +53,14 @@ export const useMenuConfigStore = create<MenuConfigState>()(
       ],
       categories: [
         { id: 'tecnologia', slug: 'tecnologia', label: 'Tecnología' },
-        { id: 'accesorios', slug: 'accesorios', label: 'Accesorios' },
         { id: 'hogar', slug: 'hogar', label: 'Hogar' },
         { id: 'ropa', slug: 'ropa', label: 'Ropa' },
         { id: 'fundas', slug: 'fundas', label: 'Fundas' },
         { id: 'gadgets', slug: 'gadgets', label: 'Gadgets' },
         { id: 'calzado', slug: 'calzado', label: 'Calzado' },
         { id: 'electronica', slug: 'electronica', label: 'Electrónica' },
+        // Accesorios al final (debajo de Fundas en la home)
+        { id: 'accesorios', slug: 'accesorios', label: 'Accesorios' },
       ],
       updateMenuItem: (id, label) =>
         set((state) => ({

@@ -608,36 +608,46 @@ const Index = () => {
         </AnimatedSection>
 
         {/* Category Sections with Auto-scrolling Carousels */}
-        {!loading && !tagsLoading && products.length > 0 && categories.slice(0, 6).map((category, categoryIndex) => {
-          const taggedProductIds = getProductsForTag(category.slug);
-          const categoryProducts = products.filter(p => taggedProductIds.includes(p.node.id)).slice(0, 15);
-          if (categoryProducts.length === 0) return null;
-          const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
-          return (
-            <AnimatedSection 
-              key={category.slug} 
-              delay={categoryIndex * 100}
-              className="py-8"
-            >
-              <div className="container mx-auto px-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-5 w-5 text-price-yellow" />
-                    <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
+        {!loading && !tagsLoading && products.length > 0 && (() => {
+          // Avoid showing the same product across multiple category carousels (tags can overlap)
+          const used = new Set<string>();
+          const visibleCategories = categories.slice(0, 6);
+
+          return visibleCategories.map((category, categoryIndex) => {
+            const taggedProductIds = getProductsForTag(category.slug);
+            const categoryProducts = products
+              .filter((p) => taggedProductIds.includes(p.node.id))
+              .filter((p) => {
+                if (used.has(p.node.id)) return false;
+                used.add(p.node.id);
+                return true;
+              })
+              .slice(0, 15);
+
+            if (categoryProducts.length === 0) return null;
+            const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
+
+            return (
+              <AnimatedSection key={category.slug} delay={categoryIndex * 100} className="py-8">
+                <div className="container mx-auto px-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-5 w-5 text-price-yellow" />
+                      <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">{category.label}</h2>
+                    </div>
+                    <Link
+                      to={`/products?tag=${category.slug}`}
+                      className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1"
+                    >
+                      Ver todo <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </div>
-                  <Link to={`/products?tag=${category.slug}`} className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
-                    Ver todo <ArrowRight className="h-4 w-4" />
-                  </Link>
                 </div>
-              </div>
-              <CategoryCarousel 
-                products={categoryProducts} 
-                categorySlug={category.slug}
-                getTagsForProduct={getTagsForProduct}
-              />
-            </AnimatedSection>
-          );
-        })}
+                <CategoryCarousel products={categoryProducts} categorySlug={category.slug} getTagsForProduct={getTagsForProduct} />
+              </AnimatedSection>
+            );
+          });
+        })()}
 
         {/* Sponsors section with products */}
         <Sponsors products={products.slice(12, 20)} />
