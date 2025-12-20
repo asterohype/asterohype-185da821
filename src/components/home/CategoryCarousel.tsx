@@ -72,10 +72,17 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
   }, [products]);
   if (uniqueProducts.length === 0) return null;
 
-  // Duplicate products for seamless infinite scroll
+  // Repeat products to avoid "empty track" when a category has few items
   const trackProducts = useMemo(() => {
     const base = uniqueProducts.length > 0 ? uniqueProducts : [];
-    return [...base, ...base];
+    if (base.length === 0) return [];
+
+    const minCards = 14; // enough to fill wide screens + seamless loop
+    const repeats = Math.max(2, Math.ceil(minCards / base.length));
+    const repeated = Array.from({ length: repeats }, (_, i) => base[i % base.length]);
+
+    // Duplicate for seamless infinite scroll
+    return [...repeated, ...repeated];
   }, [uniqueProducts]);
 
   const marqueeClass = direction === "left" ? "astro-marquee-left" : "astro-marquee-right";
