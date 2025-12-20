@@ -1100,10 +1100,10 @@ const ProductDetail = () => {
                           <button
                             key={value}
                             onClick={() => handleOptionChange(option.name, value)}
-                            className={`min-w-[60px] px-4 py-3 text-sm border rounded-lg transition-all ${
+                            className={`min-w-[70px] px-5 py-3 text-sm border rounded-md transition-all ${
                               isSelected
                                 ? "border-foreground bg-background text-foreground font-medium"
-                                : "border-border hover:border-muted-foreground text-foreground"
+                                : "border-border/60 bg-background hover:border-foreground/50 text-foreground"
                             }`}
                           >
                             {value}
@@ -1115,11 +1115,11 @@ const ProductDetail = () => {
                 ))}
               </div>
 
-              {/* Add to Cart Button (Nike style - large black rounded) */}
+              {/* Add to Cart Button (Nike style - black/white rounded) */}
               <button
                 onClick={handleAddToCart}
                 disabled={!selectedVariant?.availableForSale}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-full bg-foreground text-background text-base font-medium hover:bg-foreground/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-full bg-foreground text-background text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Añadir a la cesta
               </button>
