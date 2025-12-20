@@ -288,6 +288,21 @@ const ProductDetail = () => {
       ...prev,
       [optionName]: value,
     }));
+    
+    // Auto-switch image when Color option changes
+    if (optionName.toLowerCase() === 'color' && product) {
+      const images = product.images.edges;
+      // Try to find an image that contains the color value in alt text or URL
+      const valueLower = value.toLowerCase();
+      const matchingIndex = images.findIndex((img, idx) => {
+        const alt = img.node.altText?.toLowerCase() || '';
+        const url = img.node.url.toLowerCase();
+        return alt.includes(valueLower) || url.includes(valueLower);
+      });
+      if (matchingIndex >= 0) {
+        setSelectedImage(matchingIndex);
+      }
+    }
   };
 
   const handleAddToCart = () => {
@@ -1106,10 +1121,55 @@ const ProductDetail = () => {
 
                 {product.options.filter(opt => opt.values.length > 1).map((option) => (
                   <div key={option.name} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-foreground">
-                        Selecciona tu {getDisplayName(product.id, option.name).toLowerCase()}
-                      </label>
+                    <div className="flex items-center gap-2">
+                      {showAdminControls && editingOptionName === option.name ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editedOptionName}
+                            onChange={(e) => setEditedOptionName(e.target.value)}
+                            className="h-8 w-32 text-sm"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                saveAlias(product.id, option.name, editedOptionName);
+                                setEditingOptionName(null);
+                                toast.success('Nombre actualizado');
+                              }
+                              if (e.key === 'Escape') setEditingOptionName(null);
+                            }}
+                            autoFocus
+                          />
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-6 w-6"
+                            onClick={() => {
+                              saveAlias(product.id, option.name, editedOptionName);
+                              setEditingOptionName(null);
+                              toast.success('Nombre actualizado');
+                            }}
+                          >
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingOptionName(null)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                          Selecciona tu {getDisplayName(product.id, option.name).toLowerCase()}
+                          {showAdminControls && (
+                            <button
+                              onClick={() => {
+                                setEditingOptionName(option.name);
+                                setEditedOptionName(getDisplayName(product.id, option.name));
+                              }}
+                              className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
+                        </label>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {option.values.map((value) => {
@@ -1118,9 +1178,9 @@ const ProductDetail = () => {
                           <button
                             key={value}
                             onClick={() => handleOptionChange(option.name, value)}
-                            className={`min-w-[72px] px-5 py-3 text-sm border rounded transition-all ${
+                            className={`min-w-[72px] px-5 py-3 text-sm border-2 rounded transition-all ${
                               isSelected
-                                ? "border-foreground bg-background text-foreground font-medium"
+                                ? "border-price-yellow bg-price-yellow/10 text-foreground font-medium"
                                 : "border-border bg-background hover:border-foreground/60 text-foreground"
                             }`}
                           >
@@ -1513,27 +1573,25 @@ const ProductDetail = () => {
           {/* Reviews Section */}
           <section className="mt-12 pt-8 border-t border-border">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
                   Reseñas de clientes
                 </h2>
-                {reviewStats.totalReviews > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`h-4 w-4 ${star <= Math.round(reviewStats.averageRating) ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
-                        />
-                      ))}
-                    </div>
-                    <span className="font-semibold">{reviewStats.averageRating}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({reviewStats.totalReviews} {reviewStats.totalReviews === 1 ? 'reseña' : 'reseñas'})
-                    </span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${star <= Math.round(reviewStats.averageRating) ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                      />
+                    ))}
                   </div>
-                )}
+                  <span className="font-semibold">{reviewStats.averageRating || 0}</span>
+                  <span className="text-sm text-muted-foreground">
+                    ({reviewStats.totalReviews} {reviewStats.totalReviews === 1 ? 'reseña' : 'reseñas'})
+                  </span>
+                </div>
               </div>
               <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
                 <DialogTrigger asChild>
