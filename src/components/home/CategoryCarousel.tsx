@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ShopifyProduct, formatPrice } from "@/lib/shopify";
 import { useProductOverrides } from "@/hooks/useProductOverrides";
 import { useProductOffer } from "@/hooks/useProductOffers";
-import { Zap, Tag } from "lucide-react";
+import { Zap } from "lucide-react";
 
 interface CategoryCarouselProps {
   products: ShopifyProduct[];
@@ -11,14 +11,12 @@ interface CategoryCarouselProps {
   getTagsForProduct: (productId: string) => any[];
 }
 
-// Individual product card in carousel
+// Individual product card in carousel - MUCH LARGER
 function CarouselProductCard({ 
   product, 
-  index,
   isHighlighted 
 }: { 
   product: ShopifyProduct; 
-  index: number;
   isHighlighted: boolean;
 }) {
   const { data: overrides } = useProductOverrides();
@@ -37,59 +35,59 @@ function CarouselProductCard({
   return (
     <Link
       to={`/product/${product.node.handle}`}
-      className={`flex-shrink-0 relative group transition-all duration-500 ${
+      className={`carousel-card flex-shrink-0 relative group transition-all duration-500 ${
         isHighlighted 
-          ? 'scale-105 z-10' 
-          : 'hover:scale-[1.02]'
+          ? 'scale-[1.08] z-20' 
+          : 'hover:scale-[1.03]'
       }`}
-      style={{ width: '200px' }}
     >
-      {/* Card container with 9:16-ish aspect ratio */}
-      <div className={`relative rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
+      {/* Card container with tall aspect ratio - LARGER SIZE */}
+      <div className={`relative rounded-2xl overflow-hidden border-2 transition-all duration-500 h-full ${
         isHighlighted 
-          ? 'border-price-yellow shadow-lg shadow-price-yellow/30' 
+          ? 'border-price-yellow shadow-[0_0_40px_hsl(var(--primary)/0.5)]' 
           : hasOffer 
             ? 'border-red-500/50 hover:border-red-500' 
-            : 'border-border/50 hover:border-price-yellow/50'
+            : 'border-border/30 hover:border-price-yellow/50'
       }`}>
         {/* Offer Badge - Prominent if highlighted or has offer */}
         {(hasOffer || isHighlighted) && (
-          <div className={`absolute top-3 left-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+          <div className={`absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg ${
             hasOffer ? 'bg-red-500 text-white' : 'bg-price-yellow text-black'
           }`}>
-            <Zap className="h-3 w-3" />
+            <Zap className="h-4 w-4" />
             {discountPercent ? `-${discountPercent}%` : 'OFERTA'}
           </div>
         )}
 
-        {/* Image - Tall aspect ratio */}
-        <div className="aspect-[3/4] overflow-hidden bg-secondary/30">
+        {/* Image - 9:16 aspect ratio (tall) */}
+        <div className="aspect-[9/16] overflow-hidden bg-secondary/30">
           <img 
             src={product.node.images.edges[0]?.node.url} 
             alt={displayTitle}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            loading="lazy"
           />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80" />
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
         </div>
 
-        {/* Info overlay at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background/95 via-background/80 to-transparent">
-          <h3 className={`font-semibold line-clamp-2 mb-2 transition-colors ${
-            isHighlighted ? 'text-price-yellow' : 'text-foreground'
-          }`} style={{ fontSize: isHighlighted ? '1rem' : '0.875rem' }}>
+        {/* Info overlay at bottom - Larger text */}
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <h3 className={`font-bold line-clamp-2 mb-3 transition-all duration-300 ${
+            isHighlighted ? 'text-price-yellow text-lg' : 'text-foreground text-base'
+          }`}>
             {displayTitle}
           </h3>
           
-          {/* Price section - Bigger when highlighted or has offer */}
+          {/* Price section - Much bigger when highlighted */}
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className={`font-bold text-price-yellow ${
-              isHighlighted || hasOffer ? 'text-xl' : 'text-lg'
+            <span className={`font-black text-price-yellow transition-all duration-300 ${
+              isHighlighted ? 'text-3xl' : hasOffer ? 'text-2xl' : 'text-xl'
             }`}>
               {formatPrice(displayPrice.amount, displayPrice.currencyCode)}
             </span>
             {hasOffer && originalPrice && (
-              <span className="text-sm text-muted-foreground line-through">
+              <span className="text-base text-muted-foreground line-through">
                 {formatPrice(originalPrice.toString(), displayPrice.currencyCode)}
               </span>
             )}
@@ -100,94 +98,81 @@ function CarouselProductCard({
   );
 }
 
-export function CategoryCarousel({ products, categorySlug, getTagsForProduct }: CategoryCarouselProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
+export function CategoryCarousel({ products, categorySlug }: CategoryCarouselProps) {
+  // Duplicate products for infinite loop effect
+  const duplicatedProducts = useMemo(() => {
+    if (products.length === 0) return [];
+    // Triple the products for seamless infinite scroll
+    return [...products, ...products, ...products];
+  }, [products]);
 
-  // Auto-scroll effect
-  useEffect(() => {
-    if (!scrollRef.current || products.length === 0 || isPaused) return;
-
-    const container = scrollRef.current;
-    const scrollSpeed = 0.5; // pixels per frame - slow and smooth
-    let animationId: number;
-    let lastTime = 0;
-
-    const scroll = (currentTime: number) => {
-      if (lastTime === 0) lastTime = currentTime;
-      const delta = currentTime - lastTime;
-      
-      if (delta > 16) { // ~60fps
-        container.scrollLeft += scrollSpeed * (delta / 16);
-        
-        // Loop back to start when reaching end
-        if (container.scrollLeft >= container.scrollWidth - container.clientWidth - 10) {
-          container.scrollLeft = 0;
-        }
-        
-        // Update highlighted index based on scroll position
-        const cardWidth = 216; // 200px + gap
-        const currentIndex = Math.floor(container.scrollLeft / cardWidth) % products.length;
-        setHighlightedIndex(currentIndex);
-        
-        lastTime = currentTime;
-      }
-      
-      animationId = requestAnimationFrame(scroll);
-    };
-
-    animationId = requestAnimationFrame(scroll);
-
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId);
-    };
-  }, [products.length, isPaused]);
-
-  // Rotate highlight every few seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHighlightedIndex(prev => (prev + 1) % products.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [products.length]);
+  // Highlight the center product (middle of the visible area)
+  const highlightIndex = products.length; // Start of second set is the "center"
 
   if (products.length === 0) return null;
 
+  // Calculate animation duration based on product count (slower for more products)
+  const animationDuration = Math.max(products.length * 5, 30); // Minimum 30s
+
   return (
-    <div 
-      className="relative"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="relative overflow-hidden py-8">
       {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background via-background/80 to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background via-background/80 to-transparent z-10 pointer-events-none" />
       
-      {/* Scrollable container */}
+      {/* CSS Infinite Scroll Container */}
       <div 
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-auto scrollbar-hide py-4 px-8 scroll-smooth"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="carousel-scroll-container flex gap-6 px-12"
+        style={{
+          animation: `scroll-left ${animationDuration}s linear infinite`,
+          width: 'max-content',
+        }}
       >
-        {products.map((product, index) => (
-          <CarouselProductCard 
-            key={product.node.id}
-            product={product}
-            index={index}
-            isHighlighted={index === highlightedIndex}
-          />
-        ))}
-        {/* Duplicate for infinite scroll effect */}
-        {products.slice(0, 3).map((product, index) => (
-          <CarouselProductCard 
-            key={`dup-${product.node.id}`}
-            product={product}
-            index={products.length + index}
-            isHighlighted={false}
-          />
-        ))}
+        {duplicatedProducts.map((product, index) => {
+          // Highlight products that have offers, rotating through visible ones
+          const isHighlighted = index === highlightIndex || 
+            (index === highlightIndex + Math.floor(products.length / 2));
+          
+          return (
+            <div 
+              key={`${product.node.id}-${index}`} 
+              className="w-[280px] md:w-[320px] lg:w-[340px]"
+            >
+              <CarouselProductCard 
+                product={product}
+                isHighlighted={isHighlighted}
+              />
+            </div>
+          );
+        })}
       </div>
+
+      {/* CSS Keyframes injected via style tag */}
+      <style>{`
+        @keyframes scroll-left {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(calc(-${products.length} * (340px + 24px)));
+          }
+        }
+        
+        .carousel-scroll-container:hover {
+          animation-play-state: paused;
+        }
+        
+        @media (max-width: 768px) {
+          @keyframes scroll-left {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(calc(-${products.length} * (280px + 24px)));
+            }
+          }
+        }
+      `}</style>
     </div>
   );
 }
