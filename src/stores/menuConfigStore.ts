@@ -30,6 +30,9 @@ interface MenuConfigState {
   updateCollection: (id: string, name: string) => void;
   updateCategory: (id: string, label: string) => void;
   updateCategoryImage: (id: string, imageUrl: string) => void;
+  addCategory: (slug: string, label: string) => void;
+  removeCategory: (id: string) => void;
+  clearCategoryImage: (id: string) => void;
 }
 
 export const useMenuConfigStore = create<MenuConfigState>()(
@@ -82,6 +85,20 @@ export const useMenuConfigStore = create<MenuConfigState>()(
         set((state) => ({
           categories: state.categories.map((cat) =>
             cat.id === id ? { ...cat, customImage: imageUrl } : cat
+          ),
+        })),
+      addCategory: (slug, label) =>
+        set((state) => ({
+          categories: [...state.categories, { id: slug, slug, label }],
+        })),
+      removeCategory: (id) =>
+        set((state) => ({
+          categories: state.categories.filter((cat) => cat.id !== id),
+        })),
+      clearCategoryImage: (id) =>
+        set((state) => ({
+          categories: state.categories.map((cat) =>
+            cat.id === id ? { ...cat, customImage: undefined } : cat
           ),
         })),
     }),

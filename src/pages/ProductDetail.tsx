@@ -25,6 +25,7 @@ import { useOptionAliases } from "@/hooks/useOptionAliases";
 import { useProductOverride, useUpsertOverride } from "@/hooks/useProductOverrides";
 import { useProductReviews, useProductReviewStats, useCreateReview, useDeleteReview, useUpdateReview } from "@/hooks/useProductReviews";
 import { useProductOffer, useUpsertOffer } from "@/hooks/useProductOffers";
+import { EditStatusChecklist } from "@/components/admin/EditStatusChecklist";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1178,13 +1179,18 @@ const ProductDetail = () => {
                           <button
                             key={value}
                             onClick={() => handleOptionChange(option.name, value)}
-                            className={`min-w-[72px] px-5 py-3 text-sm border-2 rounded transition-all ${
+                            className={`min-w-[72px] px-5 py-3 text-sm border-2 rounded-lg transition-all relative ${
                               isSelected
-                                ? "border-price-yellow bg-price-yellow/10 text-foreground font-medium"
-                                : "border-border bg-background hover:border-foreground/60 text-foreground"
+                                ? "border-white bg-white text-black font-semibold shadow-md ring-2 ring-white/50"
+                                : "border-border bg-background hover:border-muted-foreground text-foreground"
                             }`}
                           >
                             {value}
+                            {isSelected && (
+                              <span className="absolute -top-1 -right-1 h-4 w-4 bg-price-yellow rounded-full flex items-center justify-center">
+                                <Check className="h-2.5 w-2.5 text-black" />
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -1193,12 +1199,13 @@ const ProductDetail = () => {
                 ))}
               </div>
 
-              {/* Add to Cart Button (Nike style - black/white rounded) */}
+              {/* Add to Cart Button - White background, black text */}
               <button
                 onClick={handleAddToCart}
                 disabled={!selectedVariant?.availableForSale}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-full bg-foreground text-background text-base font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-full bg-white text-black text-base font-semibold hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               >
+                <ShoppingBag className="h-5 w-5" />
                 Añadir a la cesta
               </button>
 
@@ -1525,6 +1532,11 @@ const ProductDetail = () => {
                     })()
                   )}
                 </div>
+              )}
+
+              {/* Admin: Edit Status Checklist */}
+              {showAdminControls && product && (
+                <EditStatusChecklist shopifyProductId={product.id} />
               )}
             </div>
           </div>
