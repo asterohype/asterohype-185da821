@@ -12,12 +12,14 @@ interface CategoryCarouselProps {
 }
 
 // Individual product card in carousel - MUCH LARGER
-function CarouselProductCard({ 
-  product, 
-  isHighlighted 
-}: { 
-  product: ShopifyProduct; 
+function CarouselProductCard({
+  product,
+  isHighlighted,
+  categorySlug,
+}: {
+  product: ShopifyProduct;
   isHighlighted: boolean;
+  categorySlug: string;
 }) {
   const { data: overrides } = useProductOverrides();
   const { data: productOffer } = useProductOffer(product.node.id);
@@ -60,13 +62,32 @@ function CarouselProductCard({
         )}
 
         {/* Image - 9:16 aspect ratio (tall) */}
-        <div className="aspect-[9/16] overflow-hidden bg-secondary/30">
-          <img 
-            src={product.node.images.edges[0]?.node.url} 
-            alt={displayTitle}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            loading="lazy"
-          />
+        <div className="aspect-[9/16] overflow-hidden bg-secondary/30 relative">
+          {/* For Tecnología/Accesorios we must NOT crop: show full image (contain) with a blurred backdrop */}
+          {(categorySlug === 'tecnologia' || categorySlug === 'accesorios') && product.node.images.edges[0]?.node.url ? (
+            <>
+              <img
+                src={product.node.images.edges[0]?.node.url}
+                alt={displayTitle}
+                className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-70"
+                aria-hidden="true"
+                loading="lazy"
+              />
+              <img
+                src={product.node.images.edges[0]?.node.url}
+                alt={displayTitle}
+                className="relative z-[1] w-full h-full object-contain"
+                loading="lazy"
+              />
+            </>
+          ) : (
+            <img
+              src={product.node.images.edges[0]?.node.url}
+              alt={displayTitle}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              loading="lazy"
+            />
+          )}
           {/* Gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
         </div>
@@ -99,29 +120,40 @@ function CarouselProductCard({
 }
 
 export function CategoryCarousel({ products, categorySlug }: CategoryCarouselProps) {
-  // Duplicate products for infinite loop effect
-  const duplicatedProducts = useMemo(() => {
-    if (products.length === 0) return [];
-    // Triple the products for seamless infinite scroll
-    return [...products, ...products, ...products];
+  // De-duplicate by product id to avoid repeats inside a section
+  const uniqueProducts = useMemo(() => {
+    const seen = new Set<string>();
+    return products.filter((p) => {
+      const id = p.node.id;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
   }, [products]);
 
+  // Duplicate products for infinite loop effect
+  const duplicatedProducts = useMemo(() => {
+    if (uniqueProducts.length === 0) return [];
+    // Triple the products for seamless infinite scroll
+    return [...uniqueProducts, ...uniqueProducts, ...uniqueProducts];
+  }, [uniqueProducts]);
+
   // Highlight the center product (middle of the visible area)
-  const highlightIndex = products.length; // Start of second set is the "center"
+  const highlightIndex = uniqueProducts.length; // Start of second set is the "center"
 
-  if (products.length === 0) return null;
+  if (uniqueProducts.length === 0) return null;
 
-  // Calculate animation duration based on product count (slower for more products)
-  const animationDuration = Math.max(products.length * 5, 30); // Minimum 30s
+  // Faster by default (user feedback: was too slow)
+  const animationDuration = Math.max(uniqueProducts.length * 2, 12); // Minimum 12s
 
   return (
     <div className="relative overflow-hidden py-8">
       {/* Fade edges */}
       <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background via-background/80 to-transparent z-10 pointer-events-none" />
       <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background via-background/80 to-transparent z-10 pointer-events-none" />
-      
+
       {/* CSS Infinite Scroll Container */}
-      <div 
+      <div
         className="carousel-scroll-container flex gap-6 px-12"
         style={{
           animation: `scroll-left ${animationDuration}s linear infinite`,
@@ -129,19 +161,11 @@ export function CategoryCarousel({ products, categorySlug }: CategoryCarouselPro
         }}
       >
         {duplicatedProducts.map((product, index) => {
-          // Highlight products that have offers, rotating through visible ones
-          const isHighlighted = index === highlightIndex || 
-            (index === highlightIndex + Math.floor(products.length / 2));
-          
+          const isHighlighted = index === highlightIndex; // only ONE highlighted
+
           return (
-            <div 
-              key={`${product.node.id}-${index}`} 
-              className="w-[280px] md:w-[320px] lg:w-[340px]"
-            >
-              <CarouselProductCard 
-                product={product}
-                isHighlighted={isHighlighted}
-              />
+            <div key={`${product.node.id}-${index}`} className="w-[280px] md:w-[320px] lg:w-[340px]">
+              <CarouselProductCard product={product} isHighlighted={isHighlighted} categorySlug={categorySlug} />
             </div>
           );
         })}
@@ -154,21 +178,21 @@ export function CategoryCarousel({ products, categorySlug }: CategoryCarouselPro
             transform: translateX(0);
           }
           100% {
-            transform: translateX(calc(-${products.length} * (340px + 24px)));
+            transform: translateX(calc(-${uniqueProducts.length} * (340px + 24px)));
           }
         }
-        
+
         .carousel-scroll-container:hover {
           animation-play-state: paused;
         }
-        
+
         @media (max-width: 768px) {
           @keyframes scroll-left {
             0% {
               transform: translateX(0);
             }
             100% {
-              transform: translateX(calc(-${products.length} * (280px + 24px)));
+              transform: translateX(calc(-${uniqueProducts.length} * (280px + 24px)));
             }
           }
         }
