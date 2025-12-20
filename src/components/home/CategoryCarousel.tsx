@@ -102,14 +102,12 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
       <div className="absolute inset-y-0 right-0 w-16 md:w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
       {/* Scrolling track */}
-      <div className="w-[200%]">
-      <div className={`flex gap-4 ${marqueeClass}`}>
-          {trackProducts.map((p, i) => (
-            <div key={`${p.node.id}-${i}`} className="w-[180px] md:w-[200px] lg:w-[220px] flex-shrink-0">
-              <ProductCard product={p} />
-            </div>
-          ))}
-        </div>
+      <div className={`flex gap-4 w-max ${marqueeClass}`}>
+        {trackProducts.map((p, i) => (
+          <div key={`${p.node.id}-${i}`} className="w-[180px] md:w-[200px] lg:w-[220px] flex-shrink-0">
+            <ProductCard product={p} />
+          </div>
+        ))}
       </div>
     </section>
   );

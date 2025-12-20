@@ -86,50 +86,50 @@ function HolidayStripCard({
 export function TopHeroBanners() {
   return (
     <section className="container mx-auto px-4 mb-8" aria-label="Banners principales">
-      {/* Dos banners principales (mismas imágenes), con el texto navideño ENCIMA */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[300px] md:h-[400px]">
-        <div className="relative rounded-2xl overflow-hidden group">
-          <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5000} />
-          <div className="absolute inset-0 bg-gradient-to-t from-overlay/70 via-overlay/15 to-transparent z-10" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Felices Fiestas */}
+        <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Felices Fiestas">
+          {/* Texto ARRIBA (separado) */}
+          <header className="p-6 md:p-8">
+            <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
+              Felices Fiestas
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base mt-1">Regalos y novedades en AsteroHype</p>
+            <Link to="/products?tag=nuevos">
+              <Button variant="hero" size="lg" className="mt-4 rounded-full">
+                Ver novedades
+              </Button>
+            </Link>
+          </header>
 
-          <div className="absolute top-5 left-5 right-5 z-20">
-            <div className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl p-5 md:p-6">
-              <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
-                Felices Fiestas
-              </h2>
-              <p className="text-muted-foreground text-sm md:text-base mt-1">
-                Regalos y novedades en AsteroHype
-              </p>
-              <Link to="/products?tag=nuevos">
-                <Button variant="hero" size="lg" className="mt-4 rounded-full">
-                  Ver novedades
-                </Button>
-              </Link>
-            </div>
+          {/* Imágenes ABAJO */}
+          <div className="relative h-[200px] md:h-[260px] overflow-hidden">
+            <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5000} />
           </div>
-        </div>
+        </article>
 
-        <div className="relative rounded-2xl overflow-hidden group">
-          <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4000} />
-          <div className="absolute inset-0 bg-gradient-to-t from-overlay/70 via-overlay/15 to-transparent z-10" />
+        {/* Ofertas Navideñas */}
+        <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Ofertas Navideñas">
+          <header className="p-6 md:p-8">
+            <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
+              Ofertas Navideñas
+            </h2>
+            <p className="text-muted-foreground text-sm md:text-base mt-1">
+              Productos de calidad con descuentos especiales
+            </p>
+            <Link to="/products?tag=ofertas">
+              <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
+                Ver ofertas
+              </Button>
+            </Link>
+          </header>
 
-          <div className="absolute top-5 left-5 right-5 z-20">
-            <div className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl p-5 md:p-6">
-              <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
-                Ofertas Navideñas
-              </h2>
-              <p className="text-muted-foreground text-sm md:text-base mt-1">
-                Productos de calidad con descuentos especiales
-              </p>
-              <Link to="/products?tag=ofertas">
-                <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
-                  Ver ofertas
-                </Button>
-              </Link>
-            </div>
+          <div className="relative h-[200px] md:h-[260px] overflow-hidden">
+            <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4000} />
           </div>
-        </div>
+        </article>
       </div>
     </section>
   );
 }
+
