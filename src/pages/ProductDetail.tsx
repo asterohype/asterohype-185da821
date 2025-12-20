@@ -1084,6 +1084,21 @@ const ProductDetail = () => {
                   <Truck className="h-4 w-4 text-green-600" />
                   <span className="text-green-600 font-medium">Envío gratis</span>
                 </div>
+                {/* Trust badges below shipping */}
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span>Pago 100% seguro</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span>30 días de devolución</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span>Garantía incluida</span>
+                  </div>
+                </div>
               </div>
 
               {/* Product Specs Table */}
@@ -1206,11 +1221,6 @@ const ProductDetail = () => {
             {/* Right Column - Buy Box (simplified, no duplicates) */}
             <div className="lg:col-span-2">
               <div className="sticky top-24 bg-card border border-border rounded-xl p-4 space-y-4">
-                {/* Price */}
-                <div className="text-2xl font-bold text-price-yellow">
-                  {formatPrice(price.amount, price.currencyCode)}
-                </div>
-
                 {/* Stock Urgency - Only if configured */}
                 {productOffer?.low_stock_active && productOffer?.low_stock_threshold && (
                   <div className="flex items-center gap-2 text-sm text-amber-600">
@@ -1232,7 +1242,7 @@ const ProductDetail = () => {
                           <button
                             key={value}
                             onClick={() => handleOptionChange(option.name, value)}
-                            className={`px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
+                            className={`px-2.5 py-1.5 text-xs rounded-full border transition-all ${
                               isSelected
                                 ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary"
                                 : "border-border hover:border-muted-foreground text-foreground"
@@ -1249,17 +1259,17 @@ const ProductDetail = () => {
                 {/* Quantity */}
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground">Cantidad</label>
-                  <div className="flex items-center border border-border rounded-lg">
+                  <div className="flex items-center border border-border rounded-full overflow-hidden">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-3 py-2 hover:bg-muted transition-colors"
+                      className="px-4 py-2 hover:bg-muted transition-colors rounded-l-full"
                     >
                       <Minus className="h-3 w-3" />
                     </button>
-                    <span className="flex-1 text-center font-medium">{quantity}</span>
+                    <span className="flex-1 text-center font-medium min-w-[40px]">{quantity}</span>
                     <button
                       onClick={() => setQuantity(quantity + 1)}
-                      className="px-3 py-2 hover:bg-muted transition-colors"
+                      className="px-4 py-2 hover:bg-muted transition-colors rounded-r-full"
                     >
                       <Plus className="h-3 w-3" />
                     </button>
@@ -1267,19 +1277,18 @@ const ProductDetail = () => {
                 </div>
 
                 {/* Add to Cart Button */}
-                <Button
+                <button
                   onClick={handleAddToCart}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                  size="lg"
                   disabled={!selectedVariant?.availableForSale}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  <ShoppingBag className="h-4 w-4" />
                   Añadir al Carrito
-                </Button>
+                </button>
 
                 {/* Urgency Section - Only if configured with real date */}
                 {offerTimeLeft && productOffer?.offer_text && (
-                  <div className="bg-gradient-to-r from-red-600 to-amber-500 rounded-lg p-3 space-y-2 text-white">
+                  <div className="bg-gradient-to-r from-red-600 to-amber-500 rounded-xl p-3 space-y-2 text-white">
                     <div className="flex items-center gap-2 font-bold">
                       <Clock className="h-4 w-4 animate-pulse" />
                       {productOffer.offer_text}
@@ -1300,22 +1309,6 @@ const ProductDetail = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Trust badges */}
-                <div className="pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-3.5 w-3.5 text-green-600" />
-                    Pago 100% seguro
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RotateCcw className="h-3.5 w-3.5 text-green-600" />
-                    30 días de devolución
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Award className="h-3.5 w-3.5 text-green-600" />
-                    Garantía incluida
-                  </div>
-                </div>
 
                 {/* Admin Cost Section */}
                 {showAdminControls && (
