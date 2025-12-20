@@ -12,44 +12,16 @@ interface CategoryCarouselProps {
   direction?: "left" | "right";
 }
 
-const ASPECT_CATEGORIES = new Set(["tecnologia", "accesorios"]);
-
-const ProductImage916 = forwardRef<
-  HTMLDivElement,
-  {
-    src?: string;
-    alt: string;
-    mode: "cover" | "contain-filled";
-  }
->(function ProductImage916({ src, alt, mode }, ref) {
+function ProductImage916({ src, alt }: { src?: string; alt: string }) {
   return (
-    <div ref={ref} className="aspect-[9/16] overflow-hidden relative bg-secondary/30">
-      {mode === "contain-filled" && src ? (
-        <>
-          <img
-            src={src}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover scale-110 opacity-90"
-            loading="lazy"
-          />
-          <img
-            src={src}
-            alt={alt}
-            className="relative z-10 w-full h-full object-contain"
-            loading="lazy"
-          />
-        </>
-      ) : (
-        <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />
-      )}
-
-      <div className="absolute inset-0 bg-gradient-to-t from-overlay/70 via-overlay/10 to-transparent" />
+    <div className="aspect-[9/16] overflow-hidden relative bg-card">
+      <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />
+      <div className="absolute inset-0 bg-gradient-to-t from-overlay/80 via-overlay/20 to-transparent" />
     </div>
   );
-});
+}
 
-function ProductCard({ product, imageMode }: { product: ShopifyProduct; imageMode: "cover" | "contain-filled" }) {
+function ProductCard({ product }: { product: ShopifyProduct }) {
   const { data: overrides } = useProductOverrides();
   const { data: productOffer } = useProductOffer(product.node.id);
 
@@ -67,7 +39,7 @@ function ProductCard({ product, imageMode }: { product: ShopifyProduct; imageMod
 
   return (
     <Link to={`/product/${product.node.handle}`} className="block h-full">
-      <div className="relative rounded-xl overflow-hidden border border-border/40 hover:border-price-yellow/50 transition-colors h-full bg-card/50 hover:scale-105 transition-transform duration-300">
+      <div className="relative rounded-xl overflow-hidden border border-border/40 hover:border-price-yellow/50 transition-all h-full bg-card hover:scale-[1.03] duration-300">
         {hasOffer && (
           <div className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-destructive text-destructive-foreground">
             <Zap className="h-3 w-3" />
@@ -75,7 +47,7 @@ function ProductCard({ product, imageMode }: { product: ShopifyProduct; imageMod
           </div>
         )}
 
-        <ProductImage916 src={product.node.images.edges[0]?.node.url} alt={displayTitle} mode={imageMode} />
+        <ProductImage916 src={product.node.images.edges[0]?.node.url} alt={displayTitle} />
 
         <div className="absolute bottom-0 left-0 right-0 p-3">
           <h3 className="text-sm font-medium line-clamp-2 text-foreground mb-1">{displayTitle}</h3>
@@ -98,9 +70,6 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
       return true;
     });
   }, [products]);
-
-  const imageMode: "cover" | "contain-filled" = ASPECT_CATEGORIES.has(categorySlug) ? "contain-filled" : "cover";
-
   if (uniqueProducts.length === 0) return null;
 
   // Duplicate products for seamless infinite scroll
@@ -127,10 +96,10 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
 
       {/* Scrolling track */}
       <div className="w-[200%]">
-        <div className={`flex gap-4 ${marqueeClass}`}>
+      <div className={`flex gap-4 ${marqueeClass}`}>
           {trackProducts.map((p, i) => (
             <div key={`${p.node.id}-${i}`} className="w-[180px] md:w-[200px] lg:w-[220px] flex-shrink-0">
-              <ProductCard product={p} imageMode={imageMode} />
+              <ProductCard product={p} />
             </div>
           ))}
         </div>
