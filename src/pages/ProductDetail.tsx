@@ -22,6 +22,8 @@ import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
 import { useProductOverride, useUpsertOverride } from "@/hooks/useProductOverrides";
+import { useProductReviews, useProductReviewStats, useCreateReview } from "@/hooks/useProductReviews";
+import { useProductOffer, useUpsertOffer } from "@/hooks/useProductOffers";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -45,10 +47,11 @@ import {
   Shield,
   RotateCcw,
   Star,
-  Flame,
   Gift,
   Clock,
   Award,
+  Settings,
+  MessageSquare,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -61,6 +64,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
 
@@ -85,6 +98,8 @@ const ProductDetail = () => {
   const [savingProduct, setSavingProduct] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState(false);
   const [relatedScrollPos, setRelatedScrollPos] = useState(0);
+  const [showOfferEditor, setShowOfferEditor] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
@@ -95,9 +110,18 @@ const ProductDetail = () => {
   const { getCostForProduct, saveCost, calculateProfit, loading: costsLoading } = useProductCosts();
   const { getDisplayName, saveAlias } = useOptionAliases();
 
-  // Override hooks for local edits (no Shopify token required)
+  // Override hooks for local edits
   const { data: productOverride, isLoading: overrideLoading } = useProductOverride(product?.id);
   const upsertOverride = useUpsertOverride();
+  
+  // Reviews hooks
+  const { data: reviews = [], isLoading: reviewsLoading } = useProductReviews(product?.id);
+  const { stats: reviewStats } = useProductReviewStats(product?.id);
+  const createReview = useCreateReview();
+  
+  // Offers hook
+  const { data: productOffer, isLoading: offerLoading } = useProductOffer(product?.id);
+  const upsertOffer = useUpsertOffer();
   
   const showAdminControls = isAdmin && isAdminModeActive;
   
@@ -114,6 +138,28 @@ const ProductDetail = () => {
   const [editingOptionName, setEditingOptionName] = useState<string | null>(null);
   const [editedOptionName, setEditedOptionName] = useState('');
   const [savingOptionName, setSavingOptionName] = useState(false);
+
+  // Offer editing states
+  const [offerForm, setOfferForm] = useState({
+    promo_text: '',
+    promo_subtext: '',
+    promo_active: false,
+    offer_end_date: '',
+    offer_text: '',
+    offer_active: false,
+    discount_percent: '',
+    original_price: '',
+    low_stock_threshold: '',
+    low_stock_active: false,
+  });
+
+  // Review form states
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    title: '',
+    comment: '',
+    user_name: '',
+  });
 
   useEffect(() => {
     async function loadProduct() {
@@ -145,11 +191,49 @@ const ProductDetail = () => {
     loadProduct();
   }, [handle]);
 
+  // Load offer data into form when editing
+  useEffect(() => {
+    if (productOffer) {
+      setOfferForm({
+        promo_text: productOffer.promo_text || '',
+        promo_subtext: productOffer.promo_subtext || '',
+        promo_active: productOffer.promo_active || false,
+        offer_end_date: productOffer.offer_end_date ? new Date(productOffer.offer_end_date).toISOString().slice(0, 16) : '',
+        offer_text: productOffer.offer_text || '',
+        offer_active: productOffer.offer_active || false,
+        discount_percent: productOffer.discount_percent?.toString() || '',
+        original_price: productOffer.original_price?.toString() || '',
+        low_stock_threshold: productOffer.low_stock_threshold?.toString() || '',
+        low_stock_active: productOffer.low_stock_active || false,
+      });
+    }
+  }, [productOffer]);
+
   const selectedVariant = product?.variants.edges.find((v) => {
     return v.node.selectedOptions.every(
       (opt) => selectedOptions[opt.name] === opt.value
     );
   })?.node;
+
+  // Find image that matches selected variant
+  const variantImageIndex = useMemo(() => {
+    if (!product || !selectedVariant) return 0;
+    
+    // Try to match by variant title or option values
+    const variantValues = selectedVariant.selectedOptions.map(o => o.value.toLowerCase());
+    
+    const matchIndex = product.images.edges.findIndex((img) => {
+      const altText = img.node.altText?.toLowerCase() || "";
+      return variantValues.some(val => altText.includes(val));
+    });
+
+    return matchIndex >= 0 ? matchIndex : 0;
+  }, [product, selectedVariant]);
+
+  // Update selected image when variant changes
+  useEffect(() => {
+    setSelectedImage(variantImageIndex);
+  }, [variantImageIndex]);
 
   // Use local override if available, otherwise fallback to Shopify data
   const displayTitle = productOverride?.title ?? product?.title;
@@ -160,28 +244,7 @@ const ProductDetail = () => {
   const displayCurrency =
     selectedVariant?.price.currencyCode ||
     product?.priceRange.minVariantPrice.currencyCode ||
-    "USD";
-
-  const matchingImageIndex = useMemo(() => {
-    if (!product) return 0;
-
-    const colorOption =
-      selectedOptions["Color"] || selectedOptions["color"] || selectedOptions["Colour"];
-    if (!colorOption) return selectedImage;
-
-    const matchIndex = product.images.edges.findIndex((img) => {
-      const altText = img.node.altText?.toLowerCase() || "";
-      return altText.includes(colorOption.toLowerCase());
-    });
-
-    return matchIndex >= 0 ? matchIndex : selectedImage;
-  }, [product, selectedOptions, selectedImage]);
-
-  useEffect(() => {
-    if (matchingImageIndex !== selectedImage) {
-      setSelectedImage(matchingImageIndex);
-    }
-  }, [matchingImageIndex]);
+    "EUR";
 
   useEffect(() => {
     if (!product) return;
@@ -263,7 +326,7 @@ const ProductDetail = () => {
         description: productOverride?.description,
         price: productOverride?.price,
       });
-      toast.success('Nombre actualizado (local)');
+      toast.success('Nombre actualizado');
       setEditingTitle(false);
     } catch (error) {
       console.error('Error updating title:', error);
@@ -294,7 +357,7 @@ const ProductDetail = () => {
         description: productOverride?.description,
         price: parseFloat(editedPrice.trim()),
       });
-      toast.success('Precio actualizado (local)');
+      toast.success('Precio actualizado');
       setEditingPrice(false);
     } catch (error) {
       console.error('Error updating price:', error);
@@ -325,7 +388,7 @@ const ProductDetail = () => {
         description: editedDescription,
         price: productOverride?.price,
       });
-      toast.success('Descripción actualizada (local)');
+      toast.success('Descripción actualizada');
       setEditingDescription(false);
     } catch (error) {
       console.error('Error updating description:', error);
@@ -405,6 +468,54 @@ const ProductDetail = () => {
       toast.error('Error al eliminar el producto');
     } finally {
       setDeletingProduct(false);
+    }
+  };
+
+  const handleSaveOffer = async () => {
+    if (!product) return;
+    
+    try {
+      await upsertOffer.mutateAsync({
+        shopify_product_id: product.id,
+        promo_text: offerForm.promo_text || null,
+        promo_subtext: offerForm.promo_subtext || null,
+        promo_active: offerForm.promo_active,
+        offer_end_date: offerForm.offer_end_date ? new Date(offerForm.offer_end_date).toISOString() : null,
+        offer_text: offerForm.offer_text || null,
+        offer_active: offerForm.offer_active,
+        discount_percent: offerForm.discount_percent ? parseInt(offerForm.discount_percent) : null,
+        original_price: offerForm.original_price ? parseFloat(offerForm.original_price) : null,
+        low_stock_threshold: offerForm.low_stock_threshold ? parseInt(offerForm.low_stock_threshold) : null,
+        low_stock_active: offerForm.low_stock_active,
+      });
+      toast.success('Configuración de oferta guardada');
+      setShowOfferEditor(false);
+    } catch (error) {
+      console.error('Error saving offer:', error);
+      toast.error('Error al guardar la oferta');
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!product || !reviewForm.user_name.trim()) {
+      toast.error('Por favor, introduce tu nombre');
+      return;
+    }
+    
+    try {
+      await createReview.mutateAsync({
+        shopify_product_id: product.id,
+        user_name: reviewForm.user_name.trim(),
+        rating: reviewForm.rating,
+        title: reviewForm.title || undefined,
+        comment: reviewForm.comment || undefined,
+      });
+      toast.success('¡Gracias por tu reseña!');
+      setShowReviewForm(false);
+      setReviewForm({ rating: 5, title: '', comment: '', user_name: '' });
+    } catch (error: any) {
+      console.error('Error submitting review:', error);
+      toast.error(error.message || 'Error al enviar la reseña');
     }
   };
 
@@ -531,6 +642,26 @@ const ProductDetail = () => {
     }
   };
 
+  // Calculate offer countdown
+  const offerTimeLeft = useMemo(() => {
+    if (!productOffer?.offer_active || !productOffer?.offer_end_date) return null;
+    const end = new Date(productOffer.offer_end_date).getTime();
+    const now = Date.now();
+    const diff = end - now;
+    if (diff <= 0) return null;
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { days, hours, minutes };
+  }, [productOffer?.offer_active, productOffer?.offer_end_date]);
+
+  // Convert description to bullet points
+  const descriptionBullets = displayDescription
+    ? displayDescription.split(/[.!?]+/).filter((s) => s.trim().length > 10).slice(0, 5)
+    : [];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -563,20 +694,12 @@ const ProductDetail = () => {
 
   const images = product.images.edges;
   const price = { amount: displayPriceAmount || "0", currencyCode: displayCurrency };
-
-  // Calculate fake original price (for display - ~30% more) 
   const currentPrice = parseFloat(price.amount);
-  const originalPrice = (currentPrice * 1.35).toFixed(2);
-  const discountPercent = 25;
-
-  // Convert description to bullet points
-  const descriptionBullets = displayDescription
-    ? displayDescription.split(/[.!?]+/).filter((s) => s.trim().length > 10).slice(0, 5)
-    : [];
-
-  // Fake rating for display
-  const rating = 4.5;
-  const reviewCount = 127;
+  
+  // Use real offer data if available
+  const hasDiscount = productOffer?.discount_percent && productOffer?.original_price;
+  const originalPrice = hasDiscount ? productOffer.original_price : null;
+  const discountPercent = hasDiscount ? productOffer.discount_percent : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -592,10 +715,10 @@ const ProductDetail = () => {
             <span className="text-foreground truncate max-w-[200px]">{displayTitle}</span>
           </nav>
 
-          {/* Main Product Section - Amazon Style Layout */}
+          {/* Main Product Section */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {/* Left Column - Images (Thumbnails + Main) */}
+            {/* Left Column - Images */}
             <div className="lg:col-span-6 flex gap-3">
               {/* Vertical Thumbnails */}
               <div className="hidden md:flex flex-col gap-2 w-16 flex-shrink-0">
@@ -708,19 +831,21 @@ const ProductDetail = () => {
 
             {/* Middle Column - Product Info */}
             <div className="lg:col-span-4 space-y-4">
-              {/* Rating */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-4 w-4 ${star <= Math.floor(rating) ? 'text-amber-400 fill-amber-400' : star - 0.5 <= rating ? 'text-amber-400 fill-amber-400/50' : 'text-muted-foreground/30'}`}
-                    />
-                  ))}
+              {/* Rating - Real data */}
+              {reviewStats.totalReviews > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${star <= Math.floor(reviewStats.averageRating) ? 'text-amber-400 fill-amber-400' : star - 0.5 <= reviewStats.averageRating ? 'text-amber-400 fill-amber-400/50' : 'text-muted-foreground/30'}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium">{reviewStats.averageRating}/5</span>
+                  <span className="text-sm text-muted-foreground">({reviewStats.totalReviews} reseñas)</span>
                 </div>
-                <span className="text-sm font-medium">{rating}/5</span>
-                <span className="text-sm text-muted-foreground">({reviewCount} reseñas)</span>
-              </div>
+              )}
 
               {/* Title */}
               {showAdminControls && editingTitle ? (
@@ -778,16 +903,131 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Promo Banner */}
-              <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center flex-shrink-0">
-                  <Gift className="h-5 w-5 text-background" />
+              {/* Promo Banner - Only show if configured by admin */}
+              {productOffer?.promo_active && productOffer?.promo_text && (
+                <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center flex-shrink-0">
+                    <Gift className="h-5 w-5 text-background" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{productOffer.promo_text}</p>
+                    {productOffer.promo_subtext && (
+                      <p className="text-xs text-muted-foreground">{productOffer.promo_subtext}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">¡Compra 2 y llévate envío GRATIS!</p>
-                  <p className="text-xs text-muted-foreground">Oferta por tiempo limitado</p>
-                </div>
-              </div>
+              )}
+
+              {/* Admin: Configure Offers Button */}
+              {showAdminControls && (
+                <Dialog open={showOfferEditor} onOpenChange={setShowOfferEditor}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Configurar Ofertas
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Configurar Ofertas del Producto</DialogTitle>
+                      <DialogDescription>
+                        Personaliza los banners promocionales, descuentos y urgencia.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4">
+                      {/* Promo Banner Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="font-semibold">Banner Promocional</Label>
+                          <Switch
+                            checked={offerForm.promo_active}
+                            onCheckedChange={(v) => setOfferForm({ ...offerForm, promo_active: v })}
+                          />
+                        </div>
+                        <Input
+                          placeholder="Texto principal (ej: ¡Compra 2 y llévate envío GRATIS!)"
+                          value={offerForm.promo_text}
+                          onChange={(e) => setOfferForm({ ...offerForm, promo_text: e.target.value })}
+                        />
+                        <Input
+                          placeholder="Subtexto (ej: Oferta por tiempo limitado)"
+                          value={offerForm.promo_subtext}
+                          onChange={(e) => setOfferForm({ ...offerForm, promo_subtext: e.target.value })}
+                        />
+                      </div>
+
+                      {/* Discount Section */}
+                      <div className="space-y-3">
+                        <Label className="font-semibold">Descuento</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Precio original (€)</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={offerForm.original_price}
+                              onChange={(e) => setOfferForm({ ...offerForm, original_price: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">% Descuento</label>
+                            <Input
+                              type="number"
+                              placeholder="25"
+                              value={offerForm.discount_percent}
+                              onChange={(e) => setOfferForm({ ...offerForm, discount_percent: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Urgency Offer Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="font-semibold">Oferta con Fecha Límite</Label>
+                          <Switch
+                            checked={offerForm.offer_active}
+                            onCheckedChange={(v) => setOfferForm({ ...offerForm, offer_active: v })}
+                          />
+                        </div>
+                        <Input
+                          type="datetime-local"
+                          value={offerForm.offer_end_date}
+                          onChange={(e) => setOfferForm({ ...offerForm, offer_end_date: e.target.value })}
+                        />
+                        <Input
+                          placeholder="Texto de oferta (ej: ¡Oferta especial!)"
+                          value={offerForm.offer_text}
+                          onChange={(e) => setOfferForm({ ...offerForm, offer_text: e.target.value })}
+                        />
+                      </div>
+
+                      {/* Stock Urgency Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="font-semibold">Urgencia de Stock</Label>
+                          <Switch
+                            checked={offerForm.low_stock_active}
+                            onCheckedChange={(v) => setOfferForm({ ...offerForm, low_stock_active: v })}
+                          />
+                        </div>
+                        <Input
+                          type="number"
+                          placeholder="Cantidad (ej: 12)"
+                          value={offerForm.low_stock_threshold}
+                          onChange={(e) => setOfferForm({ ...offerForm, low_stock_threshold: e.target.value })}
+                        />
+                      </div>
+
+                      <Button onClick={handleSaveOffer} className="w-full" disabled={upsertOffer.isPending}>
+                        {upsertOffer.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                        Guardar Configuración
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
 
               {/* Price Section */}
               <div className="border-b border-border pb-4">
@@ -819,12 +1059,16 @@ const ProductDetail = () => {
                       <span className="text-3xl font-bold text-price-yellow">
                         {formatPrice(price.amount, price.currencyCode)}
                       </span>
-                      <span className="text-lg text-muted-foreground line-through">
-                        {formatPrice(originalPrice, price.currencyCode)}
-                      </span>
-                      <span className="px-2 py-0.5 text-xs font-bold bg-green-600 text-white rounded-md">
-                        -{discountPercent}% OFF
-                      </span>
+                      {hasDiscount && originalPrice && (
+                        <>
+                          <span className="text-lg text-muted-foreground line-through">
+                            {formatPrice(originalPrice.toString(), price.currencyCode)}
+                          </span>
+                          <span className="px-2 py-0.5 text-xs font-bold bg-green-600 text-white rounded-md">
+                            -{discountPercent}% OFF
+                          </span>
+                        </>
+                      )}
                       {showAdminControls && (
                         <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6">
                           <Pencil className="h-3 w-3" />
@@ -864,9 +1108,16 @@ const ProductDetail = () => {
                 </table>
               </div>
 
-              {/* Description Bullets */}
+              {/* Description Section */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-foreground">Acerca de este producto</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground">Acerca de este producto</h3>
+                  {showAdminControls && (
+                    <Button size="icon" variant="ghost" onClick={startEditingDescription} className="h-6 w-6">
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 {showAdminControls && editingDescription ? (
                   <div className="space-y-2">
                     <Textarea
@@ -885,136 +1136,110 @@ const ProductDetail = () => {
                       </Button>
                     </div>
                   </div>
+                ) : descriptionBullets.length > 0 ? (
+                  <ul className="space-y-2">
+                    {descriptionBullets.map((bullet, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-green-600 mt-2 flex-shrink-0" />
+                        {bullet.trim()}
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
-                  <div className="relative">
-                    {descriptionBullets.length > 0 ? (
-                      <ul className="space-y-2 text-sm text-muted-foreground">
-                        {descriptionBullets.map((bullet, idx) => (
-                          <li key={idx} className="flex gap-2">
-                            <span className="text-primary mt-1">•</span>
-                            <span>{bullet.trim()}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {displayDescription || (showAdminControls ? 'Sin descripción - haz clic para añadir' : 'Sin descripción disponible')}
-                      </p>
-                    )}
-                    {showAdminControls && (
-                      <Button size="icon" variant="ghost" onClick={startEditingDescription} className="absolute top-0 right-0 h-6 w-6">
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-sm text-muted-foreground">{displayDescription || 'Sin descripción disponible.'}</p>
                 )}
               </div>
 
-              {/* Admin Tag Editor */}
-              {showAdminControls && (
-                <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Tag className="h-4 w-4" />
-                    <span>Etiquetas</span>
-                    {savingTag && <Loader2 className="h-3 w-3 animate-spin" />}
-                  </div>
-                  <div className="space-y-2">
-                    {TAG_GROUPS.map(group => {
-                      const groupTags = tagsByGroup[group] || [];
+              {/* Tags */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Tag className="h-4 w-4" />
+                  Etiquetas
+                </div>
+                
+                {showAdminControls ? (
+                  <div className="space-y-3">
+                    {TAG_GROUPS.map(groupName => {
+                      const groupTags = tagsByGroup[groupName] || [];
                       if (groupTags.length === 0) return null;
-                      
                       return (
-                        <div key={group} className="flex flex-wrap gap-1">
-                          {groupTags.map(tag => {
-                            const isSelected = productTags.some(t => t.id === tag.id);
-                            return (
-                              <button
-                                key={tag.id}
-                                onClick={() => handleToggleTag(tag)}
-                                disabled={savingTag}
-                                className={`text-xs px-2 py-1 rounded-full transition-all ${
-                                  isSelected 
-                                    ? 'bg-primary text-primary-foreground' 
-                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                                }`}
-                              >
-                                {tag.name}
-                              </button>
-                            );
-                          })}
+                        <div key={groupName}>
+                          <p className="text-[10px] text-muted-foreground mb-1">{groupName}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {groupTags.map(tag => {
+                              const isAssigned = productTags.some(t => t.id === tag.id);
+                              return (
+                                <button
+                                  key={tag.id}
+                                  onClick={() => handleToggleTag(tag)}
+                                  disabled={savingTag}
+                                  className={`px-2 py-0.5 text-xs rounded-full border transition-all ${
+                                    isAssigned 
+                                      ? 'bg-primary/20 border-primary text-primary' 
+                                      : 'bg-muted border-border text-muted-foreground hover:border-primary'
+                                  }`}
+                                >
+                                  {isAssigned && <Check className="h-2.5 w-2.5 inline mr-0.5" />}
+                                  {tag.name}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                ) : productTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {productTags.map(tag => (
+                      <span key={tag.id} className="px-2 py-1 text-xs bg-muted border border-border rounded-full text-muted-foreground">
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Sin etiquetas asignadas</p>
+                )}
+              </div>
             </div>
 
-            {/* Right Column - Buy Box */}
+            {/* Right Column - Buy Box (simplified, no duplicates) */}
             <div className="lg:col-span-2">
-              <div className="lg:sticky lg:top-24 bg-card border border-border rounded-xl p-4 space-y-4">
-                {/* Price in buy box with original price */}
-                <div>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-2xl font-bold text-price-yellow">
-                      {formatPrice(price.amount, price.currencyCode)}
-                    </span>
-                    <span className="text-sm text-muted-foreground line-through">
-                      {formatPrice(originalPrice, price.currencyCode)}
-                    </span>
+              <div className="sticky top-24 bg-card border border-border rounded-xl p-4 space-y-4">
+                {/* Price */}
+                <div className="text-2xl font-bold text-price-yellow">
+                  {formatPrice(price.amount, price.currencyCode)}
+                </div>
+
+                {/* Stock Urgency - Only if configured */}
+                {productOffer?.low_stock_active && productOffer?.low_stock_threshold && (
+                  <div className="flex items-center gap-2 text-sm text-amber-600">
+                    <span className="animate-pulse">🔥</span>
+                    ¡Solo quedan {productOffer.low_stock_threshold} unidades!
                   </div>
-                </div>
+                )}
 
-                {/* Delivery Info */}
-                <div className="text-sm space-y-1">
-                  <div className="flex items-center gap-2 text-green-600 font-medium">
-                    <Truck className="h-4 w-4" />
-                    Envío GRATIS
-                  </div>
-                  <p className="text-muted-foreground text-xs">Entrega estimada: 7-15 días</p>
-                </div>
-
-                {/* Availability with urgency */}
-                <div className="space-y-1">
-                  <p className={`text-sm font-medium ${selectedVariant?.availableForSale ? 'text-green-600' : 'text-destructive'}`}>
-                    {selectedVariant?.availableForSale ? 'En stock' : 'No disponible'}
-                  </p>
-                  {selectedVariant?.availableForSale && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-600">
-                      <Flame className="h-3.5 w-3.5" />
-                      <span className="font-medium">¡Solo quedan 12 unidades!</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Options in buy box - with bestseller badge */}
-                {product.options.map((option, optionIndex) => (
+                {/* Variant Selection */}
+                {product.options.filter(opt => opt.values.length > 1).map((option) => (
                   <div key={option.name} className="space-y-2">
                     <label className="text-xs font-medium text-muted-foreground">
                       {getDisplayName(product.id, option.name)}
                     </label>
                     <div className="flex flex-wrap gap-1.5">
-                      {option.values.map((value, valueIndex) => {
+                      {option.values.map((value, idx) => {
                         const isSelected = selectedOptions[option.name] === value;
-                        const isBestseller = optionIndex === 0 && valueIndex === 1; // 2nd option as bestseller
                         return (
-                          <div key={value} className="relative">
-                            <button
-                              onClick={() => handleOptionChange(option.name, value)}
-                              className={`px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
-                                isSelected
-                                  ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary"
-                                  : "border-border hover:border-muted-foreground text-foreground"
-                              } ${isBestseller ? 'ring-1 ring-amber-500/50' : ''}`}
-                            >
-                              {value}
-                            </button>
-                            {isBestseller && (
-                              <span className="absolute -top-2 -right-1 px-1 text-[8px] font-bold bg-amber-500 text-white rounded">
-                                TOP
-                              </span>
-                            )}
-                          </div>
+                          <button
+                            key={value}
+                            onClick={() => handleOptionChange(option.name, value)}
+                            className={`px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary"
+                                : "border-border hover:border-muted-foreground text-foreground"
+                            }`}
+                          >
+                            {value}
+                          </button>
                         );
                       })}
                     </div>
@@ -1052,16 +1277,29 @@ const ProductDetail = () => {
                   Añadir al Carrito
                 </Button>
 
-                {/* Urgency Section */}
-                <div className="bg-gradient-to-r from-red-500/10 to-amber-500/10 border border-red-500/30 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-red-600">
-                    <Clock className="h-4 w-4" />
-                    ¡Oferta termina pronto!
+                {/* Urgency Section - Only if configured with real date */}
+                {offerTimeLeft && productOffer?.offer_text && (
+                  <div className="bg-gradient-to-r from-red-600 to-amber-500 rounded-lg p-3 space-y-2 text-white">
+                    <div className="flex items-center gap-2 font-bold">
+                      <Clock className="h-4 w-4 animate-pulse" />
+                      {productOffer.offer_text}
+                    </div>
+                    <div className="flex gap-2 text-xs">
+                      <div className="bg-white/20 rounded px-2 py-1 text-center">
+                        <span className="font-bold text-lg">{offerTimeLeft.days}</span>
+                        <p className="text-[10px]">días</p>
+                      </div>
+                      <div className="bg-white/20 rounded px-2 py-1 text-center">
+                        <span className="font-bold text-lg">{offerTimeLeft.hours}</span>
+                        <p className="text-[10px]">hrs</p>
+                      </div>
+                      <div className="bg-white/20 rounded px-2 py-1 text-center">
+                        <span className="font-bold text-lg">{offerTimeLeft.minutes}</span>
+                        <p className="text-[10px]">min</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Últimas unidades a este precio. ¡No te lo pierdas!
-                  </p>
-                </div>
+                )}
 
                 {/* Trust badges */}
                 <div className="pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
@@ -1145,7 +1383,6 @@ const ProductDetail = () => {
                           if (cjCostData && !hasData) {
                             const cjTotalCost = cjCostData.productCost + cjCostData.shippingCost;
                             const cjProfit = sellingPrice - cjTotalCost * 0.92;
-                            const cjMargin = (cjProfit / sellingPrice) * 100;
                             
                             return (
                               <div className="space-y-2 text-xs">
@@ -1182,7 +1419,6 @@ const ProductDetail = () => {
                           if (hasData) {
                             const totalCost = productCostData.product_cost + productCostData.shipping_cost;
                             const profit = sellingPrice - totalCost;
-                            const margin = (profit / sellingPrice) * 100;
                             
                             return (
                               <div className="grid grid-cols-3 gap-1 text-center text-xs">
@@ -1222,7 +1458,131 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Related Products - Carousel Style */}
+          {/* Reviews Section */}
+          <section className="mt-12 pt-8 border-t border-border">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Reseñas de clientes
+                {reviewStats.totalReviews > 0 && (
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({reviewStats.totalReviews})
+                  </span>
+                )}
+              </h2>
+              <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Star className="h-4 w-4 mr-2" />
+                    Escribir reseña
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Escribe tu reseña</DialogTitle>
+                    <DialogDescription>
+                      Comparte tu experiencia con este producto.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Tu nombre</Label>
+                      <Input
+                        value={reviewForm.user_name}
+                        onChange={(e) => setReviewForm({ ...reviewForm, user_name: e.target.value })}
+                        placeholder="Tu nombre..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Puntuación</Label>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                            className="p-1"
+                          >
+                            <Star
+                              className={`h-6 w-6 ${star <= reviewForm.rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Título (opcional)</Label>
+                      <Input
+                        value={reviewForm.title}
+                        onChange={(e) => setReviewForm({ ...reviewForm, title: e.target.value })}
+                        placeholder="Resume tu experiencia..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Comentario (opcional)</Label>
+                      <Textarea
+                        value={reviewForm.comment}
+                        onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                        placeholder="Cuéntanos más sobre tu experiencia..."
+                        rows={4}
+                      />
+                    </div>
+                    <Button onClick={handleSubmitReview} className="w-full" disabled={createReview.isPending}>
+                      {createReview.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Enviar reseña
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {reviewsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>Aún no hay reseñas para este producto.</p>
+                <p className="text-sm">¡Sé el primero en compartir tu experiencia!</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {reviews.map((review) => (
+                  <div key={review.id} className="bg-card border border-border rounded-lg p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                          {review.user_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{review.user_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(review.created_at).toLocaleDateString('es-ES')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-3.5 w-3.5 ${star <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {review.title && (
+                      <p className="font-medium text-sm">{review.title}</p>
+                    )}
+                    {review.comment && (
+                      <p className="text-sm text-muted-foreground">{review.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Related Products */}
           {relatedProducts.length > 0 && (
             <section className="mt-12 pt-8 border-t border-border">
               <div className="flex items-center justify-between mb-4">
