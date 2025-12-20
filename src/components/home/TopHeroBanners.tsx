@@ -86,56 +86,47 @@ function HolidayStripCard({
 export function TopHeroBanners() {
   return (
     <section className="container mx-auto px-4 mb-8" aria-label="Banners principales">
-      {/* Banner navideño (limpio, sin copos/emojis) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <HolidayStripCard
-          title="Felices Fiestas"
-          subtitle="Regalos y novedades en AsteroHype"
-          cta={{ label: "Ver novedades", to: "/products?tag=nuevos" }}
-          variant="primary"
-        />
-        <HolidayStripCard
-          title="Ofertas Navideñas"
-          subtitle="Productos de calidad con descuentos especiales"
-          cta={{ label: "Ver ofertas", to: "/products?tag=ofertas" }}
-          variant="outline"
-        />
-      </div>
-
-      {/* Dos banners originales con las imágenes (intacto) */}
+      {/* Dos banners principales (mismas imágenes), con el texto navideño ENCIMA */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[300px] md:h-[400px]">
         <div className="relative rounded-2xl overflow-hidden group">
           <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5000} />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent z-10" />
-          <div className="absolute bottom-6 left-6 right-6 z-20">
-            <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">
-              Compra con Confianza
-            </h2>
-            <p className="text-muted-foreground text-sm md:text-base">
-              Miles de clientes satisfechos
-            </p>
-            <Link to="/products">
-              <Button variant="hero" size="lg" className="mt-4 rounded-full">
-                Explorar Tienda
-              </Button>
-            </Link>
+          <div className="absolute inset-0 bg-gradient-to-t from-overlay/70 via-overlay/15 to-transparent z-10" />
+
+          <div className="absolute top-5 left-5 right-5 z-20">
+            <div className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl p-5 md:p-6">
+              <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
+                Felices Fiestas
+              </h2>
+              <p className="text-muted-foreground text-sm md:text-base mt-1">
+                Regalos y novedades en AsteroHype
+              </p>
+              <Link to="/products?tag=nuevos">
+                <Button variant="hero" size="lg" className="mt-4 rounded-full">
+                  Ver novedades
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
+
         <div className="relative rounded-2xl overflow-hidden group">
           <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4000} />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent z-10" />
-          <div className="absolute bottom-6 left-6 right-6 z-20">
-            <h2 className="text-2xl md:text-3xl font-display italic text-foreground mb-2">
-              Ofertas Exclusivas
-            </h2>
-            <p className="text-muted-foreground text-sm md:text-base">
-              Descuentos especiales cada día
-            </p>
-            <Link to="/products">
-              <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
-                Ver Ofertas
-              </Button>
-            </Link>
+          <div className="absolute inset-0 bg-gradient-to-t from-overlay/70 via-overlay/15 to-transparent z-10" />
+
+          <div className="absolute top-5 left-5 right-5 z-20">
+            <div className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl p-5 md:p-6">
+              <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
+                Ofertas Navideñas
+              </h2>
+              <p className="text-muted-foreground text-sm md:text-base mt-1">
+                Productos de calidad con descuentos especiales
+              </p>
+              <Link to="/products?tag=ofertas">
+                <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
+                  Ver ofertas
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
