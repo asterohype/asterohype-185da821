@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Shopify Storefront API Configuration
 const SHOPIFY_API_VERSION = '2025-07';
@@ -6,6 +7,14 @@ const SHOPIFY_STORE_PERMANENT_DOMAIN = 'e7kzti-96.myshopify.com';
 const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 const SHOPIFY_STOREFRONT_TOKEN = '7adf5ac937177947a686836842f100fe';
 
+// Helper to get the current user's session token for authenticated requests
+async function getAuthToken(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('No hay sesión activa. Por favor, inicia sesión.');
+  }
+  return session.access_token;
+}
 export interface ShopifyProduct {
   node: {
     id: string;
@@ -292,13 +301,14 @@ export function formatPrice(amount: string, currencyCode: string = 'USD'): strin
 
 // Update product title via Admin API (through edge function)
 export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
+  const token = await getAuthToken();
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ productId, title: newTitle }),
     }
@@ -312,13 +322,14 @@ export async function updateProductTitle(productId: string, newTitle: string): P
 
 // Update product variant price via Admin API (through edge function)
 export async function updateProductPrice(productId: string, variantId: string, newPrice: string): Promise<void> {
+  const token = await getAuthToken();
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ productId, variantId, price: newPrice }),
     }
@@ -332,13 +343,14 @@ export async function updateProductPrice(productId: string, variantId: string, n
 
 // Update product description via Admin API (through edge function)
 export async function updateProductDescription(productId: string, description: string): Promise<void> {
+  const token = await getAuthToken();
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ productId, description }),
     }
@@ -352,13 +364,14 @@ export async function updateProductDescription(productId: string, description: s
 
 // Delete product image via Admin API
 export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
+  const token = await getAuthToken();
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ action: 'delete_image', productId, imageId }),
     }
@@ -372,13 +385,14 @@ export async function deleteProductImage(productId: string, imageId: string): Pr
 
 // Add product image via Admin API
 export async function addProductImage(productId: string, imageUrl: string, imageAlt?: string): Promise<unknown> {
+  const token = await getAuthToken();
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ action: 'add_image', productId, imageUrl, imageAlt }),
     }
@@ -394,13 +408,14 @@ export async function addProductImage(productId: string, imageUrl: string, image
 
 // Delete product via Admin API
 export async function deleteProduct(productId: string): Promise<void> {
+  const token = await getAuthToken();
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ action: 'delete_product', productId }),
     }
