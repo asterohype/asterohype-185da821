@@ -87,10 +87,53 @@ export function useCreateReview() {
   });
 }
 
+export function useUpdateReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reviewId, productId, updates }: { 
+      reviewId: string; 
+      productId: string;
+      updates: { rating?: number; title?: string | null; comment?: string | null; user_name?: string };
+    }) => {
+      const { error } = await supabase
+        .from("product_reviews")
+        .update(updates)
+        .eq("id", reviewId);
+      if (error) throw error;
+      return productId;
+    },
+    onSuccess: (productId) => {
+      queryClient.invalidateQueries({ 
+        queryKey: ["product-reviews", productId] 
+      });
+    },
+  });
+}
+
 export function useDeleteReview() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ reviewId, productId }: { reviewId: string; productId: string }) => {
+      const { error } = await supabase
+        .from("product_reviews")
+        .delete()
+        .eq("id", reviewId);
+      if (error) throw error;
+      return productId;
+    },
+    onSuccess: (productId) => {
+      queryClient.invalidateQueries({ 
+        queryKey: ["product-reviews", productId] 
+      });
+    },
+  });
+}
+
+export function useAdminDeleteReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reviewId, productId }: { reviewId: string; productId: string }) => {
+      // This uses service role via edge function or admin permissions
       const { error } = await supabase
         .from("product_reviews")
         .delete()
