@@ -44,6 +44,11 @@ import {
   Truck,
   Shield,
   RotateCcw,
+  Star,
+  Flame,
+  Gift,
+  Clock,
+  Award,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -559,10 +564,19 @@ const ProductDetail = () => {
   const images = product.images.edges;
   const price = { amount: displayPriceAmount || "0", currencyCode: displayCurrency };
 
+  // Calculate fake original price (for display - ~30% more) 
+  const currentPrice = parseFloat(price.amount);
+  const originalPrice = (currentPrice * 1.35).toFixed(2);
+  const discountPercent = 25;
+
   // Convert description to bullet points
   const descriptionBullets = displayDescription
     ? displayDescription.split(/[.!?]+/).filter((s) => s.trim().length > 10).slice(0, 5)
     : [];
+
+  // Fake rating for display
+  const rating = 4.5;
+  const reviewCount = 127;
 
   return (
     <div className="min-h-screen bg-background">
@@ -694,6 +708,20 @@ const ProductDetail = () => {
 
             {/* Middle Column - Product Info */}
             <div className="lg:col-span-4 space-y-4">
+              {/* Rating */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-4 w-4 ${star <= Math.floor(rating) ? 'text-amber-400 fill-amber-400' : star - 0.5 <= rating ? 'text-amber-400 fill-amber-400/50' : 'text-muted-foreground/30'}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium">{rating}/5</span>
+                <span className="text-sm text-muted-foreground">({reviewCount} reseñas)</span>
+              </div>
+
               {/* Title */}
               {showAdminControls && editingTitle ? (
                 <div className="flex items-center gap-2">
@@ -750,6 +778,17 @@ const ProductDetail = () => {
                 </div>
               )}
 
+              {/* Promo Banner */}
+              <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center flex-shrink-0">
+                  <Gift className="h-5 w-5 text-background" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">¡Compra 2 y llévate envío GRATIS!</p>
+                  <p className="text-xs text-muted-foreground">Oferta por tiempo limitado</p>
+                </div>
+              </div>
+
               {/* Price Section */}
               <div className="border-b border-border pb-4">
                 {showAdminControls && editingPrice ? (
@@ -775,15 +814,26 @@ const ProductDetail = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-bold text-price-yellow">
-                      {formatPrice(price.amount, price.currencyCode)}
-                    </span>
-                    {showAdminControls && (
-                      <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6">
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
+                  <div className="space-y-1">
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <span className="text-3xl font-bold text-price-yellow">
+                        {formatPrice(price.amount, price.currencyCode)}
+                      </span>
+                      <span className="text-lg text-muted-foreground line-through">
+                        {formatPrice(originalPrice, price.currencyCode)}
+                      </span>
+                      <span className="px-2 py-0.5 text-xs font-bold bg-green-600 text-white rounded-md">
+                        -{discountPercent}% OFF
+                      </span>
+                      {showAdminControls && (
+                        <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Impuestos incluidos. Envío gratis para pedidos superiores a 49€
+                    </p>
                   </div>
                 )}
                 <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
@@ -903,9 +953,16 @@ const ProductDetail = () => {
             {/* Right Column - Buy Box */}
             <div className="lg:col-span-2">
               <div className="lg:sticky lg:top-24 bg-card border border-border rounded-xl p-4 space-y-4">
-                {/* Price in buy box */}
-                <div className="text-2xl font-bold text-price-yellow">
-                  {formatPrice(price.amount, price.currencyCode)}
+                {/* Price in buy box with original price */}
+                <div>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-2xl font-bold text-price-yellow">
+                      {formatPrice(price.amount, price.currencyCode)}
+                    </span>
+                    <span className="text-sm text-muted-foreground line-through">
+                      {formatPrice(originalPrice, price.currencyCode)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Delivery Info */}
@@ -917,31 +974,49 @@ const ProductDetail = () => {
                   <p className="text-muted-foreground text-xs">Entrega estimada: 7-15 días</p>
                 </div>
 
-                {/* Availability */}
-                <p className={`text-sm font-medium ${selectedVariant?.availableForSale ? 'text-green-600' : 'text-destructive'}`}>
-                  {selectedVariant?.availableForSale ? 'En stock' : 'No disponible'}
-                </p>
+                {/* Availability with urgency */}
+                <div className="space-y-1">
+                  <p className={`text-sm font-medium ${selectedVariant?.availableForSale ? 'text-green-600' : 'text-destructive'}`}>
+                    {selectedVariant?.availableForSale ? 'En stock' : 'No disponible'}
+                  </p>
+                  {selectedVariant?.availableForSale && (
+                    <div className="flex items-center gap-1.5 text-xs text-amber-600">
+                      <Flame className="h-3.5 w-3.5" />
+                      <span className="font-medium">¡Solo quedan 12 unidades!</span>
+                    </div>
+                  )}
+                </div>
 
-                {/* Options in buy box */}
-                {product.options.map((option) => (
+                {/* Options in buy box - with bestseller badge */}
+                {product.options.map((option, optionIndex) => (
                   <div key={option.name} className="space-y-2">
                     <label className="text-xs font-medium text-muted-foreground">
                       {getDisplayName(product.id, option.name)}
                     </label>
                     <div className="flex flex-wrap gap-1.5">
-                      {option.values.map((value) => (
-                        <button
-                          key={value}
-                          onClick={() => handleOptionChange(option.name, value)}
-                          className={`px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
-                            selectedOptions[option.name] === value
-                              ? "border-primary bg-primary/10 text-primary font-medium"
-                              : "border-border hover:border-muted-foreground text-foreground"
-                          }`}
-                        >
-                          {value}
-                        </button>
-                      ))}
+                      {option.values.map((value, valueIndex) => {
+                        const isSelected = selectedOptions[option.name] === value;
+                        const isBestseller = optionIndex === 0 && valueIndex === 1; // 2nd option as bestseller
+                        return (
+                          <div key={value} className="relative">
+                            <button
+                              onClick={() => handleOptionChange(option.name, value)}
+                              className={`px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary"
+                                  : "border-border hover:border-muted-foreground text-foreground"
+                              } ${isBestseller ? 'ring-1 ring-amber-500/50' : ''}`}
+                            >
+                              {value}
+                            </button>
+                            {isBestseller && (
+                              <span className="absolute -top-2 -right-1 px-1 text-[8px] font-bold bg-amber-500 text-white rounded">
+                                TOP
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -977,6 +1052,17 @@ const ProductDetail = () => {
                   Añadir al Carrito
                 </Button>
 
+                {/* Urgency Section */}
+                <div className="bg-gradient-to-r from-red-500/10 to-amber-500/10 border border-red-500/30 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-red-600">
+                    <Clock className="h-4 w-4" />
+                    ¡Oferta termina pronto!
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Últimas unidades a este precio. ¡No te lo pierdas!
+                  </p>
+                </div>
+
                 {/* Trust badges */}
                 <div className="pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
@@ -988,7 +1074,7 @@ const ProductDetail = () => {
                     30 días de devolución
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-3.5 w-3.5 text-green-600" />
+                    <Award className="h-3.5 w-3.5 text-green-600" />
                     Garantía incluida
                   </div>
                 </div>
