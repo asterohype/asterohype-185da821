@@ -705,7 +705,7 @@ const ProductDetail = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-24 pb-24 md:pb-12">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-6xl mx-auto px-6">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <Link to="/" className="hover:text-primary transition-colors">Inicio</Link>
