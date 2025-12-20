@@ -266,6 +266,7 @@ export type Database = {
           id: string
           price: number | null
           shopify_product_id: string
+          subtitle: string | null
           title: string | null
           updated_at: string
         }
@@ -275,6 +276,7 @@ export type Database = {
           id?: string
           price?: number | null
           shopify_product_id: string
+          subtitle?: string | null
           title?: string | null
           updated_at?: string
         }
@@ -284,6 +286,7 @@ export type Database = {
           id?: string
           price?: number | null
           shopify_product_id?: string
+          subtitle?: string | null
           title?: string | null
           updated_at?: string
         }
