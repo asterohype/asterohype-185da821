@@ -22,6 +22,7 @@ import {
   Pencil,
   Check,
   ImagePlus,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +38,7 @@ import { toast } from "sonner";
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
 import { ChristmasBanner } from "@/components/home/ChristmasBanner";
-import { HolidayTopBanners } from "@/components/home/HolidayTopBanners";
+import { TopHeroBanners } from "@/components/home/TopHeroBanners";
 
 // Scroll animation hook
 function useScrollReveal() {
@@ -217,10 +218,24 @@ const Index = () => {
   const { isAdmin } = useAdmin();
   const { isAdminModeActive } = useAdminModeStore();
   const showAdminControls = isAdmin && isAdminModeActive;
-  const { categories, updateCategory, updateCategoryImage, clearCategoryImage } = useMenuConfigStore();
+  const {
+    categories,
+    updateCategory,
+    updateCategoryImage,
+    clearCategoryImage,
+    addCategory,
+  } = useMenuConfigStore();
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [imageSelectorCategory, setImageSelectorCategory] = useState<{ id: string; label: string; customImage?: string } | null>(null);
+  const [imageSelectorCategory, setImageSelectorCategory] = useState<{
+    id: string;
+    label: string;
+    customImage?: string;
+  } | null>(null);
+
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [newCategoryLabel, setNewCategoryLabel] = useState("");
+  const [newCategorySlug, setNewCategorySlug] = useState("");
 
   // Authentication state
   useEffect(() => {
@@ -290,8 +305,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-32 pb-24 md:pb-8">
-        {/* Banner superior navideño (doble) */}
-        <HolidayTopBanners />
+        <TopHeroBanners />
 
 
         {/* Marketing Cards Grid - Amazon Style with scroll animations */}
@@ -419,11 +433,82 @@ const Index = () => {
         <section className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-display text-2xl md:text-3xl uppercase italic text-foreground">Categorías</h2>
-            <Link to="/products" className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1">
-              Ver todo <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              {showAdminControls && (
+                <Button
+                  type="button"
+                  variant="hero-outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => setIsCreatingCategory((v) => !v)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva categoría
+                </Button>
+              )}
+              <Link
+                to="/products"
+                className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1"
+              >
+                Ver todo <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
-          
+
+          {showAdminControls && isCreatingCategory && (
+            <div className="mb-6 rounded-2xl border border-border/50 bg-card p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div className="md:col-span-1">
+                  <label className="text-xs text-muted-foreground">Nombre</label>
+                  <Input
+                    value={newCategoryLabel}
+                    onChange={(e) => setNewCategoryLabel(e.target.value)}
+                    placeholder="Ej: Decoración"
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-xs text-muted-foreground">Slug</label>
+                  <Input
+                    value={newCategorySlug}
+                    onChange={(e) => setNewCategorySlug(e.target.value)}
+                    placeholder="Ej: decoracion"
+                  />
+                </div>
+                <div className="md:col-span-1 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="hero"
+                    className="rounded-full"
+                    onClick={() => {
+                      const label = newCategoryLabel.trim();
+                      const slug = newCategorySlug.trim().toLowerCase().replace(/\s+/g, "-");
+                      if (!label || !slug) {
+                        toast.error("Rellena nombre y slug");
+                        return;
+                      }
+                      addCategory(slug, label);
+                      setIsCreatingCategory(false);
+                      setNewCategoryLabel("");
+                      setNewCategorySlug("");
+                      toast.success("Categoría creada");
+                    }}
+                  >
+                    Crear
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => setIsCreatingCategory(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">Nota: el slug debe ser único.</p>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex justify-center gap-6 md:gap-10 flex-wrap">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -433,6 +518,7 @@ const Index = () => {
                 </div>
               ))}
             </div>
+
           ) : (
             <div className="flex justify-center gap-6 md:gap-10 lg:gap-12 flex-wrap">
               {categories.map((category) => {
