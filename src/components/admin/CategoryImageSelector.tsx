@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShopifyProduct } from "@/lib/shopify";
-import { Upload, Image, Trash2, Search, Check } from "lucide-react";
+import { Upload, Image, Trash2, Search, Check, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface CategoryImageSelectorProps {
@@ -18,6 +18,8 @@ interface CategoryImageSelectorProps {
   categoryName: string;
 }
 
+const PRODUCTS_PER_PAGE = 20;
+
 export function CategoryImageSelector({
   isOpen,
   onClose,
@@ -29,20 +31,29 @@ export function CategoryImageSelector({
 }: CategoryImageSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  // When viewing a product's images, store the product
+  const [viewingProduct, setViewingProduct] = useState<ShopifyProduct | null>(null);
 
   // Filter products by search query
-  const filteredProducts = products.filter((p) =>
-    p.node.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) =>
+      p.node.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [products, searchQuery]);
 
-  // Get all unique images from products
-  const productImages = filteredProducts.flatMap((p) =>
-    p.node.images.edges.map((img) => ({
-      url: img.node.url,
-      productTitle: p.node.title,
-      productId: p.node.id,
-    }))
-  );
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  // Reset page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,7 +64,6 @@ export function CategoryImageSelector({
       return;
     }
 
-    // Convert to base64 for local storage (or you could upload to storage)
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
@@ -78,9 +88,19 @@ export function CategoryImageSelector({
     onClose();
   };
 
+  const handleProductClick = (product: ShopifyProduct) => {
+    setViewingProduct(product);
+    setSelectedImage(null);
+  };
+
+  const handleBackToProducts = () => {
+    setViewingProduct(null);
+    setSelectedImage(null);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh]">
+      <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Image className="h-5 w-5 text-primary" />
@@ -102,68 +122,147 @@ export function CategoryImageSelector({
 
           {/* Tab: Select from products */}
           <TabsContent value="products" className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar producto..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Images grid */}
-            <ScrollArea className="h-[350px] pr-4">
-              <div className="grid grid-cols-4 gap-3">
-                {productImages.slice(0, 60).map((img, index) => (
-                  <button
-                    key={`${img.productId}-${index}`}
-                    onClick={() => setSelectedImage(img.url)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                      selectedImage === img.url
-                        ? "border-primary ring-2 ring-primary/30"
-                        : "border-border/50 hover:border-primary/50"
-                    }`}
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.productTitle}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {selectedImage === img.url && (
-                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                        <Check className="h-8 w-8 text-primary drop-shadow-lg" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-              {productImages.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  No se encontraron imágenes
-                </p>
-              )}
-            </ScrollArea>
-
-            {/* Select button */}
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSelectProductImage}
-                disabled={!selectedImage}
-                className="flex-1"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Usar imagen seleccionada
-              </Button>
-              {currentImage && (
-                <Button variant="destructive" onClick={handleClearImage}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar
+            {viewingProduct ? (
+              // Viewing a specific product's images
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToProducts}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver a productos
                 </Button>
-              )}
-            </div>
+
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg">{viewingProduct.node.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {viewingProduct.node.images.edges.length} imagen(es) disponibles
+                  </p>
+                </div>
+
+                <ScrollArea className="h-[400px] pr-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {viewingProduct.node.images.edges.map((img, index) => (
+                      <button
+                        key={`${viewingProduct.node.id}-img-${index}`}
+                        onClick={() => setSelectedImage(img.node.url)}
+                        className={`relative aspect-square rounded-xl overflow-hidden border-3 transition-all hover:scale-105 ${
+                          selectedImage === img.node.url
+                            ? "border-primary ring-4 ring-primary/30"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <img
+                          src={img.node.url}
+                          alt={img.node.altText || `Imagen ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {selectedImage === img.node.url && (
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <Check className="h-10 w-10 text-primary drop-shadow-lg" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                <Button
+                  onClick={handleSelectProductImage}
+                  disabled={!selectedImage}
+                  className="w-full"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Usar esta imagen
+                </Button>
+              </div>
+            ) : (
+              // Viewing all products
+              <>
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar producto..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Products grid */}
+                <ScrollArea className="h-[380px] pr-4">
+                  <div className="grid grid-cols-4 gap-3">
+                    {paginatedProducts.map((product) => (
+                      <button
+                        key={product.node.id}
+                        onClick={() => handleProductClick(product)}
+                        className="relative aspect-square rounded-lg overflow-hidden border-2 border-border/50 hover:border-primary/50 transition-all hover:scale-105 group"
+                      >
+                        <img
+                          src={product.node.images.edges[0]?.node.url}
+                          alt={product.node.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-xs font-medium text-foreground line-clamp-2">
+                            {product.node.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {product.node.images.edges.length} imgs
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {filteredProducts.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      No se encontraron productos
+                    </p>
+                  )}
+                </ScrollArea>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Página {currentPage} de {totalPages} ({filteredProducts.length} productos)
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Clear button */}
+                {currentImage && (
+                  <Button variant="destructive" onClick={handleClearImage} className="w-full">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar imagen actual
+                  </Button>
+                )}
+              </>
+            )}
           </TabsContent>
 
           {/* Tab: Upload file */}
@@ -201,11 +300,7 @@ export function CategoryImageSelector({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleClearImage}
-                >
+                <Button variant="destructive" size="sm" onClick={handleClearImage}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Eliminar imagen
                 </Button>
