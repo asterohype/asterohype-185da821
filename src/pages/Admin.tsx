@@ -160,7 +160,7 @@ export default function Admin() {
           ? { ...p, node: { ...p.node, title: editedTitle.trim() } }
           : p
       ));
-      toast.success('Nombre actualizado en Shopify');
+      toast.success('Nombre actualizado');
       cancelEditing();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -216,7 +216,7 @@ export default function Admin() {
             }
           : p
       ));
-      toast.success('Precio actualizado en Shopify');
+      toast.success('Precio actualizado');
       cancelEditingPrice();
     } catch (error) {
       console.error('Error updating price:', error);

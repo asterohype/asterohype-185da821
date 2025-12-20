@@ -245,16 +245,21 @@ export async function storefrontApiRequest(query: string, variables: Record<stri
   return data;
 }
 
-// Fetch all products
+// Fetch all products (with local overrides applied)
 export async function fetchProducts(first: number = 20, query?: string): Promise<ShopifyProduct[]> {
   const data = await storefrontApiRequest(STOREFRONT_QUERY, { first, query });
-  return data.data.products.edges;
+  const products = data.data.products.edges as ShopifyProduct[];
+  return applyLocalOverrides(products);
 }
 
-// Fetch single product by handle
+// Fetch single product by handle (with local override applied)
 export async function fetchProductByHandle(handle: string): Promise<ShopifyProduct['node'] | null> {
   const data = await storefrontApiRequest(PRODUCT_BY_HANDLE_QUERY, { handle });
-  return data.data.product;
+  const product = data.data.product as ShopifyProduct["node"] | null;
+  if (!product) return null;
+
+  const [patched] = await applyLocalOverrides([{ node: product } as ShopifyProduct]);
+  return patched?.node ?? product;
 }
 
 // Create checkout
@@ -295,23 +300,85 @@ export function formatPrice(amount: string, currencyCode: string = 'USD'): strin
 // Local Product Overrides (stored in database)
 // ============================================================
 
-async function upsertProductOverride(
-  shopifyProductId: string,
-  patch: { title?: string | null; description?: string | null; price?: number | null }
-) {
+type ProductOverridePatch = {
+  title?: string | null;
+  description?: string | null;
+  price?: number | null;
+};
+
+async function upsertProductOverride(shopifyProductId: string, patch: ProductOverridePatch) {
+  // Only update fields that are provided (avoid overwriting other fields with null).
+  const updatePayload: Record<string, unknown> = {};
+  if ("title" in patch) updatePayload.title = patch.title;
+  if ("description" in patch) updatePayload.description = patch.description;
+  if ("price" in patch) updatePayload.price = patch.price;
+
+  const { data: existing, error: findError } = await supabase
+    .from("product_overrides")
+    .select("id")
+    .eq("shopify_product_id", shopifyProductId)
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("product_overrides")
+      .update(updatePayload)
+      .eq("shopify_product_id", shopifyProductId);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
   const { error } = await supabase
     .from("product_overrides")
-    .upsert(
-      {
-        shopify_product_id: shopifyProductId,
-        title: patch.title ?? null,
-        description: patch.description ?? null,
-        price: patch.price ?? null,
-      },
-      { onConflict: "shopify_product_id" }
-    );
-
+    .insert({ shopify_product_id: shopifyProductId, ...updatePayload });
   if (error) throw new Error(error.message);
+}
+
+async function applyLocalOverrides(products: ShopifyProduct[]): Promise<ShopifyProduct[]> {
+  const ids = products.map((p) => p.node.id).filter(Boolean);
+  if (ids.length === 0) return products;
+
+  const { data, error } = await supabase
+    .from("product_overrides")
+    .select("shopify_product_id,title,description,price")
+    .in("shopify_product_id", ids);
+
+  if (error) {
+    // Fail open: show Shopify data if overrides cannot be fetched.
+    return products;
+  }
+
+  const byId = new Map<string, { title: string | null; description: string | null; price: number | null }>();
+  (data || []).forEach((o) => {
+    byId.set(o.shopify_product_id, {
+      title: o.title,
+      description: o.description,
+      price: o.price,
+    });
+  });
+
+  return products.map((p) => {
+    const ov = byId.get(p.node.id);
+    if (!ov) return p;
+
+    return {
+      ...p,
+      node: {
+        ...p.node,
+        title: ov.title ?? p.node.title,
+        description: ov.description ?? p.node.description,
+        priceRange: {
+          ...p.node.priceRange,
+          minVariantPrice:
+            ov.price != null
+              ? { ...p.node.priceRange.minVariantPrice, amount: String(ov.price) }
+              : p.node.priceRange.minVariantPrice,
+        },
+      },
+    } as ShopifyProduct;
+  });
 }
 
 export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
@@ -324,9 +391,7 @@ export async function updateProductPrice(
   newPrice: string
 ): Promise<void> {
   const parsed = Number(newPrice);
-  if (!Number.isFinite(parsed)) {
-    throw new Error("Precio inválido");
-  }
+  if (!Number.isFinite(parsed)) throw new Error("Precio inválido");
   await upsertProductOverride(productId, { price: parsed });
 }
 
