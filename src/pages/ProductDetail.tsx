@@ -23,7 +23,7 @@ import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
 import { useProductOverride, useUpsertOverride } from "@/hooks/useProductOverrides";
-import { useProductReviews, useProductReviewStats, useCreateReview } from "@/hooks/useProductReviews";
+import { useProductReviews, useProductReviewStats, useCreateReview, useDeleteReview, useUpdateReview } from "@/hooks/useProductReviews";
 import { useProductOffer, useUpsertOffer } from "@/hooks/useProductOffers";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -126,6 +126,8 @@ const ProductDetail = () => {
   const { data: reviews = [], isLoading: reviewsLoading } = useProductReviews(product?.id);
   const { stats: reviewStats } = useProductReviewStats(product?.id);
   const createReview = useCreateReview();
+  const deleteReview = useDeleteReview();
+  const updateReview = useUpdateReview();
   
   // Offers hook
   const { data: productOffer, isLoading: offerLoading } = useProductOffer(product?.id);
@@ -168,6 +170,22 @@ const ProductDetail = () => {
     comment: '',
     user_name: '',
   });
+  
+  // Edit review states
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editReviewForm, setEditReviewForm] = useState({
+    rating: 5,
+    title: '',
+    comment: '',
+  });
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Get current user ID
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id || null);
+    });
+  }, []);
 
   useEffect(() => {
     async function loadProduct() {
@@ -1495,15 +1513,28 @@ const ProductDetail = () => {
           {/* Reviews Section */}
           <section className="mt-12 pt-8 border-t border-border">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Reseñas de clientes
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Reseñas de clientes
+                </h2>
                 {reviewStats.totalReviews > 0 && (
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({reviewStats.totalReviews})
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-4 w-4 ${star <= Math.round(reviewStats.averageRating) ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="font-semibold">{reviewStats.averageRating}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({reviewStats.totalReviews} {reviewStats.totalReviews === 1 ? 'reseña' : 'reseñas'})
+                    </span>
+                  </div>
                 )}
-              </h2>
+              </div>
               <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -1581,37 +1612,147 @@ const ProductDetail = () => {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {reviews.map((review) => (
-                  <div key={review.id} className="bg-card border border-border rounded-lg p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
-                          {review.user_name.charAt(0).toUpperCase()}
+                {reviews.map((review) => {
+                  const isOwnReview = currentUserId && review.user_id === currentUserId;
+                  const canDelete = showAdminControls || isOwnReview;
+                  const canEdit = isOwnReview;
+                  const isEditing = editingReviewId === review.id;
+                  
+                  return (
+                    <div key={review.id} className="bg-card border border-border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                            {review.user_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{review.user_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString('es-ES')}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-sm">{review.user_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(review.created_at).toLocaleDateString('es-ES')}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          {isEditing ? (
+                            <div className="flex items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  onClick={() => setEditReviewForm({...editReviewForm, rating: star})}
+                                  className="p-0.5"
+                                >
+                                  <Star
+                                    className={`h-4 w-4 ${star <= editReviewForm.rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-3.5 w-3.5 ${star <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          {!isEditing && (canEdit || canDelete) && (
+                            <div className="flex items-center gap-1">
+                              {canEdit && (
+                                <button
+                                  onClick={() => {
+                                    setEditingReviewId(review.id);
+                                    setEditReviewForm({
+                                      rating: review.rating,
+                                      title: review.title || '',
+                                      comment: review.comment || '',
+                                    });
+                                  }}
+                                  className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm('¿Eliminar esta reseña?')) return;
+                                    try {
+                                      await deleteReview.mutateAsync({ reviewId: review.id, productId: product!.id });
+                                      toast.success('Reseña eliminada');
+                                    } catch (error) {
+                                      toast.error('Error al eliminar');
+                                    }
+                                  }}
+                                  className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`h-3.5 w-3.5 ${star <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                      
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={editReviewForm.title}
+                            onChange={(e) => setEditReviewForm({...editReviewForm, title: e.target.value})}
+                            placeholder="Título (opcional)"
+                            className="text-sm"
                           />
-                        ))}
-                      </div>
+                          <Textarea
+                            value={editReviewForm.comment}
+                            onChange={(e) => setEditReviewForm({...editReviewForm, comment: e.target.value})}
+                            placeholder="Comentario..."
+                            rows={2}
+                            className="text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={async () => {
+                                try {
+                                  await updateReview.mutateAsync({
+                                    reviewId: review.id,
+                                    productId: product!.id,
+                                    updates: {
+                                      rating: editReviewForm.rating,
+                                      title: editReviewForm.title || null,
+                                      comment: editReviewForm.comment || null,
+                                    }
+                                  });
+                                  toast.success('Reseña actualizada');
+                                  setEditingReviewId(null);
+                                } catch (error) {
+                                  toast.error('Error al actualizar');
+                                }
+                              }}
+                              disabled={updateReview.isPending}
+                            >
+                              {updateReview.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Save className="h-3 w-3 mr-1" />}
+                              Guardar
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingReviewId(null)}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {review.title && (
+                            <p className="font-medium text-sm">{review.title}</p>
+                          )}
+                          {review.comment && (
+                            <p className="text-sm text-muted-foreground">{review.comment}</p>
+                          )}
+                        </>
+                      )}
                     </div>
-                    {review.title && (
-                      <p className="font-medium text-sm">{review.title}</p>
-                    )}
-                    {review.comment && (
-                      <p className="text-sm text-muted-foreground">{review.comment}</p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
