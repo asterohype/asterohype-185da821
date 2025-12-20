@@ -16,6 +16,7 @@ import { Smartphone, Home, Shirt, Headphones, ChevronRight, Flame, Zap, Gift, Tr
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductTags } from "@/hooks/useProductTags";
+import { useProductOverrides } from "@/hooks/useProductOverrides";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useAdminModeStore } from "@/stores/adminModeStore";
@@ -95,6 +96,84 @@ const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval
           }`}
         />
       ))}
+    </div>
+  );
+};
+
+// Destacados Grid Component that uses overrides
+const DestacadosGrid = ({ 
+  products, 
+  getTagsForProduct 
+}: { 
+  products: ShopifyProduct[]; 
+  getTagsForProduct: (productId: string) => any[];
+}) => {
+  const { data: overrides } = useProductOverrides();
+  
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+      {products.map((product, index) => {
+        const productTags = getTagsForProduct(product.node.id);
+        const override = overrides?.find(o => o.shopify_product_id === product.node.id);
+        const displayTitle = override?.title || product.node.title;
+        const displayPrice = override?.price 
+          ? { amount: override.price.toString(), currencyCode: product.node.priceRange.minVariantPrice.currencyCode }
+          : product.node.priceRange.minVariantPrice;
+        
+        return (
+          <Link 
+            key={product.node.id}
+            to={`/product/${product.node.handle}`}
+            className="group relative bg-card rounded-xl overflow-hidden border-2 border-price-yellow/30 hover:border-price-yellow transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-price-yellow/20 animate-fade-up"
+            style={{ animationDelay: `${index * 80}ms` }}
+          >
+            {/* Destacado badge */}
+            <div className="absolute top-2 left-2 z-10 bg-price-yellow text-background text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Star className="h-2.5 w-2.5 fill-background" />
+              DESTACADO
+            </div>
+            
+            {/* Category labels from DB */}
+            {productTags.length > 0 && (
+              <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-1 justify-end max-w-[60%]">
+                {productTags.slice(0, 2).map((tag: any) => (
+                  <span 
+                    key={tag.id}
+                    className="bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-2 py-0.5 rounded-full border border-border/50"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            {/* Image with glow effect */}
+            <div className="aspect-square overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-t from-price-yellow/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-[1]"></div>
+              <img 
+                src={product.node.images.edges[0]?.node.url} 
+                alt={displayTitle}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              />
+            </div>
+            
+            {/* Info */}
+            <div className="p-3">
+              <h3 className="text-xs md:text-sm font-medium text-foreground line-clamp-2 group-hover:text-price-yellow transition-colors">
+                {displayTitle}
+              </h3>
+              {override?.subtitle && (
+                <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                  {override.subtitle}
+                </p>
+              )}
+              <p className="text-price-yellow font-bold text-sm md:text-base mt-1">
+                {formatPrice(displayPrice.amount, displayPrice.currencyCode)}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 };
@@ -466,59 +545,7 @@ const Index = () => {
                 ))}
               </div>
             ) : destacadosProducts.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-              {destacadosProducts.slice(0, 10).map((product, index) => {
-                  const productTags = getTagsForProduct(product.node.id);
-                  return (
-                    <Link 
-                      key={product.node.id}
-                      to={`/product/${product.node.handle}`}
-                      className="group relative bg-card rounded-xl overflow-hidden border-2 border-price-yellow/30 hover:border-price-yellow transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-price-yellow/20 animate-fade-up"
-                      style={{ animationDelay: `${index * 80}ms` }}
-                    >
-                      {/* Destacado badge */}
-                      <div className="absolute top-2 left-2 z-10 bg-price-yellow text-background text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Star className="h-2.5 w-2.5 fill-background" />
-                        DESTACADO
-                      </div>
-                      
-                      {/* Category labels from DB */}
-                      {productTags.length > 0 && (
-                        <div className="absolute top-2 right-2 z-10 flex flex-wrap gap-1 justify-end max-w-[60%]">
-                          {productTags.slice(0, 2).map(tag => (
-                            <span 
-                              key={tag.id}
-                              className="bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-2 py-0.5 rounded-full border border-border/50"
-                            >
-                              {tag.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Image with glow effect */}
-                      <div className="aspect-square overflow-hidden relative">
-                        <div className="absolute inset-0 bg-gradient-to-t from-price-yellow/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-[1]"></div>
-                        <img 
-                          src={product.node.images.edges[0]?.node.url} 
-                          alt={product.node.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
-                      
-                      {/* Info */}
-                      <div className="p-3">
-                        <h3 className="text-xs md:text-sm font-medium text-foreground line-clamp-2 group-hover:text-price-yellow transition-colors">
-                          {product.node.title}
-                        </h3>
-                        <p className="text-price-yellow font-bold text-sm md:text-base mt-1">
-                          {formatPrice(product.node.priceRange.minVariantPrice.amount, product.node.priceRange.minVariantPrice.currencyCode)}
-                        </p>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+              <DestacadosGrid products={destacadosProducts.slice(0, 10)} getTagsForProduct={getTagsForProduct} />
             ) : (
               <p className="text-center text-muted-foreground py-8">No hay productos destacados aún</p>
             )}
