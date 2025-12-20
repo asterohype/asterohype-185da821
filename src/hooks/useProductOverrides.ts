@@ -5,6 +5,7 @@ export interface ProductOverride {
   id: string;
   shopify_product_id: string;
   title: string | null;
+  subtitle: string | null;
   description: string | null;
   price: number | null;
   created_at: string;
@@ -57,6 +58,7 @@ export function useUpsertOverride() {
           {
             shopify_product_id: override.shopify_product_id,
             title: override.title,
+            subtitle: override.subtitle,
             description: override.description,
             price: override.price,
           },

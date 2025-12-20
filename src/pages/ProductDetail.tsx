@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCartStore } from "@/stores/cartStore";
+import { useFavoritesStore } from "@/stores/favoritesStore";
 import { ProductCard } from "@/components/products/ProductCard";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAdminModeStore } from "@/stores/adminModeStore";
@@ -52,6 +53,7 @@ import {
   Award,
   Settings,
   MessageSquare,
+  Heart,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -89,6 +91,8 @@ const ProductDetail = () => {
   const [savingTag, setSavingTag] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
+  const [editingSubtitle, setEditingSubtitle] = useState(false);
+  const [editedSubtitle, setEditedSubtitle] = useState('');
   const [editingPrice, setEditingPrice] = useState(false);
   const [editedPrice, setEditedPrice] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
@@ -103,6 +107,10 @@ const ProductDetail = () => {
 
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
+  
+  // Favorites
+  const { toggleFavorite, isFavorite } = useFavoritesStore();
+  const isProductFavorite = product ? isFavorite(product.id) : false;
   
   const { isAdmin } = useAdmin();
   const { isAdminModeActive } = useAdminModeStore();
@@ -237,6 +245,7 @@ const ProductDetail = () => {
 
   // Use local override if available, otherwise fallback to Shopify data
   const displayTitle = productOverride?.title ?? product?.title;
+  const displaySubtitle = productOverride?.subtitle ?? null;
   const displayDescription = productOverride?.description ?? product?.description;
   const displayPriceAmount = productOverride?.price 
     ? productOverride.price.toString() 
@@ -323,6 +332,7 @@ const ProductDetail = () => {
       await upsertOverride.mutateAsync({
         shopify_product_id: product.id,
         title: editedTitle.trim(),
+        subtitle: productOverride?.subtitle,
         description: productOverride?.description,
         price: productOverride?.price,
       });
@@ -331,6 +341,38 @@ const ProductDetail = () => {
     } catch (error) {
       console.error('Error updating title:', error);
       toast.error('Error al actualizar el nombre');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const startEditingSubtitle = () => {
+    if (product) {
+      setEditedSubtitle(displaySubtitle || '');
+      setEditingSubtitle(true);
+    }
+  };
+
+  const saveSubtitle = async () => {
+    if (!product) {
+      setEditingSubtitle(false);
+      return;
+    }
+    
+    setSavingProduct(true);
+    try {
+      await upsertOverride.mutateAsync({
+        shopify_product_id: product.id,
+        title: productOverride?.title,
+        subtitle: editedSubtitle.trim() || null,
+        description: productOverride?.description,
+        price: productOverride?.price,
+      });
+      toast.success('Subtítulo actualizado');
+      setEditingSubtitle(false);
+    } catch (error) {
+      console.error('Error updating subtitle:', error);
+      toast.error('Error al actualizar el subtítulo');
     } finally {
       setSavingProduct(false);
     }
@@ -354,6 +396,7 @@ const ProductDetail = () => {
       await upsertOverride.mutateAsync({
         shopify_product_id: product.id,
         title: productOverride?.title,
+        subtitle: productOverride?.subtitle,
         description: productOverride?.description,
         price: parseFloat(editedPrice.trim()),
       });
@@ -385,6 +428,7 @@ const ProductDetail = () => {
       await upsertOverride.mutateAsync({
         shopify_product_id: product.id,
         title: productOverride?.title,
+        subtitle: productOverride?.subtitle,
         description: editedDescription,
         price: productOverride?.price,
       });
@@ -831,138 +875,149 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Variant Selection - Below images */}
-              <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-                {/* Stock Urgency - Only if configured */}
-                {productOffer?.low_stock_active && productOffer?.low_stock_threshold && (
-                  <div className="flex items-center gap-2 text-sm text-amber-600">
-                    <span className="animate-pulse">🔥</span>
-                    ¡Solo quedan {productOffer.low_stock_threshold} unidades!
-                  </div>
-                )}
-
-                {/* Variant Selection */}
-                {product.options.filter(opt => opt.values.length > 1).map((option) => (
-                  <div key={option.name} className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {getDisplayName(product.id, option.name)}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {option.values.map((value) => {
-                        const isSelected = selectedOptions[option.name] === value;
-                        return (
-                          <button
-                            key={value}
-                            onClick={() => handleOptionChange(option.name, value)}
-                            className={`px-3 py-2 text-sm rounded-full border transition-all ${
-                              isSelected
-                                ? "border-primary bg-primary/10 text-primary font-medium ring-1 ring-primary"
-                                : "border-border hover:border-muted-foreground text-foreground"
-                            }`}
-                          >
-                            {value}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Quantity */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Cantidad</label>
-                  <div className="flex items-center border border-border rounded-full overflow-hidden w-fit">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-4 py-2 hover:bg-muted transition-colors"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="px-6 font-medium">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="px-4 py-2 hover:bg-muted transition-colors"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Right Column - Product Info */}
+            {/* Right Column - Product Info (Nike style) */}
             <div className="space-y-6">
-              {/* Rating - Real data */}
-              {reviewStats.totalReviews > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-4 w-4 ${star <= Math.floor(reviewStats.averageRating) ? 'text-amber-400 fill-amber-400' : star - 0.5 <= reviewStats.averageRating ? 'text-amber-400 fill-amber-400/50' : 'text-muted-foreground/30'}`}
-                      />
-                    ))}
+              {/* Title + Subtitle */}
+              <div className="space-y-1">
+                {showAdminControls && editingTitle ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveTitle();
+                        if (e.key === 'Escape') setEditingTitle(false);
+                      }}
+                      className="text-lg font-semibold"
+                      autoFocus
+                    />
+                    <Button size="icon" variant="ghost" onClick={saveTitle} disabled={savingProduct} className="h-8 w-8 text-green-600">
+                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)} className="h-8 w-8 text-destructive">
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <span className="text-sm font-medium">{reviewStats.averageRating}/5</span>
-                  <span className="text-sm text-muted-foreground">({reviewStats.totalReviews} reseñas)</span>
-                </div>
-              )}
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <h1 className="text-xl md:text-2xl font-semibold text-foreground leading-tight">
+                      {displayTitle}
+                    </h1>
+                    {showAdminControls && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button size="icon" variant="ghost" onClick={startEditingTitle} className="h-6 w-6">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="ghost" disabled={deletingProduct} className="h-6 w-6 text-destructive">
+                              {deletingProduct ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. El producto "{product.title}" será eliminado permanentemente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteProduct} className="bg-destructive hover:bg-destructive/90">
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Subtitle */}
+                {showAdminControls && editingSubtitle ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editedSubtitle}
+                      onChange={(e) => setEditedSubtitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveSubtitle();
+                        if (e.key === 'Escape') setEditingSubtitle(false);
+                      }}
+                      className="text-sm"
+                      placeholder="Ej: Sudadera con capucha y cremallera - Hombre"
+                      autoFocus
+                    />
+                    <Button size="icon" variant="ghost" onClick={saveSubtitle} disabled={savingProduct} className="h-8 w-8 text-green-600">
+                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingSubtitle(false)} className="h-8 w-8 text-destructive">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <p className="text-muted-foreground text-sm">
+                      {displaySubtitle || (showAdminControls ? 'Añadir subtítulo...' : '')}
+                    </p>
+                    {showAdminControls && (
+                      <Button size="icon" variant="ghost" onClick={startEditingSubtitle} className="h-5 w-5">
+                        <Pencil className="h-2.5 w-2.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
 
-              {/* Title */}
-              {showAdminControls && editingTitle ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={editedTitle}
-                    onChange={(e) => setEditedTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveTitle();
-                      if (e.key === 'Escape') setEditingTitle(false);
-                    }}
-                    className="text-lg font-semibold"
-                    autoFocus
-                  />
-                  <Button size="icon" variant="ghost" onClick={saveTitle} disabled={savingProduct} className="h-8 w-8 text-green-600">
-                    {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)} className="h-8 w-8 text-destructive">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2">
-                  <h1 className="text-xl md:text-2xl font-semibold text-foreground leading-tight">
-                    {displayTitle}
-                  </h1>
-                  {showAdminControls && (
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button size="icon" variant="ghost" onClick={startEditingTitle} className="h-6 w-6">
+              {/* Price Section */}
+              <div className="space-y-2">
+                {showAdminControls && editingPrice ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">€</span>
+                    <Input
+                      value={editedPrice}
+                      onChange={(e) => setEditedPrice(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') savePrice();
+                        if (e.key === 'Escape') setEditingPrice(false);
+                      }}
+                      className="w-24 text-lg font-bold"
+                      type="number"
+                      step="0.01"
+                      autoFocus
+                    />
+                    <Button size="icon" variant="ghost" onClick={savePrice} disabled={savingProduct} className="h-8 w-8 text-green-600">
+                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingPrice(false)} className="h-8 w-8 text-destructive">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="text-2xl font-bold text-foreground">
+                      {formatPrice(price.amount, price.currencyCode)}
+                    </span>
+                    {hasDiscount && originalPrice && (
+                      <>
+                        <span className="text-base text-muted-foreground line-through">
+                          {formatPrice(originalPrice.toString(), price.currencyCode)}
+                        </span>
+                        <span className="px-2 py-0.5 text-xs font-bold bg-green-600 text-white rounded-md">
+                          -{discountPercent}% OFF
+                        </span>
+                      </>
+                    )}
+                    {showAdminControls && (
+                      <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6">
                         <Pencil className="h-3 w-3" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" disabled={deletingProduct} className="h-6 w-6 text-destructive">
-                            {deletingProduct ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta acción no se puede deshacer. El producto "{product.title}" será eliminado permanentemente.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteProduct} className="bg-destructive hover:bg-destructive/90">
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Promo Banner - Only show if configured by admin */}
               {productOffer?.promo_active && productOffer?.promo_text && (
@@ -978,6 +1033,109 @@ const ProductDetail = () => {
                   </div>
                 </div>
               )}
+
+              {/* About this product */}
+              <div className="space-y-3 border-t border-border pt-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground">Acerca de este producto</h3>
+                  {showAdminControls && (
+                    <Button size="icon" variant="ghost" onClick={startEditingDescription} className="h-6 w-6">
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                {showAdminControls && editingDescription ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={editedDescription}
+                      onChange={(e) => setEditedDescription(e.target.value)}
+                      className="min-h-[100px]"
+                      placeholder="Descripción del producto..."
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={saveDescription} disabled={savingProduct}>
+                        {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                        Guardar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingDescription(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : descriptionBullets.length > 0 ? (
+                  <ul className="space-y-2">
+                    {descriptionBullets.map((bullet, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-foreground mt-2 flex-shrink-0" />
+                        {bullet.trim()}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{displayDescription || 'Sin descripción disponible.'}</p>
+                )}
+              </div>
+
+              {/* Size/Variant Selection (Nike style) */}
+              <div className="space-y-4 border-t border-border pt-4">
+                {/* Stock Urgency - Only if configured */}
+                {productOffer?.low_stock_active && productOffer?.low_stock_threshold && (
+                  <div className="flex items-center gap-2 text-sm text-amber-600">
+                    <span className="animate-pulse">🔥</span>
+                    ¡Solo quedan {productOffer.low_stock_threshold} unidades!
+                  </div>
+                )}
+
+                {product.options.filter(opt => opt.values.length > 1).map((option) => (
+                  <div key={option.name} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-foreground">
+                        Selecciona tu {getDisplayName(product.id, option.name).toLowerCase()}
+                      </label>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {option.values.map((value) => {
+                        const isSelected = selectedOptions[option.name] === value;
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => handleOptionChange(option.name, value)}
+                            className={`min-w-[60px] px-4 py-3 text-sm border rounded-lg transition-all ${
+                              isSelected
+                                ? "border-foreground bg-background text-foreground font-medium"
+                                : "border-border hover:border-muted-foreground text-foreground"
+                            }`}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add to Cart Button (Nike style - large black rounded) */}
+              <button
+                onClick={handleAddToCart}
+                disabled={!selectedVariant?.availableForSale}
+                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-full bg-foreground text-background text-base font-medium hover:bg-foreground/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Añadir a la cesta
+              </button>
+
+              {/* Favorite Button (Nike style - outline with heart) */}
+              <button
+                onClick={() => product && toggleFavorite(product.id)}
+                className={`w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full border text-base font-medium transition-all ${
+                  isProductFavorite 
+                    ? 'border-primary bg-primary/5 text-primary' 
+                    : 'border-border text-foreground hover:border-muted-foreground'
+                }`}
+              >
+                Favorito
+                <Heart className={`h-5 w-5 ${isProductFavorite ? 'fill-primary' : ''}`} />
+              </button>
 
               {/* Admin: Configure Offers Button */}
               {showAdminControls && (
@@ -1090,150 +1248,37 @@ const ProductDetail = () => {
                 </Dialog>
               )}
 
-              {/* Price Section */}
-              <div className="border-b border-border pb-4">
-                {showAdminControls && editingPrice ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">€</span>
-                    <Input
-                      value={editedPrice}
-                      onChange={(e) => setEditedPrice(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') savePrice();
-                        if (e.key === 'Escape') setEditingPrice(false);
-                      }}
-                      className="w-24 text-lg font-bold"
-                      type="number"
-                      step="0.01"
-                      autoFocus
-                    />
-                    <Button size="icon" variant="ghost" onClick={savePrice} disabled={savingProduct} className="h-8 w-8 text-green-600">
-                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => setEditingPrice(false)} className="h-8 w-8 text-destructive">
-                      <X className="h-4 w-4" />
-                    </Button>
+              {/* Urgency Section - Only if configured with real date */}
+              {offerTimeLeft && productOffer?.offer_text && (
+                <div className="bg-gradient-to-r from-red-600 to-amber-500 rounded-xl p-4 space-y-2 text-white">
+                  <div className="flex items-center gap-2 font-bold">
+                    <Clock className="h-5 w-5 animate-pulse" />
+                    {productOffer.offer_text}
                   </div>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <span className="text-3xl font-bold text-price-yellow">
-                        {formatPrice(price.amount, price.currencyCode)}
-                      </span>
-                      {hasDiscount && originalPrice && (
-                        <>
-                          <span className="text-lg text-muted-foreground line-through">
-                            {formatPrice(originalPrice.toString(), price.currencyCode)}
-                          </span>
-                          <span className="px-2 py-0.5 text-xs font-bold bg-green-600 text-white rounded-md">
-                            -{discountPercent}% OFF
-                          </span>
-                        </>
-                      )}
-                      {showAdminControls && (
-                        <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6">
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                      )}
+                  <div className="flex gap-3 text-sm">
+                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
+                      <span className="font-bold text-xl">{offerTimeLeft.days}</span>
+                      <p className="text-xs">días</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Impuestos incluidos. Envío gratis para pedidos superiores a 49€
-                    </p>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                  <Truck className="h-4 w-4 text-green-600" />
-                  <span className="text-green-600 font-medium">Envío gratis</span>
-                </div>
-                {/* Trust badges below shipping */}
-                <div className="mt-3 space-y-1.5">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span>Pago 100% seguro</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span>30 días de devolución</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span>Garantía incluida</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Product Specs Table */}
-              <div className="space-y-2">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {product.options.filter(opt => opt.values.length > 0).slice(0, 3).map((option) => (
-                      <tr key={option.name} className="border-b border-border/50">
-                        <td className="py-2 font-medium text-muted-foreground w-28">{getDisplayName(product.id, option.name)}</td>
-                        <td className="py-2 text-foreground">{selectedOptions[option.name]}</td>
-                      </tr>
-                    ))}
-                    {selectedVariant?.availableForSale !== undefined && (
-                      <tr className="border-b border-border/50">
-                        <td className="py-2 font-medium text-muted-foreground w-28">Disponibilidad</td>
-                        <td className={`py-2 font-medium ${selectedVariant.availableForSale ? 'text-green-600' : 'text-destructive'}`}>
-                          {selectedVariant.availableForSale ? 'En stock' : 'Agotado'}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Description Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">Acerca de este producto</h3>
-                  {showAdminControls && (
-                    <Button size="icon" variant="ghost" onClick={startEditingDescription} className="h-6 w-6">
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-                {showAdminControls && editingDescription ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={editedDescription}
-                      onChange={(e) => setEditedDescription(e.target.value)}
-                      className="min-h-[120px]"
-                      placeholder="Descripción del producto..."
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={saveDescription} disabled={savingProduct}>
-                        {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
-                        Guardar
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingDescription(false)}>
-                        Cancelar
-                      </Button>
+                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
+                      <span className="font-bold text-xl">{offerTimeLeft.hours}</span>
+                      <p className="text-xs">hrs</p>
+                    </div>
+                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
+                      <span className="font-bold text-xl">{offerTimeLeft.minutes}</span>
+                      <p className="text-xs">min</p>
                     </div>
                   </div>
-                ) : descriptionBullets.length > 0 ? (
-                  <ul className="space-y-2">
-                    {descriptionBullets.map((bullet, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span className="h-1.5 w-1.5 rounded-full bg-green-600 mt-2 flex-shrink-0" />
-                        {bullet.trim()}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{displayDescription || 'Sin descripción disponible.'}</p>
-                )}
-              </div>
-
-              {/* Tags */}
-              <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Tag className="h-4 w-4" />
-                  Etiquetas
                 </div>
-                
-                {showAdminControls ? (
+              )}
+
+              {/* Admin: Tags Section - Only in admin mode */}
+              {showAdminControls && (
+                <div className="space-y-3 pt-4 border-t border-border">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Tag className="h-4 w-4" />
+                    Etiquetas
+                  </div>
                   <div className="space-y-3">
                     {TAG_GROUPS.map(groupName => {
                       const groupTags = tagsByGroup[groupName] || [];
@@ -1264,50 +1309,6 @@ const ProductDetail = () => {
                         </div>
                       );
                     })}
-                  </div>
-                ) : productTags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {productTags.map(tag => (
-                      <span key={tag.id} className="px-2 py-1 text-xs bg-muted border border-border rounded-full text-muted-foreground">
-                        {tag.name}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Sin etiquetas asignadas</p>
-                )}
-              </div>
-
-              {/* Add to Cart Button - Large and prominent */}
-              <button
-                onClick={handleAddToCart}
-                disabled={!selectedVariant?.availableForSale}
-                className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-xl bg-primary text-primary-foreground text-lg font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-              >
-                <ShoppingBag className="h-5 w-5" />
-                Añadir al Carrito
-              </button>
-
-              {/* Urgency Section - Only if configured with real date */}
-              {offerTimeLeft && productOffer?.offer_text && (
-                <div className="bg-gradient-to-r from-red-600 to-amber-500 rounded-xl p-4 space-y-2 text-white">
-                  <div className="flex items-center gap-2 font-bold">
-                    <Clock className="h-5 w-5 animate-pulse" />
-                    {productOffer.offer_text}
-                  </div>
-                  <div className="flex gap-3 text-sm">
-                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
-                      <span className="font-bold text-xl">{offerTimeLeft.days}</span>
-                      <p className="text-xs">días</p>
-                    </div>
-                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
-                      <span className="font-bold text-xl">{offerTimeLeft.hours}</span>
-                      <p className="text-xs">hrs</p>
-                    </div>
-                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
-                      <span className="font-bold text-xl">{offerTimeLeft.minutes}</span>
-                      <p className="text-xs">min</p>
-                    </div>
                   </div>
                 </div>
               )}
