@@ -1,10 +1,20 @@
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Shopify Storefront API Configuration
 const SHOPIFY_API_VERSION = '2025-07';
 const SHOPIFY_STORE_PERMANENT_DOMAIN = 'e7kzti-96.myshopify.com';
 const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 const SHOPIFY_STOREFRONT_TOKEN = '7adf5ac937177947a686836842f100fe';
+
+// Helper to get the current user's session token for authenticated requests
+async function getAuthToken(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('No hay sesión activa. Por favor, inicia sesión.');
+  }
+  return session.access_token;
+}
 export interface ShopifyProduct {
   node: {
     id: string;
@@ -290,37 +300,129 @@ export function formatPrice(amount: string, currencyCode: string = 'USD'): strin
 }
 
 // Update product title via Admin API (through edge function)
-// NOTE: Admin-write operations are disabled in this project to avoid requiring private Admin API credentials.
-// The storefront continues to work normally (read + checkout) via Storefront API.
-function throwAdminWriteDisabled(): never {
-  throw new Error("Edición de productos deshabilitada en esta versión (sin API de administrador).");
-}
+export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId, title: newTitle }),
+    }
+  );
 
-export async function updateProductTitle(_productId: string, _newTitle: string): Promise<void> {
-  throwAdminWriteDisabled();
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to update product');
+  }
 }
 
 // Update product variant price via Admin API (through edge function)
-export async function updateProductPrice(_productId: string, _variantId: string, _newPrice: string): Promise<void> {
-  throwAdminWriteDisabled();
+export async function updateProductPrice(productId: string, variantId: string, newPrice: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId, variantId, price: newPrice }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to update price');
+  }
 }
 
 // Update product description via Admin API (through edge function)
-export async function updateProductDescription(_productId: string, _description: string): Promise<void> {
-  throwAdminWriteDisabled();
+export async function updateProductDescription(productId: string, description: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId, description }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to update description');
+  }
 }
 
 // Delete product image via Admin API
-export async function deleteProductImage(_productId: string, _imageId: string): Promise<void> {
-  throwAdminWriteDisabled();
+export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: 'delete_image', productId, imageId }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to delete image');
+  }
 }
 
 // Add product image via Admin API
-export async function addProductImage(_productId: string, _imageUrl: string, _imageAlt?: string): Promise<unknown> {
-  throwAdminWriteDisabled();
+export async function addProductImage(productId: string, imageUrl: string, imageAlt?: string): Promise<unknown> {
+  const token = await getAuthToken();
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: 'add_image', productId, imageUrl, imageAlt }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to add image');
+  }
+
+  return response.json();
 }
 
 // Delete product via Admin API
-export async function deleteProduct(_productId: string): Promise<void> {
-  throwAdminWriteDisabled();
+export async function deleteProduct(productId: string): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: 'delete_product', productId }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to delete product');
+  }
 }
