@@ -1100,10 +1100,10 @@ const ProductDetail = () => {
                           <button
                             key={value}
                             onClick={() => handleOptionChange(option.name, value)}
-                            className={`min-w-[70px] px-5 py-3 text-sm border rounded-md transition-all ${
+                            className={`min-w-[72px] px-5 py-3 text-sm border rounded transition-all ${
                               isSelected
                                 ? "border-foreground bg-background text-foreground font-medium"
-                                : "border-border/60 bg-background hover:border-foreground/50 text-foreground"
+                                : "border-border bg-background hover:border-foreground/60 text-foreground"
                             }`}
                           >
                             {value}

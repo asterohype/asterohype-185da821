@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowRight, Loader2, X } from "lucide-react";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
+import { useProductOverrides } from "@/hooks/useProductOverrides";
 
 interface SearchModalProps {
   open: boolean;
@@ -17,6 +18,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [allProducts, setAllProducts] = useState<ShopifyProduct[]>([]);
+  const { data: overrides } = useProductOverrides();
 
   useEffect(() => {
     async function loadProducts() {
@@ -41,14 +43,25 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
       return;
     }
 
+    const searchLower = query.toLowerCase();
+    
     const filtered = allProducts.filter((p) => {
       const title = p.node.title?.toLowerCase() || "";
       const desc = p.node.description?.toLowerCase() || "";
-      return title.includes(query.toLowerCase()) || desc.includes(query.toLowerCase());
+      
+      // Also search in overrides (custom title, subtitle)
+      const override = overrides?.find(o => o.shopify_product_id === p.node.id);
+      const overrideTitle = override?.title?.toLowerCase() || "";
+      const overrideSubtitle = override?.subtitle?.toLowerCase() || "";
+      
+      return title.includes(searchLower) || 
+             desc.includes(searchLower) ||
+             overrideTitle.includes(searchLower) ||
+             overrideSubtitle.includes(searchLower);
     });
 
     setProducts(filtered.slice(0, 6));
-  }, [query, allProducts]);
+  }, [query, allProducts, overrides]);
 
   const handleSelectProduct = (productHandle: string) => {
     navigate(`/product/${productHandle}`);
@@ -117,6 +130,10 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               <div>
                 {products.map((product) => {
                   const image = product.node.images?.edges?.[0]?.node;
+                  const override = overrides?.find(o => o.shopify_product_id === product.node.id);
+                  const displayTitle = override?.title || product.node.title;
+                  const displaySubtitle = override?.subtitle;
+                  
                   return (
                     <button
                       key={product.node.id}
@@ -126,14 +143,19 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
                       {image && (
                         <img
                           src={image.url}
-                          alt={image.altText || product.node.title}
+                          alt={image.altText || displayTitle}
                           className="w-12 h-12 rounded-lg object-cover bg-secondary flex-shrink-0"
                         />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground text-sm truncate">
-                          {product.node.title}
+                          {displayTitle}
                         </p>
+                        {displaySubtitle && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {displaySubtitle}
+                          </p>
+                        )}
                         <p className="text-xs text-price-yellow">
                           {product.node.priceRange?.minVariantPrice?.amount
                             ? `${parseFloat(product.node.priceRange.minVariantPrice.amount).toFixed(2)}€`
