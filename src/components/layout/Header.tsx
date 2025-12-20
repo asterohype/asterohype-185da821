@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useMenuConfigStore } from "@/stores/menuConfigStore";
+import { useCollections } from "@/hooks/useCollections";
 import { useState, useEffect } from "react";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,8 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
   const totalItems = useCartStore((state) => state.getTotalItems());
   const setCartOpen = useCartStore((state) => state.setOpen);
   const { isAdminModeActive, toggleAdminMode } = useAdminModeStore();
-  const { menuItems, collections, collectionsLabel, updateMenuItem, updateCollectionsLabel, updateCollection } = useMenuConfigStore();
+  const { menuItems, collectionsLabel, updateMenuItem, updateCollectionsLabel } = useMenuConfigStore();
+  const { collections: supabaseCollections } = useCollections();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const { isAdmin } = useAdmin();
@@ -72,30 +74,33 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
     setEditValue(currentValue);
   };
 
-  const saveEdit = (type: 'menu' | 'collections-label' | 'collection', id?: string) => {
+  const saveEdit = (type: 'menu' | 'collections-label', id?: string) => {
     if (type === 'menu' && id) {
       updateMenuItem(id, editValue);
     } else if (type === 'collections-label') {
       updateCollectionsLabel(editValue);
-    } else if (type === 'collection' && id) {
-      updateCollection(id, editValue);
     }
     setEditingItem(null);
     setEditValue("");
     toast.success('Guardado');
   };
+  
+  // Use active Supabase collections, sorted by name
+  const activeCollections = supabaseCollections
+    .filter(c => c.is_active)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const showAdminControls = isAdmin && isAdminModeActive;
 
   const renderEditableText = (
     id: string,
     text: string,
-    type: 'menu' | 'collections-label' | 'collection',
+    type: 'menu' | 'collections-label',
     className?: string
   ) => {
     if (showAdminControls && editingItem === id) {
       return (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <Input
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
@@ -107,7 +112,11 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
             }}
           />
           <button
-            onClick={() => saveEdit(type, id)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              saveEdit(type, id);
+            }}
             className="p-1 rounded hover:bg-primary/20"
           >
             <Check className="h-3 w-3 text-primary" />
@@ -174,13 +183,13 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
                     align="center" 
                     className="min-w-[180px] bg-popover border border-border shadow-lg rounded-lg p-1"
                   >
-                    {collections.map((collection) => (
+                    {activeCollections.map((collection) => (
                       <DropdownMenuItem key={collection.id} asChild>
                         <Link 
-                          to={`/products?search=${collection.query}`}
+                          to={`/products?collection=${collection.slug}`}
                           className="cursor-pointer hover:text-price-yellow px-3 py-2 rounded-md"
                         >
-                          {renderEditableText(collection.id, collection.name, 'collection')}
+                          {collection.name}
                         </Link>
                       </DropdownMenuItem>
                     ))}
@@ -328,14 +337,14 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
                     {renderEditableText('collections-label-mobile', collectionsLabel, 'collections-label')}
                   </span>
                   <div className="pl-3 flex flex-col gap-1">
-                    {collections.map((collection) => (
+                    {activeCollections.map((collection) => (
                       <Link
                         key={collection.id}
-                        to={`/products?search=${collection.query}`}
+                        to={`/products?collection=${collection.slug}`}
                         className="text-sm text-muted-foreground hover:text-price-yellow transition-colors py-1"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        {renderEditableText(`${collection.id}-mobile`, collection.name, 'collection')}
+                        {collection.name}
                       </Link>
                     ))}
                   </div>
