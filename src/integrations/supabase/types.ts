@@ -208,6 +208,36 @@ export type Database = {
         }
         Relationships: []
       }
+      product_overrides: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          price: number | null
+          shopify_product_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          price?: number | null
+          shopify_product_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          price?: number | null
+          shopify_product_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_tag_assignments: {
         Row: {
           created_at: string

@@ -299,136 +299,53 @@ export function formatPrice(amount: string, currencyCode: string = 'USD'): strin
   }).format(parseFloat(amount));
 }
 
-// Update product title via Admin API (through edge function)
+// ============================================================
+// Local Product Overrides (stored in Supabase, no Shopify Admin API)
+// ============================================================
+
+// Update product title (local override)
 export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId, title: newTitle }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({} as any));
-    const msg = errorData.error || 'No se pudo actualizar el producto.';
-    throw new Error(msg);
-  }
+  const { error } = await supabase
+    .from("product_overrides")
+    .upsert(
+      { shopify_product_id: productId, title: newTitle },
+      { onConflict: "shopify_product_id" }
+    );
+  if (error) throw new Error(error.message);
 }
 
-// Update product variant price via Admin API (through edge function)
-export async function updateProductPrice(productId: string, variantId: string, newPrice: string): Promise<void> {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId, variantId, price: newPrice }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({} as any));
-    const msg = errorData.error || 'No se pudo actualizar el precio.';
-    throw new Error(msg);
-  }
+// Update product price (local override)
+export async function updateProductPrice(productId: string, _variantId: string, newPrice: string): Promise<void> {
+  const { error } = await supabase
+    .from("product_overrides")
+    .upsert(
+      { shopify_product_id: productId, price: parseFloat(newPrice) },
+      { onConflict: "shopify_product_id" }
+    );
+  if (error) throw new Error(error.message);
 }
 
-// Update product description via Admin API (through edge function)
+// Update product description (local override)
 export async function updateProductDescription(productId: string, description: string): Promise<void> {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId, description }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({} as any));
-    const msg = errorData.error || 'No se pudo actualizar la descripción.';
-    throw new Error(msg);
-  }
+  const { error } = await supabase
+    .from("product_overrides")
+    .upsert(
+      { shopify_product_id: productId, description },
+      { onConflict: "shopify_product_id" }
+    );
+  if (error) throw new Error(error.message);
 }
 
-// Delete product image via Admin API
-export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ action: 'delete_image', productId, imageId }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({} as any));
-    const msg = errorData.error || 'No se pudo eliminar la imagen.';
-    throw new Error(msg);
-  }
+// Image operations are not supported via local overrides – no-op stubs
+export async function deleteProductImage(_productId: string, _imageId: string): Promise<void> {
+  throw new Error("Eliminar imágenes no está disponible (requiere Admin API de Shopify).");
 }
 
-// Add product image via Admin API
-export async function addProductImage(productId: string, imageUrl: string, imageAlt?: string): Promise<unknown> {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ action: 'add_image', productId, imageUrl, imageAlt }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({} as any));
-    const msg = errorData.error || 'No se pudo añadir la imagen.';
-    throw new Error(msg);
-  }
-
-  return response.json();
+export async function addProductImage(_productId: string, _imageUrl: string, _imageAlt?: string): Promise<unknown> {
+  throw new Error("Añadir imágenes no está disponible (requiere Admin API de Shopify).");
 }
 
-// Delete product via Admin API
-export async function deleteProduct(productId: string): Promise<void> {
-  const token = await getAuthToken();
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-shopify-product`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ action: 'delete_product', productId }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({} as any));
-    const msg = errorData.error || 'No se pudo eliminar el producto.';
-    throw new Error(msg);
-  }
+// Delete product – not supported via local overrides
+export async function deleteProduct(_productId: string): Promise<void> {
+  throw new Error("Eliminar productos no está disponible (requiere Admin API de Shopify).");
 }
