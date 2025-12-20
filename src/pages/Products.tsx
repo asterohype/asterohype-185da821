@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -6,7 +6,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
 import { useProductTags } from "@/hooks/useProductTags";
 import { useCollections } from "@/hooks/useCollections";
-import { Loader2, Search, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Loader2, Search, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/collapsible";
 
 const GROUP_ORDER = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
+const PRODUCTS_PER_PAGE = 40;
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,6 +34,7 @@ const Products = () => {
     'Destacados': false,
   });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { tags, getTagsByGroup, getTagsForProduct, loading: tagsLoading } = useProductTags();
   const { collections, getProductsForCollection } = useCollections();
@@ -40,6 +42,7 @@ const Products = () => {
   useEffect(() => {
     async function loadProducts() {
       try {
+        // Load more products - Shopify API max is 250 per query
         const data = await fetchProducts(250);
         setProducts(data);
       } catch (error) {
@@ -55,6 +58,8 @@ const Products = () => {
     const search = searchParams.get("search");
     const tag = searchParams.get("tag");
     const collection = searchParams.get("collection");
+    const page = searchParams.get("page");
+    
     if (search) {
       setSearchQuery(search);
     } else if (!collection) {
@@ -63,7 +68,15 @@ const Products = () => {
     if (tag) {
       setSelectedTags([tag]);
     }
+    if (page) {
+      setCurrentPage(parseInt(page) || 1);
+    }
   }, [searchParams]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedTags]);
 
   const toggleTag = (slug: string) => {
     setSelectedTags(prev =>
@@ -75,6 +88,7 @@ const Products = () => {
     setSelectedTags([]);
     setSearchQuery("");
     setSearchParams({});
+    setCurrentPage(1);
   };
 
   const tagsByGroup = getTagsByGroup();
@@ -86,32 +100,46 @@ const Products = () => {
     ? getProductsForCollection(activeCollection.id)
     : null;
 
-  const filteredProducts = products.filter((product) => {
-    const titleLower = product.node.title?.toLowerCase() || "";
-    const descLower = product.node.description?.toLowerCase() || "";
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const titleLower = product.node.title?.toLowerCase() || "";
+      const descLower = product.node.description?.toLowerCase() || "";
 
-    // Collection filter - if collection is selected, only show products in that collection
-    if (collectionProductIds !== null) {
-      if (!collectionProductIds.includes(product.node.id)) {
-        return false;
+      // Collection filter
+      if (collectionProductIds !== null) {
+        if (!collectionProductIds.includes(product.node.id)) {
+          return false;
+        }
       }
-    }
 
-    // Search filter
-    const matchesSearch =
-      searchQuery === "" ||
-      titleLower.includes(searchQuery.toLowerCase()) ||
-      descLower.includes(searchQuery.toLowerCase());
+      // Search filter
+      const matchesSearch =
+        searchQuery === "" ||
+        titleLower.includes(searchQuery.toLowerCase()) ||
+        descLower.includes(searchQuery.toLowerCase());
 
-    // Tag filter - check if product has ANY of the selected tags
-    let matchesTags = selectedTags.length === 0;
-    if (!matchesTags) {
-      const productTags = getTagsForProduct(product.node.id);
-      matchesTags = productTags.some((pt) => selectedTags.includes(pt.slug));
-    }
+      // Tag filter
+      let matchesTags = selectedTags.length === 0;
+      if (!matchesTags) {
+        const productTags = getTagsForProduct(product.node.id);
+        matchesTags = productTags.some((pt) => selectedTags.includes(pt.slug));
+      }
 
-    return matchesSearch && matchesTags;
-  });
+      return matchesSearch && matchesTags;
+    });
+  }, [products, collectionProductIds, searchQuery, selectedTags, getTagsForProduct]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const hasActiveFilters = selectedTags.length > 0 || searchQuery !== "" || collectionSlug !== null;
 
@@ -143,7 +171,6 @@ const Products = () => {
         const groupTags = tagsByGroup[groupName] || [];
         if (groupTags.length === 0) return null;
         
-        // Get tag class based on group
         const getTagClass = (group: string) => {
           switch (group) {
             case 'Ropa Detallado': return 'tag-ropa';
@@ -195,6 +222,88 @@ const Products = () => {
     </div>
   );
 
+  // Pagination component
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-8">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="h-9 w-9 p-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {startPage > 1 && (
+          <>
+            <Button
+              variant={currentPage === 1 ? "default" : "outline"}
+              size="sm"
+              onClick={() => goToPage(1)}
+              className="h-9 w-9 p-0"
+            >
+              1
+            </Button>
+            {startPage > 2 && <span className="text-muted-foreground px-1">...</span>}
+          </>
+        )}
+
+        {pages.map((page) => (
+          <Button
+            key={page}
+            variant={currentPage === page ? "default" : "outline"}
+            size="sm"
+            onClick={() => goToPage(page)}
+            className={`h-9 w-9 p-0 ${currentPage === page ? 'bg-price-yellow text-black hover:bg-price-yellow/90' : ''}`}
+          >
+            {page}
+          </Button>
+        ))}
+
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="text-muted-foreground px-1">...</span>}
+            <Button
+              variant={currentPage === totalPages ? "default" : "outline"}
+              size="sm"
+              onClick={() => goToPage(totalPages)}
+              className="h-9 w-9 p-0"
+            >
+              {totalPages}
+            </Button>
+          </>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => goToPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="h-9 w-9 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header onMobileFilterClick={() => setMobileFiltersOpen(true)} />
@@ -206,6 +315,7 @@ const Products = () => {
               {searchQuery && `Buscando: "${searchQuery}" · `}
               {selectedTags.length > 0 && `Filtros: ${selectedTags.join(', ')} · `}
               {filteredProducts.length} productos encontrados
+              {totalPages > 1 && ` · Página ${currentPage} de ${totalPages}`}
             </p>
           </div>
 
@@ -257,20 +367,23 @@ const Products = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filteredProducts.map((product, index) => {
-                    const productTags = getTagsForProduct(product.node.id);
-                    return (
-                      <div
-                        key={product.node.id}
-                        className="animate-fade-up"
-                        style={{ animationDelay: `${index * 20}ms` }}
-                      >
-                        <ProductCard product={product} tags={productTags} />
-                      </div>
-                    );
-                  })}
-                </div>
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {paginatedProducts.map((product, index) => {
+                      const productTags = getTagsForProduct(product.node.id);
+                      return (
+                        <div
+                          key={product.node.id}
+                          className="animate-fade-up"
+                          style={{ animationDelay: `${index * 20}ms` }}
+                        >
+                          <ProductCard product={product} tags={productTags} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Pagination />
+                </>
               )}
             </div>
           </div>

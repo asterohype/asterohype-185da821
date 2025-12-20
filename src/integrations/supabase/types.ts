@@ -181,6 +181,57 @@ export type Database = {
         }
         Relationships: []
       }
+      product_edit_status: {
+        Row: {
+          about_done: boolean
+          all_done: boolean
+          color_done: boolean
+          created_at: string
+          description_done: boolean
+          id: string
+          images_done: boolean
+          model_done: boolean
+          offers_done: boolean
+          price_done: boolean
+          shopify_product_id: string
+          tags_done: boolean
+          title_done: boolean
+          updated_at: string
+        }
+        Insert: {
+          about_done?: boolean
+          all_done?: boolean
+          color_done?: boolean
+          created_at?: string
+          description_done?: boolean
+          id?: string
+          images_done?: boolean
+          model_done?: boolean
+          offers_done?: boolean
+          price_done?: boolean
+          shopify_product_id: string
+          tags_done?: boolean
+          title_done?: boolean
+          updated_at?: string
+        }
+        Update: {
+          about_done?: boolean
+          all_done?: boolean
+          color_done?: boolean
+          created_at?: string
+          description_done?: boolean
+          id?: string
+          images_done?: boolean
+          model_done?: boolean
+          offers_done?: boolean
+          price_done?: boolean
+          shopify_product_id?: string
+          tags_done?: boolean
+          title_done?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_offers: {
         Row: {
           created_at: string

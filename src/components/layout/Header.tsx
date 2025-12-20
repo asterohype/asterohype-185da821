@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag, Package, Pencil, Check } from "lucide-react";
+import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag, Package, Pencil, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useAdminModeStore } from "@/stores/adminModeStore";
@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { SearchModal } from "@/components/search/SearchModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
+import { NewProductsPanel } from "@/components/admin/NewProductsPanel";
 
 interface HeaderProps {
   onMobileFilterClick?: () => void;
@@ -50,6 +51,7 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
   const [editValue, setEditValue] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [newProductsPanelOpen, setNewProductsPanelOpen] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -261,6 +263,13 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
                         <Package className="h-4 w-4" />
                         Colecciones
                       </Link>
+                      <button
+                        onClick={() => setNewProductsPanelOpen(true)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all w-full text-left"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Nuevos Productos
+                      </button>
                     </HoverCardContent>
                   </HoverCard>
                 )}
@@ -367,6 +376,7 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
 
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+      <NewProductsPanel open={newProductsPanelOpen} onOpenChange={setNewProductsPanelOpen} />
       <CartDrawer />
       <MobileNavBar 
         onSearchClick={() => setSearchOpen(true)} 
