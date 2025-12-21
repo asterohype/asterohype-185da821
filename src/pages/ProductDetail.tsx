@@ -417,7 +417,8 @@ const ProductDetail = () => {
 
     setSavingProduct(true);
     try {
-      await updateProductTitle(product.id, newTitle);
+      const res = await updateProductTitle(product.id, newTitle);
+      if (!res.ok) return;
 
       const separatorToSave =
         selectedSeparator && newTitle.includes(selectedSeparator) ? selectedSeparator : null;
@@ -482,7 +483,7 @@ const ProductDetail = () => {
       setEditingPrice(false);
       return;
     }
-    
+
     // Get first variant to update price in Shopify
     const firstVariant = product.variants.edges[0]?.node;
     if (!firstVariant) {
@@ -494,8 +495,9 @@ const ProductDetail = () => {
     setSavingProduct(true);
     try {
       // Update price directly in Shopify (not our DB)
-      await updateProductPrice(product.id, firstVariant.id, editedPrice.trim());
-      
+      const res = await updateProductPrice(product.id, firstVariant.id, editedPrice.trim());
+      if (!res.ok) return;
+
       // Update local state to reflect the change
       setProduct({
         ...product,
@@ -504,17 +506,23 @@ const ProductDetail = () => {
           minVariantPrice: {
             ...product.priceRange.minVariantPrice,
             amount: editedPrice.trim(),
-          }
+          },
         },
         variants: {
-          edges: product.variants.edges.map((v, i) => 
-            i === 0 
-              ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: editedPrice.trim() } } }
+          edges: product.variants.edges.map((v, i) =>
+            i === 0
+              ? {
+                  ...v,
+                  node: {
+                    ...v.node,
+                    price: { ...v.node.price, amount: editedPrice.trim() },
+                  },
+                }
               : v
-          )
-        }
+          ),
+        },
       });
-      
+
       toast.success('Precio actualizado en Shopify');
       setEditingPrice(false);
     } catch (error) {

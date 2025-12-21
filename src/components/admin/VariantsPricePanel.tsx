@@ -167,7 +167,8 @@ export function VariantsPricePanel({
 
     setSavingVariants((prev) => new Set(prev).add(variant.id));
     try {
-      await updateProductPrice(productId, variant.id, newPrice);
+      const res = await updateProductPrice(productId, variant.id, newPrice);
+      if (!res.ok) return;
 
       // Update local state
       const updatedVariants = variants.map((v) =>
@@ -207,21 +208,24 @@ export function VariantsPricePanel({
 
     for (const v of variantsToUpdate) {
       try {
-        await updateProductPrice(productId, v.node.id, bulkPrice.trim());
-        successCount++;
+        const res = await updateProductPrice(productId, v.node.id, bulkPrice.trim());
+        if (res.ok) successCount++;
+        else errorCount++;
       } catch (error) {
         console.error(`Error updating ${v.node.title}:`, error);
         errorCount++;
       }
     }
 
-    // Update local state
-    const updatedVariants = variants.map((v) =>
-      selectedVariants.has(v.node.id)
-        ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: bulkPrice.trim() } } }
-        : v
-    );
-    onVariantsUpdated(updatedVariants);
+    // Update local state (only if at least one succeeded)
+    if (successCount > 0) {
+      const updatedVariants = variants.map((v) =>
+        selectedVariants.has(v.node.id)
+          ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: bulkPrice.trim() } } }
+          : v
+      );
+      onVariantsUpdated(updatedVariants);
+    }
 
     if (successCount > 0) {
       toast.success(`${successCount} variante(s) actualizadas`);
