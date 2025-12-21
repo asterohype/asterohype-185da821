@@ -44,13 +44,25 @@ const Products = () => {
 
     async function loadProducts() {
       try {
-        // Carga rápida inicial
-        const firstBatch = await fetchProducts(250);
+        // Primera página rápida - solo 40 productos (1 página)
+        const firstBatch = await fetchProducts(40);
         if (cancelled) return;
         setProducts(firstBatch);
         setLoading(false);
 
-        // Completa en segundo plano (para llegar a +350)
+        // Cargar resto en segundo plano de forma incremental
+        const batchSizes = [80, 150, 250, 400];
+        for (const size of batchSizes) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // Pequeña pausa
+          if (cancelled) return;
+          const batch = await fetchProducts(size);
+          if (cancelled) return;
+          setProducts(batch);
+        }
+
+        // Carga final completa
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (cancelled) return;
         const fullBatch = await fetchProducts(9999);
         if (cancelled) return;
         setProducts(fullBatch);
@@ -113,7 +125,7 @@ const Products = () => {
     : null;
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    let filtered = products.filter((product) => {
       const titleLower = product.node.title?.toLowerCase() || "";
       const descLower = product.node.description?.toLowerCase() || "";
 
@@ -139,6 +151,34 @@ const Products = () => {
 
       return matchesSearch && matchesTags;
     });
+
+    // Mezclar productos por nicho (alternando por productType)
+    if (filtered.length > 0) {
+      // Agrupar por tipo de producto
+      const byType: Record<string, ShopifyProduct[]> = {};
+      filtered.forEach(p => {
+        const type = p.node.productType || 'otros';
+        if (!byType[type]) byType[type] = [];
+        byType[type].push(p);
+      });
+
+      // Mezclar alternando entre tipos
+      const types = Object.keys(byType);
+      const mixed: ShopifyProduct[] = [];
+      let maxLen = Math.max(...types.map(t => byType[t].length));
+      
+      for (let i = 0; i < maxLen; i++) {
+        for (const type of types) {
+          if (byType[type][i]) {
+            mixed.push(byType[type][i]);
+          }
+        }
+      }
+      
+      return mixed;
+    }
+
+    return filtered;
   }, [products, collectionProductIds, searchQuery, selectedTags, getTagsForProduct]);
 
   // Pagination
