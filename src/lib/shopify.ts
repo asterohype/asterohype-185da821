@@ -406,47 +406,95 @@ type UpdateShopifyProductAction =
   | { action: 'add_product_image'; productId: string; imageUrl: string; altText?: string }
   | { action: 'delete_product'; productId: string };
 
-async function invokeUpdateShopifyProduct(payload: UpdateShopifyProductAction) {
+type ShopifyWriteResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+function normalizeShopifyWriteError(message: string) {
+  // Avoid surfacing internal implementation details in the UI.
+  if (
+    message.toLowerCase().includes('token de administrador inválido') ||
+    message.toLowerCase().includes('invalid api key') ||
+    message.toLowerCase().includes('access token')
+  ) {
+    return 'Edición en Shopify no disponible ahora mismo.';
+  }
+  return message || 'No se pudo completar la acción en Shopify.';
+}
+
+async function invokeUpdateShopifyProduct(
+  payload: UpdateShopifyProductAction
+): Promise<ShopifyWriteResult> {
   const { data, error } = await supabase.functions.invoke('update-shopify-product', {
     body: payload,
   });
 
-  if (error) throw new Error(error.message);
-  if (data?.error) throw new Error(data.error);
+  // Never throw here: unhandled promise rejections can crash the UI.
+  if (error) {
+    const message = normalizeShopifyWriteError(error.message);
+    toast.error(message);
+    return { ok: false, message };
+  }
 
-  return data;
+  if (data?.error) {
+    const message = normalizeShopifyWriteError(String(data.error));
+    toast.error(message);
+    return { ok: false, message };
+  }
+
+  return { ok: true };
 }
 
-export async function updateProductTitle(productId: string, newTitle: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ action: 'update_title', productId, title: newTitle });
+export async function updateProductTitle(
+  productId: string,
+  newTitle: string
+): Promise<ShopifyWriteResult> {
+  return invokeUpdateShopifyProduct({ action: 'update_title', productId, title: newTitle });
 }
 
 export async function updateProductPrice(
   productId: string,
   variantId: string,
   newPrice: string
-): Promise<void> {
-  await invokeUpdateShopifyProduct({ action: 'update_variant_price', productId, variantId, price: newPrice });
+): Promise<ShopifyWriteResult> {
+  return invokeUpdateShopifyProduct({
+    action: 'update_variant_price',
+    productId,
+    variantId,
+    price: newPrice,
+  });
 }
 
-export async function updateProductDescription(productId: string, description: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ action: 'update_description', productId, description });
+export async function updateProductDescription(
+  productId: string,
+  description: string
+): Promise<ShopifyWriteResult> {
+  return invokeUpdateShopifyProduct({ action: 'update_description', productId, description });
 }
 
-export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ action: 'delete_product_image', productId, imageId });
+export async function deleteProductImage(
+  productId: string,
+  imageId: string
+): Promise<ShopifyWriteResult> {
+  return invokeUpdateShopifyProduct({ action: 'delete_product_image', productId, imageId });
 }
 
 export async function addProductImage(
   productId: string,
   imageUrl: string,
   imageAlt?: string
-): Promise<unknown> {
-  return invokeUpdateShopifyProduct({ action: 'add_product_image', productId, imageUrl, altText: imageAlt });
+): Promise<ShopifyWriteResult> {
+  return invokeUpdateShopifyProduct({
+    action: 'add_product_image',
+    productId,
+    imageUrl,
+    altText: imageAlt,
+  });
 }
 
-export async function deleteProduct(productId: string): Promise<void> {
-  await invokeUpdateShopifyProduct({ action: 'delete_product', productId });
+export async function deleteProduct(productId: string): Promise<ShopifyWriteResult> {
+  return invokeUpdateShopifyProduct({ action: 'delete_product', productId });
 }
+
 
 
