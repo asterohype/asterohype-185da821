@@ -39,7 +39,6 @@ import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { CategoryStaticGrid } from "@/components/home/CategoryStaticGrid";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
 import { ChristmasBanner } from "@/components/home/ChristmasBanner";
-import { TopHeroBanners } from "@/components/home/TopHeroBanners";
 import { TopHeroImageStrips } from "@/components/home/TopHeroImageStrips";
 
 // Scroll animation hook
@@ -308,7 +307,6 @@ const Index = () => {
       <Header />
       <main className="pt-32 pb-24 md:pb-8">
         <ChristmasBanner />
-        <TopHeroBanners />
         <TopHeroImageStrips />
 
         {/* Marketing Cards Grid - Amazon Style with scroll animations */}
