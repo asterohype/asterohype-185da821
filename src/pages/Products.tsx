@@ -152,29 +152,56 @@ const Products = () => {
       return matchesSearch && matchesTags;
     });
 
-    // Mezclar productos por nicho (alternando por productType)
+    // Mezclar productos por nicho (alternando por productType) + mezclar dentro de cada tipo
     if (filtered.length > 0) {
+      // Seed estable por sesión/búsqueda para que no cambie cada render
+      const seedStr = `${searchQuery}|${selectedTags.join(",")}|${collectionSlug ?? ""}`;
+      let seed = 0;
+      for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+
+      const seededRand = () => {
+        // LCG simple
+        seed = (1664525 * seed + 1013904223) >>> 0;
+        return seed / 0xffffffff;
+      };
+
+      const shuffleInPlace = <T,>(arr: T[]) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(seededRand() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
       // Agrupar por tipo de producto
       const byType: Record<string, ShopifyProduct[]> = {};
-      filtered.forEach(p => {
-        const type = p.node.productType || 'otros';
-        if (!byType[type]) byType[type] = [];
-        byType[type].push(p);
+      filtered.forEach((p) => {
+        const type = p.node.productType || "otros";
+        (byType[type] ??= []).push(p);
       });
 
-      // Mezclar alternando entre tipos
-      const types = Object.keys(byType);
+      // Mezclar dentro de cada tipo para evitar “bloques” repetidos
+      Object.values(byType).forEach((list) => shuffleInPlace(list));
+
+      // Orden de tipos mezclado (pero estable)
+      const types = shuffleInPlace(Object.keys(byType));
+
+      // Intercalado round-robin
       const mixed: ShopifyProduct[] = [];
-      let maxLen = Math.max(...types.map(t => byType[t].length));
-      
-      for (let i = 0; i < maxLen; i++) {
-        for (const type of types) {
-          if (byType[type][i]) {
-            mixed.push(byType[type][i]);
-          }
+      let remaining = filtered.length;
+      let typeIndex = 0;
+
+      while (remaining > 0) {
+        const type = types[typeIndex % types.length];
+        const list = byType[type];
+        const item = list?.shift();
+        if (item) {
+          mixed.push(item);
+          remaining--;
         }
+        typeIndex++;
       }
-      
+
       return mixed;
     }
 

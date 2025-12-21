@@ -135,10 +135,12 @@ const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval
 // Destacados Grid Component that uses overrides
 const DestacadosGrid = ({ 
   products, 
-  getTagsForProduct 
+  getTagsForProduct,
+  showOverridePrice,
 }: { 
   products: ShopifyProduct[]; 
   getTagsForProduct: (productId: string) => any[];
+  showOverridePrice: boolean;
 }) => {
   const { data: overrides } = useProductOverrides();
   
@@ -148,7 +150,7 @@ const DestacadosGrid = ({
         const productTags = getTagsForProduct(product.node.id);
         const override = overrides?.find(o => o.shopify_product_id === product.node.id);
         const displayTitle = override?.title || product.node.title;
-        const displayPrice = override?.price 
+        const displayPrice = showOverridePrice && override?.price 
           ? { amount: override.price.toString(), currencyCode: product.node.priceRange.minVariantPrice.currencyCode }
           : product.node.priceRange.minVariantPrice;
         
@@ -668,7 +670,7 @@ const Index = () => {
                 ))}
               </div>
             ) : destacadosProducts.length > 0 ? (
-              <DestacadosGrid products={destacadosProducts.slice(0, 10)} getTagsForProduct={getTagsForProduct} />
+              <DestacadosGrid products={destacadosProducts.slice(0, 10)} getTagsForProduct={getTagsForProduct} showOverridePrice={showAdminControls} />
             ) : (
               <p className="text-center text-muted-foreground py-8">No hay productos destacados aún</p>
             )}

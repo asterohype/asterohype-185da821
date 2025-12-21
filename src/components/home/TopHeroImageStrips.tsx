@@ -51,7 +51,7 @@ function ImageStripCard({
 }) {
   return (
     <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label={title}>
-      <div className="relative h-[240px] md:h-[280px] overflow-hidden">
+      <div className="relative h-[240px] md:h-[280px] overflow-hidden rounded-2xl"> 
         <BannerCarousel images={images} interval={interval} />
       </div>
       <footer className="p-5 md:p-6">
