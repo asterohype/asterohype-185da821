@@ -214,44 +214,62 @@ const CART_CREATE_MUTATION = `
 `;
 
 // Storefront API Helper
-export async function storefrontApiRequest(query: string, variables: Record<string, unknown> = {}) {
-  const response = await fetch(SHOPIFY_STOREFRONT_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  });
+export async function storefrontApiRequest(
+  query: string,
+  variables: Record<string, unknown> = {},
+  opts: { timeoutMs?: number } = {}
+) {
+  const controller = new AbortController();
+  const timeoutMs = opts.timeoutMs ?? 15000;
+  const t = window.setTimeout(() => controller.abort(), timeoutMs);
 
-  if (response.status === 402) {
-    toast.error("Shopify: Payment required", {
-      description: "Shopify API access requires an active billing plan.",
+  try {
+    const response = await fetch(SHOPIFY_STOREFRONT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+      signal: controller.signal,
     });
-    throw new Error("Payment required");
-  }
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+    if (response.status === 402) {
+      toast.error("Shopify: Payment required", {
+        description: "Shopify API access requires an active billing plan.",
+      });
+      throw new Error("Payment required");
+    }
 
-  const data = await response.json();
-  
-  if (data.errors) {
-    throw new Error(`Error calling Shopify: ${data.errors.map((e: { message: string }) => e.message).join(', ')}`);
-  }
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-  return data;
+    const data = await response.json();
+
+    if (data.errors) {
+      throw new Error(`Error calling Shopify: ${data.errors.map((e: { message: string }) => e.message).join(', ')}`);
+    }
+
+    return data;
+  } catch (err) {
+    if ((err as Error)?.name === 'AbortError') {
+      throw new Error(`Shopify request timeout after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(t);
+  }
 }
 
 // Fetch all products with pagination support
 export async function fetchProducts(first: number = 20, query?: string): Promise<ShopifyProduct[]> {
-  // If requesting more than 250, need pagination
+  // If requesting 250 or less, a single request is enough.
   if (first <= 250) {
-    const data = await storefrontApiRequest(STOREFRONT_QUERY, { first, query });
+    const data = await storefrontApiRequest(STOREFRONT_QUERY, { first, query }, { timeoutMs: 15000 });
     return data.data.products.edges as ShopifyProduct[];
   }
   
@@ -318,11 +336,15 @@ export async function fetchProducts(first: number = 20, query?: string): Promise
   `;
   
   while (hasNextPage && allProducts.length < first) {
-    const data = await storefrontApiRequest(PAGINATED_QUERY, { 
-      first: Math.min(perPage, first - allProducts.length), 
-      query,
-      after: cursor 
-    });
+    const data = await storefrontApiRequest(
+      PAGINATED_QUERY,
+      {
+        first: Math.min(perPage, first - allProducts.length),
+        query,
+        after: cursor,
+      },
+      { timeoutMs: 20000 }
+    );
     const edges = data.data.products.edges as ShopifyProduct[];
     allProducts = [...allProducts, ...edges];
     hasNextPage = data.data.products.pageInfo.hasNextPage;

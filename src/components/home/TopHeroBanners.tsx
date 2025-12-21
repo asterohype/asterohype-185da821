@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-import bannerFelices from "@/assets/banner-felices-fiestas.png";
-import bannerOfertas from "@/assets/banner-ofertas-navidenas.png";
+import bannerHypeBlue from "@/assets/banner-asterohype-blue.png";
+import bannerHypePink from "@/assets/banner-asterohype-pink.png";
 
 function BannerBg({ src }: { src: string }) {
   return (
@@ -27,7 +27,7 @@ export function TopHeroBanners() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <article className="relative rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Felices Fiestas">
           <header className="relative p-6 md:p-8 min-h-[190px]">
-            <BannerBg src={bannerFelices} />
+            <BannerBg src={bannerHypeBlue} />
             <div className="relative">
               <h2 className="font-display italic uppercase text-background text-2xl md:text-3xl leading-tight">
                 Felices Fiestas
@@ -44,7 +44,7 @@ export function TopHeroBanners() {
 
         <article className="relative rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Ofertas Navideñas">
           <header className="relative p-6 md:p-8 min-h-[190px]">
-            <BannerBg src={bannerOfertas} />
+            <BannerBg src={bannerHypePink} />
             <div className="relative">
               <h2 className="font-display italic uppercase text-background text-2xl md:text-3xl leading-tight">
                 Ofertas Navideñas

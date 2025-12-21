@@ -40,18 +40,30 @@ const Products = () => {
   const { collections, getProductsForCollection } = useCollections();
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadProducts() {
       try {
-        // Load products - use 250 max per request for now to avoid timeout issues
-        const data = await fetchProducts(250);
-        setProducts(data);
+        // Carga rápida inicial
+        const firstBatch = await fetchProducts(250);
+        if (cancelled) return;
+        setProducts(firstBatch);
+        setLoading(false);
+
+        // Completa en segundo plano (para llegar a +350)
+        const fullBatch = await fetchProducts(9999);
+        if (cancelled) return;
+        setProducts(fullBatch);
       } catch (error) {
         console.error("Failed to load products:", error);
-      } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+
     loadProducts();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
