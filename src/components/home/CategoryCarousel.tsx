@@ -77,9 +77,10 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
     const base = uniqueProducts.length > 0 ? uniqueProducts : [];
     if (base.length === 0) return [];
 
-    const minCards = 14; // enough to fill wide screens + seamless loop
-    const repeats = Math.max(2, Math.ceil(minCards / base.length));
-    const repeated = Array.from({ length: repeats }, (_, i) => base[i % base.length]);
+    // Ensure one "half" of the marquee is wider than the viewport, otherwise you will see black gaps.
+    const minCards = 20;
+    const targetLen = Math.max(minCards, base.length * 3);
+    const repeated = Array.from({ length: targetLen }, (_, i) => base[i % base.length]);
 
     // Duplicate for seamless infinite scroll
     return [...repeated, ...repeated];
@@ -92,8 +93,8 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
       <style>{`
         @keyframes astroMarqueeLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes astroMarqueeRight { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
-        .astro-marquee-left { animation: astroMarqueeLeft 60s linear infinite; }
-        .astro-marquee-right { animation: astroMarqueeRight 60s linear infinite; }
+        .astro-marquee-left { animation: astroMarqueeLeft 45s linear infinite; }
+        .astro-marquee-right { animation: astroMarqueeRight 45s linear infinite; }
         .astro-marquee-left:hover, .astro-marquee-right:hover { animation-play-state: paused; }
       `}</style>
 
@@ -102,7 +103,7 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
       <div className="absolute inset-y-0 right-0 w-16 md:w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
       {/* Scrolling track */}
-      <div className={`flex gap-4 w-max ${marqueeClass}`}>
+      <div className={`flex gap-4 w-max ${marqueeClass} will-change-transform`}>
         {trackProducts.map((p, i) => (
           <div key={`${p.node.id}-${i}`} className="w-[180px] md:w-[200px] lg:w-[220px] flex-shrink-0">
             <ProductCard product={p} />

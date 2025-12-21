@@ -87,14 +87,13 @@ export function TopHeroBanners() {
   return (
     <section className="container mx-auto px-4 mb-8" aria-label="Banners principales">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Felices Fiestas */}
         <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Felices Fiestas">
-          {/* Texto ARRIBA (separado) */}
-          <header className="p-6 md:p-8">
-            <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
+          {/* Cabecera negra arriba (separada de la imagen) */}
+          <header className="bg-foreground text-background p-6 md:p-8">
+            <h2 className="font-display italic uppercase text-background text-2xl md:text-3xl leading-tight">
               Felices Fiestas
             </h2>
-            <p className="text-muted-foreground text-sm md:text-base mt-1">Regalos y novedades en AsteroHype</p>
+            <p className="text-background/70 text-sm md:text-base mt-1">Regalos y novedades en AsteroHype</p>
             <Link to="/products?tag=nuevos">
               <Button variant="hero" size="lg" className="mt-4 rounded-full">
                 Ver novedades
@@ -102,21 +101,18 @@ export function TopHeroBanners() {
             </Link>
           </header>
 
-          {/* Imágenes ABAJO */}
-          <div className="relative h-[200px] md:h-[260px] overflow-hidden">
+          {/* Imagen abajo */}
+          <div className="relative h-[220px] md:h-[260px] overflow-hidden">
             <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5000} />
           </div>
         </article>
 
-        {/* Ofertas Navideñas */}
         <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Ofertas Navideñas">
-          <header className="p-6 md:p-8">
-            <h2 className="font-display italic uppercase text-foreground text-2xl md:text-3xl leading-tight">
+          <header className="bg-foreground text-background p-6 md:p-8">
+            <h2 className="font-display italic uppercase text-background text-2xl md:text-3xl leading-tight">
               Ofertas Navideñas
             </h2>
-            <p className="text-muted-foreground text-sm md:text-base mt-1">
-              Productos de calidad con descuentos especiales
-            </p>
+            <p className="text-background/70 text-sm md:text-base mt-1">Productos de calidad con descuentos especiales</p>
             <Link to="/products?tag=ofertas">
               <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
                 Ver ofertas
@@ -124,7 +120,7 @@ export function TopHeroBanners() {
             </Link>
           </header>
 
-          <div className="relative h-[200px] md:h-[260px] overflow-hidden">
+          <div className="relative h-[220px] md:h-[260px] overflow-hidden">
             <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4000} />
           </div>
         </article>
