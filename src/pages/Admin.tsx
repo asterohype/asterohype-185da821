@@ -151,12 +151,10 @@ export default function Admin() {
       cancelEditing();
       return;
     }
-
+    
     setSavingProduct(product.node.id);
     try {
-      const res = await updateProductTitle(product.node.id, editedTitle.trim());
-      if (!res.ok) return;
-
+      await updateProductTitle(product.node.id, editedTitle.trim());
       setProducts(prev => prev.map(p => 
         p.node.id === product.node.id 
           ? { ...p, node: { ...p.node, title: editedTitle.trim() } }
@@ -165,8 +163,11 @@ export default function Admin() {
       toast.success('Nombre actualizado');
       cancelEditing();
     } catch (error) {
-      console.error('Error updating product:', error);
-      toast.error('Error al actualizar el nombre');
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('No autorizado para editar productos')) {
+        console.error('Error updating product:', error);
+      }
+      toast.error(message.includes('No autorizado') ? message : 'Error al actualizar el nombre');
     } finally {
       setSavingProduct(null);
     }
@@ -188,7 +189,7 @@ export default function Admin() {
       cancelEditingPrice();
       return;
     }
-
+    
     const firstVariant = product.node.variants.edges[0]?.node;
     if (!firstVariant) {
       toast.error('No se encontró variante del producto');
@@ -197,9 +198,7 @@ export default function Admin() {
 
     setSavingProduct(product.node.id);
     try {
-      const res = await updateProductPrice(product.node.id, firstVariant.id, editedPrice.trim());
-      if (!res.ok) return;
-
+      await updateProductPrice(product.node.id, firstVariant.id, editedPrice.trim());
       setProducts(prev => prev.map(p => 
         p.node.id === product.node.id 
           ? { 
