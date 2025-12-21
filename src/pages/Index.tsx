@@ -39,6 +39,7 @@ import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
 import { ChristmasBanner } from "@/components/home/ChristmasBanner";
 import { TopHeroBanners } from "@/components/home/TopHeroBanners";
+import { TopHeroImageStrips } from "@/components/home/TopHeroImageStrips";
 
 // Scroll animation hook
 function useScrollReveal() {
@@ -305,8 +306,9 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-32 pb-24 md:pb-8">
+        <ChristmasBanner />
         <TopHeroBanners />
-
+        <TopHeroImageStrips />
 
         {/* Marketing Cards Grid - Amazon Style with scroll animations */}
         <AnimatedSection className="container mx-auto px-4 py-8">
