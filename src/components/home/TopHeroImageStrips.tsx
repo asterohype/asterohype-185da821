@@ -38,33 +38,48 @@ function BannerCarousel({ images, interval = 4500 }: { images: string[]; interva
   );
 }
 
+function ImageStripCard({
+  title,
+  subtitle,
+  images,
+  interval,
+}: {
+  title: string;
+  subtitle: string;
+  images: string[];
+  interval?: number;
+}) {
+  return (
+    <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label={title}>
+      <div className="relative h-[240px] md:h-[280px] overflow-hidden">
+        <BannerCarousel images={images} interval={interval} />
+      </div>
+      <footer className="p-5 md:p-6">
+        <h2 className="font-display italic uppercase text-foreground text-xl md:text-2xl leading-tight">
+          {title}
+        </h2>
+        <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>
+      </footer>
+    </article>
+  );
+}
+
 export function TopHeroImageStrips() {
   return (
     <section className="container mx-auto px-4 mb-10" aria-label="Imágenes destacadas">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Navidad - imágenes">
-          <header className="p-5 md:p-6">
-            <h2 className="font-display italic uppercase text-foreground text-xl md:text-2xl leading-tight">
-              Ideas de Navidad
-            </h2>
-            <p className="text-muted-foreground text-sm mt-1">Imágenes y packs para regalar</p>
-          </header>
-          <div className="relative h-[240px] md:h-[280px] overflow-hidden">
-            <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5200} />
-          </div>
-        </article>
-
-        <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Ofertas - imágenes">
-          <header className="p-5 md:p-6">
-            <h2 className="font-display italic uppercase text-foreground text-xl md:text-2xl leading-tight">
-              Ofertas & Descuentos
-            </h2>
-            <p className="text-muted-foreground text-sm mt-1">Selección de regalos con rebaja</p>
-          </header>
-          <div className="relative h-[240px] md:h-[280px] overflow-hidden">
-            <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4400} />
-          </div>
-        </article>
+        <ImageStripCard
+          title="Ideas de Navidad"
+          subtitle="Imágenes y packs para regalar"
+          images={LIFESTYLE_BANNER_IMAGES}
+          interval={5200}
+        />
+        <ImageStripCard
+          title="Ofertas & Descuentos"
+          subtitle="Selección de regalos con rebaja"
+          images={OFFERS_BANNER_IMAGES}
+          interval={4400}
+        />
       </div>
     </section>
   );
