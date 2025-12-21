@@ -1,23 +1,35 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 
 import bannerHypeBlue from "@/assets/banner-asterohype-blue.png";
 import bannerHypePink from "@/assets/banner-asterohype-pink.png";
 
-function BannerBg({ src }: { src: string }) {
+function BannerCard({ 
+  src, 
+  title, 
+  subtitle, 
+  linkTo, 
+  buttonText,
+  buttonVariant = "hero"
+}: { 
+  src: string; 
+  title: string;
+  subtitle: string;
+  linkTo: string;
+  buttonText: string;
+  buttonVariant?: "hero" | "hero-outline";
+}) {
   return (
-    <div className="absolute inset-0">
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full object-cover"
-        loading="eager"
-        decoding="async"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/55 to-foreground/70" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-foreground/20" />
-    </div>
+    <article className="relative rounded-2xl overflow-hidden" aria-label={title}>
+      <Link to={linkTo} className="block">
+        <img
+          src={src}
+          alt={title}
+          className="w-full h-auto object-cover"
+          loading="eager"
+          decoding="async"
+        />
+      </Link>
+    </article>
   );
 }
 
@@ -25,42 +37,22 @@ export function TopHeroBanners() {
   return (
     <section className="container mx-auto px-4 mb-6" aria-label="Banners principales">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <article className="relative rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Felices Fiestas">
-          <header className="relative p-6 md:p-8 min-h-[190px]">
-            <BannerBg src={bannerHypeBlue} />
-            <div className="relative">
-              <h2 className="font-display italic uppercase text-background text-2xl md:text-3xl leading-tight">
-                Felices Fiestas
-              </h2>
-              <p className="text-background/70 text-sm md:text-base mt-1">Regalos y novedades en AsteroHype</p>
-              <Link to="/products?tag=nuevos">
-                <Button variant="hero" size="lg" className="mt-4 rounded-full">
-                  Ver novedades
-                </Button>
-              </Link>
-            </div>
-          </header>
-        </article>
-
-        <article className="relative rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Ofertas Navideñas">
-          <header className="relative p-6 md:p-8 min-h-[190px]">
-            <BannerBg src={bannerHypePink} />
-            <div className="relative">
-              <h2 className="font-display italic uppercase text-background text-2xl md:text-3xl leading-tight">
-                Ofertas Navideñas
-              </h2>
-              <p className="text-background/70 text-sm md:text-base mt-1">Productos de calidad con descuentos especiales</p>
-              <Link to="/products?tag=ofertas">
-                <Button variant="hero-outline" size="lg" className="mt-4 rounded-full">
-                  Ver ofertas
-                </Button>
-              </Link>
-            </div>
-          </header>
-        </article>
+        <BannerCard
+          src={bannerHypeBlue}
+          title="Felices Fiestas"
+          subtitle="Regalos y novedades en AsteroHype"
+          linkTo="/products?tag=nuevos"
+          buttonText="Ver novedades"
+        />
+        <BannerCard
+          src={bannerHypePink}
+          title="Ofertas Navideñas"
+          subtitle="Productos de calidad con descuentos especiales"
+          linkTo="/products?tag=ofertas"
+          buttonText="Ver ofertas"
+          buttonVariant="hero-outline"
+        />
       </div>
     </section>
   );
 }
-
-
