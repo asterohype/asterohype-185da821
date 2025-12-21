@@ -680,14 +680,11 @@ const Index = () => {
 
             return (
               <AnimatedSection key={category.slug} delay={categoryIndex * 100} className="py-8">
-                <div className="container mx-auto px-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-5 w-5 text-price-yellow" />
-                      <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground">
-                        {category.label}
-                      </h2>
-                    </div>
+                <div className="container mx-auto px-4 mb-6">
+                  <h2 className="font-display text-2xl md:text-3xl uppercase italic text-foreground text-center">
+                    {category.label}
+                  </h2>
+                  <div className="flex justify-center mt-2">
                     <Link
                       to={`/products?tag=${category.slug}`}
                       className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1"

@@ -58,7 +58,7 @@ function ImageStripCard({
         <h2 className="font-display italic uppercase text-foreground text-xl md:text-2xl leading-tight">
           {title}
         </h2>
-        <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>
+        <p className="text-foreground/70 text-sm mt-1">{subtitle}</p>
       </footer>
     </article>
   );
