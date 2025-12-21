@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { ProductTag } from "@/hooks/useProductTags";
-import { useProductOverrides } from "@/hooks/useProductOverrides";
-import { useAdmin } from "@/hooks/useAdmin";
-import { useAdminModeStore } from "@/stores/adminModeStore";
+import { useProductOverrides, splitTitle } from "@/hooks/useProductOverrides";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -20,26 +18,24 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
   const setCartOpen = useCartStore((state) => state.setOpen);
   const { node } = product;
 
-  // Admin mode (only admins should see manual price overrides)
-  const { isAdmin } = useAdmin();
-  const { isAdminModeActive } = useAdminModeStore();
-  const showOverridePrice = isAdmin && isAdminModeActive;
-
-  // Get overrides from backend
+  // Get overrides from backend (for separator only now)
   const { data: overrides } = useProductOverrides();
   const override = overrides?.find((o) => o.shopify_product_id === node.id);
 
   const imageUrl = node.images.edges[0]?.node.url;
   const firstVariant = node.variants.edges[0]?.node;
 
-  // Prefer el precio del primer variant (modelo por defecto) para que coincida con Shopify
+  // Price always comes from Shopify variant
   const basePrice = firstVariant?.price ?? node.priceRange.minVariantPrice;
 
-  // Apply overrides if they exist. Price override ONLY if price_enabled is true AND admin mode.
-  const displayTitle = override?.title || node.title;
-  const displayPrice = (showOverridePrice && override?.price !== null && override?.price !== undefined && override?.price_enabled !== false)
-    ? { amount: override.price.toString(), currencyCode: basePrice.currencyCode }
-    : basePrice;
+  // Title/subtitle from Shopify title split by separator
+  const { title: displayTitle, subtitle: displaySubtitle } = splitTitle(
+    node.title,
+    override?.title_separator || null
+  );
+  
+  // Price is always from Shopify
+  const displayPrice = basePrice;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -122,9 +118,9 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
           <h3 className="font-medium text-foreground line-clamp-2 leading-tight group-hover:text-price-yellow transition-colors duration-300 text-sm">
             {displayTitle}
           </h3>
-          {override?.subtitle && (
+          {displaySubtitle && (
             <p className="text-xs text-muted-foreground line-clamp-1">
-              {override.subtitle}
+              {displaySubtitle}
             </p>
           )}
           <p className="text-price-yellow font-bold text-base">

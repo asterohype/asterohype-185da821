@@ -320,6 +320,7 @@ export type Database = {
           shopify_product_id: string
           subtitle: string | null
           title: string | null
+          title_separator: string | null
           updated_at: string
         }
         Insert: {
@@ -331,6 +332,7 @@ export type Database = {
           shopify_product_id: string
           subtitle?: string | null
           title?: string | null
+          title_separator?: string | null
           updated_at?: string
         }
         Update: {
@@ -342,6 +344,7 @@ export type Database = {
           shopify_product_id?: string
           subtitle?: string | null
           title?: string | null
+          title_separator?: string | null
           updated_at?: string
         }
         Relationships: []

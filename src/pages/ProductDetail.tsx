@@ -11,6 +11,7 @@ import {
   deleteProductImage,
   addProductImage,
   deleteProduct,
+  updateProductPrice,
 } from "@/lib/shopify";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +23,7 @@ import { useAdminModeStore } from "@/stores/adminModeStore";
 import { useProductTags, ProductTag } from "@/hooks/useProductTags";
 import { useProductCosts } from "@/hooks/useProductCosts";
 import { useOptionAliases } from "@/hooks/useOptionAliases";
-import { useProductOverride, useUpsertOverride } from "@/hooks/useProductOverrides";
+import { useProductOverride, useUpsertOverride, splitTitle } from "@/hooks/useProductOverrides";
 import { useProductReviews, useProductReviewStats, useCreateReview, useDeleteReview, useUpdateReview } from "@/hooks/useProductReviews";
 import { useProductOffer, useUpsertOffer } from "@/hooks/useProductOffers";
 import { useProductEditStatus } from "@/hooks/useProductEditStatus";
@@ -92,10 +93,8 @@ const ProductDetail = () => {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [savingTag, setSavingTag] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState('');
-  const [editingSubtitle, setEditingSubtitle] = useState(false);
-  const [editedSubtitle, setEditedSubtitle] = useState('');
+  const [editingSeparator, setEditingSeparator] = useState(false);
+  const [selectedSeparator, setSelectedSeparator] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState(false);
   const [editedPrice, setEditedPrice] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
@@ -283,14 +282,17 @@ const ProductDetail = () => {
     setSelectedImage(variantImageIndex);
   }, [variantImageIndex]);
 
-  // Use local override ONLY in admin mode; otherwise always show Shopify variant price
-  const displayTitle = productOverride?.title ?? product?.title;
-  const displaySubtitle = productOverride?.subtitle ?? null;
-  const displayDescription = productOverride?.description ?? product?.description;
+  // Use title_separator to split Shopify title into title/subtitle
+  // Title and subtitle now come from Shopify title, split by the saved separator
+  const shopifyTitle = product?.title || '';
+  const { title: displayTitle, subtitle: displaySubtitle } = splitTitle(
+    shopifyTitle,
+    productOverride?.title_separator || null
+  );
+  const displayDescription = product?.description;
 
-  const displayPriceAmount = (showAdminControls && productOverride?.price !== null && productOverride?.price !== undefined && productOverride?.price_enabled !== false)
-    ? productOverride.price.toString()
-    : (selectedVariant?.price.amount || product?.variants.edges[0]?.node.price.amount || product?.priceRange.minVariantPrice.amount);
+  // Price always comes from Shopify variant (no more price override in DB)
+  const displayPriceAmount = selectedVariant?.price.amount || product?.variants.edges[0]?.node.price.amount || product?.priceRange.minVariantPrice.amount;
 
   const displayCurrency =
     selectedVariant?.price.currencyCode ||
@@ -372,69 +374,39 @@ const ProductDetail = () => {
     }
   };
 
-  const startEditingTitle = () => {
-    if (product) {
-      setEditedTitle(displayTitle || product.title);
-      setEditingTitle(true);
-    }
+  // Start editing separator
+  const startEditingSeparator = () => {
+    setSelectedSeparator(productOverride?.title_separator || null);
+    setEditingSeparator(true);
   };
 
-  const saveTitle = async () => {
-    if (!product || !editedTitle.trim()) {
-      setEditingTitle(false);
-      return;
-    }
+  // Save separator to DB
+  const saveSeparator = async (separator: string | null) => {
+    if (!product) return;
     
     setSavingProduct(true);
     try {
       await upsertOverride.mutateAsync({
         shopify_product_id: product.id,
-        title: editedTitle.trim(),
-        subtitle: productOverride?.subtitle,
-        description: productOverride?.description,
-        price: productOverride?.price,
+        title_separator: separator,
       });
-      toast.success('Nombre actualizado');
-      setEditingTitle(false);
+      toast.success(separator ? `Separador "${separator}" guardado` : 'Separador eliminado');
+      setEditingSeparator(false);
     } catch (error) {
-      console.error('Error updating title:', error);
-      toast.error('Error al actualizar el nombre');
+      console.error('Error saving separator:', error);
+      toast.error('Error al guardar el separador');
     } finally {
       setSavingProduct(false);
     }
   };
 
-  const startEditingSubtitle = () => {
-    if (product) {
-      setEditedSubtitle(displaySubtitle || '');
-      setEditingSubtitle(true);
-    }
-  };
-
-  const saveSubtitle = async () => {
-    if (!product) {
-      setEditingSubtitle(false);
-      return;
-    }
-    
-    setSavingProduct(true);
-    try {
-      await upsertOverride.mutateAsync({
-        shopify_product_id: product.id,
-        title: productOverride?.title,
-        subtitle: editedSubtitle.trim() || null,
-        description: productOverride?.description,
-        price: productOverride?.price,
-      });
-      toast.success('Subtítulo actualizado');
-      setEditingSubtitle(false);
-    } catch (error) {
-      console.error('Error updating subtitle:', error);
-      toast.error('Error al actualizar el subtítulo');
-    } finally {
-      setSavingProduct(false);
-    }
-  };
+  // Detect possible separators in the Shopify title
+  const possibleSeparators = useMemo(() => {
+    if (!product) return [];
+    const title = product.title;
+    const separators = [' - ', ' | ', ' — ', ', ', ' / '];
+    return separators.filter(sep => title.includes(sep));
+  }, [product]);
 
   const startEditingPrice = () => {
     if (product) {
@@ -449,20 +421,43 @@ const ProductDetail = () => {
       return;
     }
     
+    // Get first variant to update price in Shopify
+    const firstVariant = product.variants.edges[0]?.node;
+    if (!firstVariant) {
+      toast.error('No se encontró variante del producto');
+      setEditingPrice(false);
+      return;
+    }
+
     setSavingProduct(true);
     try {
-      await upsertOverride.mutateAsync({
-        shopify_product_id: product.id,
-        title: productOverride?.title,
-        subtitle: productOverride?.subtitle,
-        description: productOverride?.description,
-        price: parseFloat(editedPrice.trim()),
+      // Update price directly in Shopify (not our DB)
+      await updateProductPrice(product.id, firstVariant.id, editedPrice.trim());
+      
+      // Update local state to reflect the change
+      setProduct({
+        ...product,
+        priceRange: {
+          ...product.priceRange,
+          minVariantPrice: {
+            ...product.priceRange.minVariantPrice,
+            amount: editedPrice.trim(),
+          }
+        },
+        variants: {
+          edges: product.variants.edges.map((v, i) => 
+            i === 0 
+              ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: editedPrice.trim() } } }
+              : v
+          )
+        }
       });
-      toast.success('Precio actualizado');
+      
+      toast.success('Precio actualizado en Shopify');
       setEditingPrice(false);
     } catch (error) {
       console.error('Error updating price:', error);
-      toast.error('Error al actualizar el precio');
+      toast.error('Error al actualizar el precio en Shopify');
     } finally {
       setSavingProduct(false);
     }
@@ -961,95 +956,143 @@ const ProductDetail = () => {
 
             {/* Right Column - Product Info (Nike style) */}
             <div className="space-y-6">
-              {/* Title + Subtitle */}
+              {/* Title + Subtitle with Separator Selector for Admin */}
               <div className="space-y-1">
-                {showAdminControls && editingTitle ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={editedTitle}
-                      onChange={(e) => setEditedTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveTitle();
-                        if (e.key === 'Escape') setEditingTitle(false);
-                      }}
-                      className="text-lg font-semibold"
-                      autoFocus
-                    />
-                    <Button size="icon" variant="ghost" onClick={saveTitle} disabled={savingProduct} className="h-8 w-8 text-green-600">
-                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)} className="h-8 w-8 text-destructive">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-2">
-                    <h1 className="text-xl md:text-2xl font-semibold text-foreground leading-tight">
-                      {displayTitle}
-                    </h1>
-                    {showAdminControls && (
-                      <div className="flex gap-1 flex-shrink-0">
-                        <Button size="icon" variant="ghost" onClick={startEditingTitle} className="h-6 w-6">
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost" disabled={deletingProduct} className="h-6 w-6 text-destructive">
-                              {deletingProduct ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. El producto "{product.title}" será eliminado permanentemente.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleDeleteProduct} className="bg-destructive hover:bg-destructive/90">
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-start gap-2">
+                  <h1 className="text-xl md:text-2xl font-semibold text-foreground leading-tight">
+                    {displayTitle}
+                  </h1>
+                  {showAdminControls && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button size="icon" variant="ghost" onClick={startEditingSeparator} className="h-6 w-6" title="Configurar separador título/subtítulo">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" disabled={deletingProduct} className="h-6 w-6 text-destructive">
+                            {deletingProduct ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción no se puede deshacer. El producto "{product.title}" será eliminado permanentemente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteProduct} className="bg-destructive hover:bg-destructive/90">
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Subtitle from separator */}
+                {displaySubtitle && (
+                  <p className="text-muted-foreground text-sm">
+                    {displaySubtitle}
+                  </p>
                 )}
                 
-                {/* Subtitle */}
-                {showAdminControls && editingSubtitle ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={editedSubtitle}
-                      onChange={(e) => setEditedSubtitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveSubtitle();
-                        if (e.key === 'Escape') setEditingSubtitle(false);
-                      }}
-                      className="text-sm"
-                      placeholder="Ej: Sudadera con capucha y cremallera - Hombre"
-                      autoFocus
-                    />
-                    <Button size="icon" variant="ghost" onClick={saveSubtitle} disabled={savingProduct} className="h-8 w-8 text-green-600">
-                      {savingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => setEditingSubtitle(false)} className="h-8 w-8 text-destructive">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <p className="text-muted-foreground text-sm">
-                      {displaySubtitle || (showAdminControls ? 'Añadir subtítulo...' : '')}
-                    </p>
-                    {showAdminControls && (
-                      <Button size="icon" variant="ghost" onClick={startEditingSubtitle} className="h-5 w-5">
-                        <Pencil className="h-2.5 w-2.5" />
-                      </Button>
-                    )}
-                  </div>
+                {/* Admin: No subtitle yet but can configure separator */}
+                {!displaySubtitle && showAdminControls && possibleSeparators.length > 0 && (
+                  <button 
+                    onClick={startEditingSeparator}
+                    className="text-xs text-muted-foreground/60 hover:text-muted-foreground flex items-center gap-1"
+                  >
+                    <Pencil className="h-2.5 w-2.5" />
+                    Configurar separador para subtítulo
+                  </button>
+                )}
+
+                {/* Separator Editor Dialog */}
+                {showAdminControls && editingSeparator && (
+                  <Dialog open={editingSeparator} onOpenChange={setEditingSeparator}>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Separador de Título</DialogTitle>
+                        <DialogDescription>
+                          Selecciona dónde cortar el título de Shopify para crear título y subtítulo.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground mb-1">Título completo de Shopify:</p>
+                          <p className="font-medium text-foreground">{shopifyTitle}</p>
+                        </div>
+
+                        {possibleSeparators.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Separadores detectados:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {possibleSeparators.map((sep) => {
+                                const preview = splitTitle(shopifyTitle, sep);
+                                const isSelected = selectedSeparator === sep;
+                                return (
+                                  <button
+                                    key={sep}
+                                    onClick={() => setSelectedSeparator(sep)}
+                                    className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                                      isSelected 
+                                        ? 'border-price-yellow bg-price-yellow/10 text-foreground' 
+                                        : 'border-border hover:border-muted-foreground'
+                                    }`}
+                                  >
+                                    <span className="font-mono bg-muted px-1 rounded">"{sep.trim()}"</span>
+                                  </button>
+                                );
+                              })}
+                              <button
+                                onClick={() => setSelectedSeparator(null)}
+                                className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                                  selectedSeparator === null 
+                                    ? 'border-price-yellow bg-price-yellow/10 text-foreground' 
+                                    : 'border-border hover:border-muted-foreground'
+                                }`}
+                              >
+                                Sin separador
+                              </button>
+                            </div>
+
+                            {/* Preview */}
+                            {selectedSeparator && (
+                              <div className="mt-4 p-3 bg-secondary/50 rounded-lg space-y-1">
+                                <p className="text-xs text-muted-foreground">Vista previa:</p>
+                                <p className="font-semibold text-foreground">{splitTitle(shopifyTitle, selectedSeparator).title}</p>
+                                <p className="text-sm text-muted-foreground">{splitTitle(shopifyTitle, selectedSeparator).subtitle}</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No se detectaron separadores comunes en el título. El título se mostrará completo.
+                          </p>
+                        )}
+
+                        <div className="flex gap-2 pt-4">
+                          <Button 
+                            onClick={() => saveSeparator(selectedSeparator)} 
+                            disabled={savingProduct}
+                            className="flex-1"
+                          >
+                            {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                            Guardar
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setEditingSeparator(false)}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
 

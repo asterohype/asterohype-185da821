@@ -9,6 +9,7 @@ export interface ProductOverride {
   description: string | null;
   price: number | null;
   price_enabled: boolean;
+  title_separator: string | null; // separator to split Shopify title into title/subtitle
   created_at: string;
   updated_at: string;
 }
@@ -46,7 +47,7 @@ export function useProductOverride(shopifyProductId: string | undefined) {
   });
 }
 
-// Upsert override (insert or update)
+// Upsert override (insert or update) - now includes title_separator
 export function useUpsertOverride() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -62,6 +63,7 @@ export function useUpsertOverride() {
             subtitle: override.subtitle,
             description: override.description,
             price: override.price,
+            title_separator: override.title_separator,
           },
           { onConflict: "shopify_product_id" }
         )
@@ -97,4 +99,16 @@ export function useDeleteOverride() {
       });
     },
   });
+}
+
+// Helper function to split title using separator
+export function splitTitle(fullTitle: string, separator: string | null): { title: string; subtitle: string | null } {
+  if (!separator || !fullTitle.includes(separator)) {
+    return { title: fullTitle, subtitle: null };
+  }
+  const index = fullTitle.indexOf(separator);
+  return {
+    title: fullTitle.substring(0, index).trim(),
+    subtitle: fullTitle.substring(index + separator.length).trim() || null,
+  };
 }

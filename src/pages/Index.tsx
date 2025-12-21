@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductTags } from "@/hooks/useProductTags";
-import { useProductOverrides } from "@/hooks/useProductOverrides";
+import { useProductOverrides, splitTitle } from "@/hooks/useProductOverrides";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useAdminModeStore } from "@/stores/adminModeStore";
@@ -137,11 +137,9 @@ const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval
 const DestacadosGrid = ({ 
   products, 
   getTagsForProduct,
-  showOverridePrice,
 }: { 
   products: ShopifyProduct[]; 
   getTagsForProduct: (productId: string) => any[];
-  showOverridePrice: boolean;
 }) => {
   const { data: overrides } = useProductOverrides();
   
@@ -150,10 +148,12 @@ const DestacadosGrid = ({
       {products.map((product, index) => {
         const productTags = getTagsForProduct(product.node.id);
         const override = overrides?.find(o => o.shopify_product_id === product.node.id);
-        const displayTitle = override?.title || product.node.title;
-        const displayPrice = (showOverridePrice && override?.price !== null && override?.price !== undefined && override?.price_enabled !== false)
-          ? { amount: override.price.toString(), currencyCode: product.node.priceRange.minVariantPrice.currencyCode }
-          : product.node.priceRange.minVariantPrice;
+        const { title: displayTitle, subtitle: displaySubtitle } = splitTitle(
+          product.node.title,
+          override?.title_separator || null
+        );
+        // Price always from Shopify
+        const displayPrice = product.node.priceRange.minVariantPrice;
         
         return (
           <Link 
@@ -197,9 +197,9 @@ const DestacadosGrid = ({
               <h3 className="text-xs md:text-sm font-medium text-foreground line-clamp-2 group-hover:text-price-yellow transition-colors">
                 {displayTitle}
               </h3>
-              {override?.subtitle && (
+              {displaySubtitle && (
                 <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                  {override.subtitle}
+                  {displaySubtitle}
                 </p>
               )}
               <p className="text-price-yellow font-bold text-sm md:text-base mt-1">
@@ -674,7 +674,7 @@ const Index = () => {
                 ))}
               </div>
             ) : destacadosProducts.length > 0 ? (
-              <DestacadosGrid products={destacadosProducts.slice(0, 10)} getTagsForProduct={getTagsForProduct} showOverridePrice={showAdminControls} />
+              <DestacadosGrid products={destacadosProducts.slice(0, 10)} getTagsForProduct={getTagsForProduct} />
             ) : (
               <p className="text-center text-muted-foreground py-8">No hay productos destacados aún</p>
             )}
