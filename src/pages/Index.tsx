@@ -36,6 +36,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
+import { CategoryStaticGrid } from "@/components/home/CategoryStaticGrid";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
 import { ChristmasBanner } from "@/components/home/ChristmasBanner";
 import { TopHeroBanners } from "@/components/home/TopHeroBanners";
@@ -659,17 +660,23 @@ const Index = () => {
           </div>
         </AnimatedSection>
 
-        {/* Category Sections with Auto-scrolling Carousels */}
+        {/* Category Sections - Static grids for tecnologia/accesorios, Carousel for ropa */}
         {!loading && !tagsLoading && products.length > 0 && (() => {
-          const visibleCategories = categories.slice(0, 6);
+          // Show only tecnologia, accesorios, ropa (exclude fundas)
+          const categoriesToShow = categories.filter(c => 
+            ['tecnologia', 'accesorios', 'ropa'].includes(c.slug)
+          );
 
-          return visibleCategories.map((category, categoryIndex) => {
+          return categoriesToShow.map((category, categoryIndex) => {
             const taggedProductIds = getProductsForTag(category.slug);
             const categoryProducts = products
               .filter((p) => taggedProductIds.includes(p.node.id));
 
             if (categoryProducts.length === 0) return null;
             const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
+
+            // First 2 (tecnologia, accesorios) = static grid, ropa = carousel
+            const useStaticGrid = category.slug === 'tecnologia' || category.slug === 'accesorios';
 
             return (
               <AnimatedSection key={category.slug} delay={categoryIndex * 100} className="py-8">
@@ -690,12 +697,20 @@ const Index = () => {
                   </div>
                 </div>
 
-                <CategoryCarousel
-                  products={categoryProducts}
-                  categorySlug={category.slug}
-                  getTagsForProduct={getTagsForProduct}
-                  direction={categoryIndex % 2 === 0 ? "right" : "left"}
-                />
+                {useStaticGrid ? (
+                  <CategoryStaticGrid
+                    products={categoryProducts}
+                    categorySlug={category.slug}
+                    maxProducts={7}
+                  />
+                ) : (
+                  <CategoryCarousel
+                    products={categoryProducts}
+                    categorySlug={category.slug}
+                    getTagsForProduct={getTagsForProduct}
+                    direction={categoryIndex % 2 === 0 ? "right" : "left"}
+                  />
+                )}
               </AnimatedSection>
             );
           });

@@ -42,7 +42,7 @@ const Products = () => {
   useEffect(() => {
     async function loadProducts() {
       try {
-        // Load more products - Shopify API max is 250 per query
+        // Load products - use 250 max per request for now to avoid timeout issues
         const data = await fetchProducts(250);
         setProducts(data);
       } catch (error) {
