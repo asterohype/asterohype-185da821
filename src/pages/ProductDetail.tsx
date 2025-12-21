@@ -12,6 +12,7 @@ import {
   addProductImage,
   deleteProduct,
   updateProductPrice,
+  updateProductTitle,
 } from "@/lib/shopify";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,6 +96,9 @@ const ProductDetail = () => {
   const [savingTag, setSavingTag] = useState(false);
   const [editingSeparator, setEditingSeparator] = useState(false);
   const [selectedSeparator, setSelectedSeparator] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedSubtitle, setEditedSubtitle] = useState('');
   const [editingPrice, setEditingPrice] = useState(false);
   const [editedPrice, setEditedPrice] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
@@ -380,7 +384,54 @@ const ProductDetail = () => {
     setEditingSeparator(true);
   };
 
-  // Save separator to DB
+  // Start editing title/subtitle
+  const startEditingTitle = () => {
+    setEditedTitle(displayTitle);
+    setEditedSubtitle(displaySubtitle || '');
+    setSelectedSeparator(productOverride?.title_separator || ' - ');
+    setEditingTitle(true);
+  };
+
+  // Save title/subtitle to Shopify (combines with separator)
+  const saveTitle = async () => {
+    if (!product || !editedTitle.trim()) {
+      setEditingTitle(false);
+      return;
+    }
+
+    const separator = selectedSeparator || ' - ';
+    const newFullTitle = editedSubtitle.trim() 
+      ? `${editedTitle.trim()}${separator}${editedSubtitle.trim()}`
+      : editedTitle.trim();
+
+    setSavingProduct(true);
+    try {
+      // Update title in Shopify
+      await updateProductTitle(product.id, newFullTitle);
+      
+      // Save the separator in our DB so we know how to split it
+      await upsertOverride.mutateAsync({
+        shopify_product_id: product.id,
+        title_separator: editedSubtitle.trim() ? separator : null,
+      });
+
+      // Update local state
+      setProduct({
+        ...product,
+        title: newFullTitle,
+      });
+
+      toast.success('Título actualizado en Shopify');
+      setEditingTitle(false);
+    } catch (error) {
+      console.error('Error updating title:', error);
+      toast.error('Error al actualizar el título en Shopify');
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  // Save separator to DB (without editing title)
   const saveSeparator = async (separator: string | null) => {
     if (!product) return;
     
@@ -956,7 +1007,7 @@ const ProductDetail = () => {
 
             {/* Right Column - Product Info (Nike style) */}
             <div className="space-y-6">
-              {/* Title + Subtitle with Separator Selector for Admin */}
+              {/* Title + Subtitle with Edit functionality for Admin */}
               <div className="space-y-1">
                 <div className="flex items-start gap-2">
                   <h1 className="text-xl md:text-2xl font-semibold text-foreground leading-tight">
@@ -964,7 +1015,7 @@ const ProductDetail = () => {
                   </h1>
                   {showAdminControls && (
                     <div className="flex gap-1 flex-shrink-0">
-                      <Button size="icon" variant="ghost" onClick={startEditingSeparator} className="h-6 w-6" title="Configurar separador título/subtítulo">
+                      <Button size="icon" variant="ghost" onClick={startEditingTitle} className="h-6 w-6" title="Editar título y subtítulo">
                         <Pencil className="h-3 w-3" />
                       </Button>
                       <AlertDialog>
@@ -999,18 +1050,120 @@ const ProductDetail = () => {
                   </p>
                 )}
                 
-                {/* Admin: No subtitle yet but can configure separator */}
-                {!displaySubtitle && showAdminControls && possibleSeparators.length > 0 && (
+                {/* Admin: No subtitle yet - hint to add one */}
+                {!displaySubtitle && showAdminControls && (
                   <button 
-                    onClick={startEditingSeparator}
+                    onClick={startEditingTitle}
                     className="text-xs text-muted-foreground/60 hover:text-muted-foreground flex items-center gap-1"
                   >
                     <Pencil className="h-2.5 w-2.5" />
-                    Configurar separador para subtítulo
+                    Añadir subtítulo
                   </button>
                 )}
 
-                {/* Separator Editor Dialog */}
+                {/* Title/Subtitle Editor Dialog */}
+                {showAdminControls && editingTitle && (
+                  <Dialog open={editingTitle} onOpenChange={setEditingTitle}>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Editar Título y Subtítulo</DialogTitle>
+                        <DialogDescription>
+                          Edita el título y subtítulo. Se guardarán en Shopify como: "Título{selectedSeparator || ' - '}Subtítulo"
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        {/* Current Shopify title */}
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground mb-1">Título actual en Shopify:</p>
+                          <p className="font-medium text-foreground text-sm">{shopifyTitle}</p>
+                        </div>
+
+                        {/* Title input */}
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-title">Título principal (estético)</Label>
+                          <Input
+                            id="edit-title"
+                            value={editedTitle}
+                            onChange={(e) => setEditedTitle(e.target.value)}
+                            placeholder="Ej: Alfombrilla Gaming RGB"
+                            className="text-base"
+                          />
+                        </div>
+
+                        {/* Separator selector */}
+                        <div className="space-y-2">
+                          <Label>Separador</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {[' - ', ' | ', ' — ', ', ', ' / '].map((sep) => (
+                              <button
+                                key={sep}
+                                onClick={() => setSelectedSeparator(sep)}
+                                className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                                  selectedSeparator === sep 
+                                    ? 'border-price-yellow bg-price-yellow/10 text-foreground' 
+                                    : 'border-border hover:border-muted-foreground'
+                                }`}
+                              >
+                                <span className="font-mono">"{sep.trim()}"</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Subtitle input */}
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-subtitle">Subtítulo (descripción corta)</Label>
+                          <Input
+                            id="edit-subtitle"
+                            value={editedSubtitle}
+                            onChange={(e) => setEditedSubtitle(e.target.value)}
+                            placeholder="Ej: Iluminación LED XXL 80x30cm"
+                            className="text-base"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Deja vacío si no quieres subtítulo
+                          </p>
+                        </div>
+
+                        {/* Preview */}
+                        <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
+                          <p className="text-xs text-muted-foreground">Vista previa en Shopify:</p>
+                          <p className="font-mono text-sm text-foreground bg-muted px-2 py-1 rounded">
+                            {editedSubtitle.trim() 
+                              ? `${editedTitle.trim()}${selectedSeparator || ' - '}${editedSubtitle.trim()}`
+                              : editedTitle.trim() || '(vacío)'}
+                          </p>
+                          <div className="border-t border-border pt-2 mt-2">
+                            <p className="text-xs text-muted-foreground mb-1">Así se verá en la tienda:</p>
+                            <p className="font-semibold text-foreground">{editedTitle.trim() || '(título)'}</p>
+                            {editedSubtitle.trim() && (
+                              <p className="text-sm text-muted-foreground">{editedSubtitle.trim()}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-4">
+                          <Button 
+                            onClick={saveTitle} 
+                            disabled={savingProduct || !editedTitle.trim()}
+                            className="flex-1"
+                          >
+                            {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                            Guardar en Shopify
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setEditingTitle(false)}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
+                {/* Legacy Separator Editor Dialog - for selecting from existing title */}
                 {showAdminControls && editingSeparator && (
                   <Dialog open={editingSeparator} onOpenChange={setEditingSeparator}>
                     <DialogContent className="max-w-md">
@@ -1031,7 +1184,6 @@ const ProductDetail = () => {
                             <p className="text-sm font-medium">Separadores detectados:</p>
                             <div className="flex flex-wrap gap-2">
                               {possibleSeparators.map((sep) => {
-                                const preview = splitTitle(shopifyTitle, sep);
                                 const isSelected = selectedSeparator === sep;
                                 return (
                                   <button
