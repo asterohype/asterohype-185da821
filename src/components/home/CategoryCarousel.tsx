@@ -93,8 +93,8 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
       <style>{`
         @keyframes astroMarqueeLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes astroMarqueeRight { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
-        .astro-marquee-left { animation: astroMarqueeLeft 140s linear infinite; }
-        .astro-marquee-right { animation: astroMarqueeRight 140s linear infinite; }
+        .astro-marquee-left { animation: astroMarqueeLeft 300s linear infinite; }
+        .astro-marquee-right { animation: astroMarqueeRight 300s linear infinite; }
         @media (prefers-reduced-motion: reduce) {
           .astro-marquee-left, .astro-marquee-right { animation: none !important; transform: none !important; }
         }

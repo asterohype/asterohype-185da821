@@ -37,11 +37,11 @@ function ProductCard({ product }: { product: ShopifyProduct }) {
           </div>
         )}
 
-        <div className="aspect-[3/4] overflow-hidden relative bg-secondary/30">
+        <div className="aspect-square overflow-hidden relative bg-secondary/30">
           <img 
             src={product.node.images.edges[0]?.node.url} 
             alt={displayTitle} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 p-2" 
             loading="lazy" 
           />
         </div>
@@ -74,9 +74,11 @@ export function CategoryStaticGrid({ products, categorySlug, maxProducts = 7 }: 
 
   return (
     <section className="container mx-auto px-4" aria-label={`Grid de ${categorySlug}`}>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
+      <div className="flex flex-wrap justify-center gap-4 md:gap-6">
         {uniqueProducts.map((p) => (
-          <ProductCard key={p.node.id} product={p} />
+          <div key={p.node.id} className="w-[140px] sm:w-[160px] md:w-[180px]">
+            <ProductCard product={p} />
+          </div>
         ))}
       </div>
     </section>
