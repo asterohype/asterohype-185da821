@@ -484,9 +484,8 @@ const ProductDetail = () => {
       return;
     }
 
-    // Get first variant to update price in Shopify
-    const firstVariant = product.variants.edges[0]?.node;
-    if (!firstVariant) {
+    const variantToUpdate = selectedVariant ?? product.variants.edges[0]?.node;
+    if (!variantToUpdate) {
       toast.error('No se encontró variante del producto');
       setEditingPrice(false);
       return;
@@ -494,34 +493,15 @@ const ProductDetail = () => {
 
     setSavingProduct(true);
     try {
-      // Update price directly in Shopify (not our DB)
-      const res = await updateProductPrice(product.id, firstVariant.id, editedPrice.trim());
+      // Update price directly in Shopify
+      const res = await updateProductPrice(product.id, variantToUpdate.id, editedPrice.trim());
       if (!res.ok) return;
 
-      // Update local state to reflect the change
-      setProduct({
-        ...product,
-        priceRange: {
-          ...product.priceRange,
-          minVariantPrice: {
-            ...product.priceRange.minVariantPrice,
-            amount: editedPrice.trim(),
-          },
-        },
-        variants: {
-          edges: product.variants.edges.map((v, i) =>
-            i === 0
-              ? {
-                  ...v,
-                  node: {
-                    ...v.node,
-                    price: { ...v.node.price, amount: editedPrice.trim() },
-                  },
-                }
-              : v
-          ),
-        },
-      });
+      // Re-fetch product from Shopify so UI always matches the source of truth
+      if (handle) {
+        const fresh = await fetchProductByHandle(handle);
+        if (fresh) setProduct(fresh);
+      }
 
       toast.success('Precio actualizado en Shopify');
       setEditingPrice(false);
