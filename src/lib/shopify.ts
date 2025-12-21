@@ -247,10 +247,89 @@ export async function storefrontApiRequest(query: string, variables: Record<stri
   return data;
 }
 
-// Fetch all products
+// Fetch all products with pagination support
 export async function fetchProducts(first: number = 20, query?: string): Promise<ShopifyProduct[]> {
-  const data = await storefrontApiRequest(STOREFRONT_QUERY, { first, query });
-  return data.data.products.edges as ShopifyProduct[];
+  // If requesting more than 250, need pagination
+  if (first <= 250) {
+    const data = await storefrontApiRequest(STOREFRONT_QUERY, { first, query });
+    return data.data.products.edges as ShopifyProduct[];
+  }
+  
+  // Paginate to fetch all products
+  let allProducts: ShopifyProduct[] = [];
+  let hasNextPage = true;
+  let cursor: string | null = null;
+  const perPage = 250;
+  
+  const PAGINATED_QUERY = `
+    query GetProducts($first: Int!, $query: String, $after: String) {
+      products(first: $first, query: $query, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          node {
+            id
+            title
+            description
+            handle
+            productType
+            tags
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            images(first: 2) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            variants(first: 5) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  availableForSale
+                  selectedOptions {
+                    name
+                    value
+                  }
+                }
+              }
+            }
+            options {
+              name
+              values
+            }
+          }
+        }
+      }
+    }
+  `;
+  
+  while (hasNextPage && allProducts.length < first) {
+    const data = await storefrontApiRequest(PAGINATED_QUERY, { 
+      first: Math.min(perPage, first - allProducts.length), 
+      query,
+      after: cursor 
+    });
+    const edges = data.data.products.edges as ShopifyProduct[];
+    allProducts = [...allProducts, ...edges];
+    hasNextPage = data.data.products.pageInfo.hasNextPage;
+    cursor = data.data.products.pageInfo.endCursor;
+  }
+  
+  return allProducts;
 }
 
 // Fetch single product by handle

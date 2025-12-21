@@ -25,7 +25,9 @@ import { useOptionAliases } from "@/hooks/useOptionAliases";
 import { useProductOverride, useUpsertOverride } from "@/hooks/useProductOverrides";
 import { useProductReviews, useProductReviewStats, useCreateReview, useDeleteReview, useUpdateReview } from "@/hooks/useProductReviews";
 import { useProductOffer, useUpsertOffer } from "@/hooks/useProductOffers";
+import { useProductEditStatus } from "@/hooks/useProductEditStatus";
 import { EditStatusChecklist } from "@/components/admin/EditStatusChecklist";
+import { NewProductsPanel } from "@/components/admin/NewProductsPanel";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -133,6 +135,25 @@ const ProductDetail = () => {
   // Offers hook
   const { data: productOffer, isLoading: offerLoading } = useProductOffer(product?.id);
   const upsertOffer = useUpsertOffer();
+  
+  // Edit status hook (for "HECHO" badge)
+  const { data: editStatus } = useProductEditStatus(product?.id);
+  
+  // Check if we came from the NewProductsPanel
+  const [showBackToPanel, setShowBackToPanel] = useState(false);
+  const [newProductsPanelOpen, setNewProductsPanelOpen] = useState(false);
+  
+  useEffect(() => {
+    const fromPanel = sessionStorage.getItem('fromNewProductsPanel');
+    if (fromPanel === 'true') {
+      setShowBackToPanel(true);
+    }
+  }, []);
+  
+  const handleBackToPanel = () => {
+    sessionStorage.removeItem('fromNewProductsPanel');
+    setNewProductsPanelOpen(true);
+  };
   
   const showAdminControls = isAdmin && isAdminModeActive;
   
@@ -782,8 +803,25 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      
+      {/* NewProductsPanel modal */}
+      <NewProductsPanel open={newProductsPanelOpen} onOpenChange={setNewProductsPanelOpen} />
+      
       <main className="pt-24 pb-24 md:pb-12">
         <div className="max-w-6xl mx-auto px-6">
+          {/* Back to Panel button (only if came from panel) */}
+          {showAdminControls && showBackToPanel && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleBackToPanel}
+              className="mb-4 gap-2 border-price-yellow/50 text-price-yellow hover:bg-price-yellow/10"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Volver al Panel de Productos
+            </Button>
+          )}
+          
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <Link to="/" className="hover:text-primary transition-colors">Inicio</Link>
@@ -838,8 +876,15 @@ const ProductDetail = () => {
                     >
                       <ImagePlus className="h-4 w-4" />
                     </button>
-                  )}
-                </div>
+                    )}
+                    
+                    {/* Admin badge: HECHO if all_done */}
+                    {showAdminControls && editStatus?.all_done && (
+                      <div className="absolute bottom-3 left-3 bg-price-yellow text-background px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 shadow-lg">
+                        ✅ HECHO
+                      </div>
+                    )}
+                  </div>
 
                 {/* Main Image */}
                 <div className="flex-1">
