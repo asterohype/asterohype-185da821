@@ -30,6 +30,7 @@ import { useProductOffer, useUpsertOffer } from "@/hooks/useProductOffers";
 import { useProductEditStatus } from "@/hooks/useProductEditStatus";
 import { EditStatusChecklist } from "@/components/admin/EditStatusChecklist";
 import { NewProductsPanel } from "@/components/admin/NewProductsPanel";
+import { VariantsPricePanel } from "@/components/admin/VariantsPricePanel";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -109,6 +110,7 @@ const ProductDetail = () => {
   const [deletingProduct, setDeletingProduct] = useState(false);
   const [relatedScrollPos, setRelatedScrollPos] = useState(0);
   const [showOfferEditor, setShowOfferEditor] = useState(false);
+  const [showVariantsPanel, setShowVariantsPanel] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
@@ -1288,13 +1290,43 @@ const ProductDetail = () => {
                       </>
                     )}
                     {showAdminControls && (
-                      <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6">
-                        <Pencil className="h-3 w-3" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={startEditingPrice} className="h-6 w-6" title="Editar precio de variante seleccionada">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setShowVariantsPanel(true)} 
+                          className="h-6 text-xs px-2 border-price-yellow/50 text-price-yellow hover:bg-price-yellow/10"
+                          title="Editar precios de todas las variantes"
+                        >
+                          <Settings className="h-3 w-3 mr-1" />
+                          Todas las variantes
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )}
               </div>
+
+              {/* Variants Price Panel */}
+              {showAdminControls && product && (
+                <VariantsPricePanel
+                  open={showVariantsPanel}
+                  onOpenChange={setShowVariantsPanel}
+                  productId={product.id}
+                  productTitle={product.title}
+                  variants={product.variants.edges}
+                  images={product.images.edges}
+                  onVariantsUpdated={(updatedVariants) => {
+                    setProduct({
+                      ...product,
+                      variants: { edges: updatedVariants },
+                    });
+                  }}
+                />
+              )}
 
               {/* Promo Banner - Only show if configured by admin */}
               {productOffer?.promo_active && productOffer?.promo_text && (
