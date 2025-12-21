@@ -50,50 +50,51 @@ const Products = () => {
   const { tags, getTagsByGroup, getTagsForProduct, loading: tagsLoading } = useProductTags();
   const { collections, getProductsForCollection } = useCollections();
 
+  // Function to mix products deterministically
+  const mixOnce = (items: ShopifyProduct[]) => {
+    const seedStr = "asterohype_v1";
+    let seed = 0;
+    for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+    const rand = () => {
+      seed = (1664525 * seed + 1013904223) >>> 0;
+      return seed / 0xffffffff;
+    };
+    const shuffle = <T,>(arr: T[]) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    const byType: Record<string, ShopifyProduct[]> = {};
+    items.forEach((p) => {
+      const type = p.node.productType || "otros";
+      (byType[type] ??= []).push(p);
+    });
+
+    const types = shuffle(Object.keys(byType));
+    const lists = Object.fromEntries(types.map((t) => [t, shuffle(byType[t])])) as Record<string, ShopifyProduct[]>;
+
+    const mixed: string[] = [];
+    let remaining = items.length;
+    let idx = 0;
+    while (remaining > 0) {
+      const type = types[idx % types.length];
+      const item = lists[type]?.shift();
+      if (item) {
+        mixed.push(item.node.id);
+        remaining--;
+      }
+      idx++;
+    }
+    return mixed;
+  };
+
+  // Initial load + progressive loading
   useEffect(() => {
     let cancelled = false;
-
-    const mixOnce = (items: ShopifyProduct[]) => {
-      // mezcla simple por productType, determinista
-      const seedStr = "asterohype_v1";
-      let seed = 0;
-      for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
-      const rand = () => {
-        seed = (1664525 * seed + 1013904223) >>> 0;
-        return seed / 0xffffffff;
-      };
-      const shuffle = <T,>(arr: T[]) => {
-        const a = [...arr];
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(rand() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
-        }
-        return a;
-      };
-
-      const byType: Record<string, ShopifyProduct[]> = {};
-      items.forEach((p) => {
-        const type = p.node.productType || "otros";
-        (byType[type] ??= []).push(p);
-      });
-
-      const types = shuffle(Object.keys(byType));
-      const lists = Object.fromEntries(types.map((t) => [t, shuffle(byType[t])])) as Record<string, ShopifyProduct[]>;
-
-      const mixed: string[] = [];
-      let remaining = items.length;
-      let idx = 0;
-      while (remaining > 0) {
-        const type = types[idx % types.length];
-        const item = lists[type]?.shift();
-        if (item) {
-          mixed.push(item.node.id);
-          remaining--;
-        }
-        idx++;
-      }
-      return mixed;
-    };
 
     async function loadProducts() {
       try {
@@ -138,6 +139,24 @@ const Products = () => {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Polling: refresh products every 30 seconds to get latest prices from Shopify
+  useEffect(() => {
+    const POLLING_INTERVAL = 30000; // 30 seconds
+
+    const refreshProducts = async () => {
+      try {
+        const freshProducts = await fetchProducts(9999);
+        setProducts(freshProducts);
+        console.log("[Shopify Polling] Products refreshed at", new Date().toLocaleTimeString());
+      } catch (error) {
+        console.error("[Shopify Polling] Failed to refresh products:", error);
+      }
+    };
+
+    const interval = setInterval(refreshProducts, POLLING_INTERVAL);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
