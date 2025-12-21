@@ -294,7 +294,10 @@ const ProductDetail = () => {
     shopifyTitle,
     productOverride?.title_separator || null
   );
-  const displayDescription = product?.description;
+  // "Acerca de este producto" uses local override (not synced with Shopify)
+  const aboutDescription = productOverride?.description || '';
+  // Shopify description kept separate for reference if needed
+  const shopifyDescription = product?.description;
 
   // Price always comes from Shopify variant (no more price override in DB)
   const displayPriceAmount = selectedVariant?.price.amount || product?.variants.edges[0]?.node.price.amount || product?.priceRange.minVariantPrice.amount;
@@ -515,7 +518,7 @@ const ProductDetail = () => {
 
   const startEditingDescription = () => {
     if (product) {
-      setEditedDescription(displayDescription || '');
+      setEditedDescription(aboutDescription);
       setEditingDescription(true);
     }
   };
@@ -804,9 +807,9 @@ const ProductDetail = () => {
     return { days, hours, minutes };
   }, [productOffer?.offer_active, productOffer?.offer_end_date]);
 
-  // Convert description to bullet points
-  const descriptionBullets = displayDescription
-    ? displayDescription.split(/[.!?]+/).filter((s) => s.trim().length > 10).slice(0, 5)
+  // Convert "Acerca de" (local) description to bullet points
+  const descriptionBullets = aboutDescription
+    ? aboutDescription.split(/[.!?]+/).filter((s) => s.trim().length > 10).slice(0, 5)
     : [];
 
   if (loading) {
@@ -1380,7 +1383,7 @@ const ProductDetail = () => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{displayDescription || 'Sin descripción disponible.'}</p>
+                  <p className="text-sm text-muted-foreground">{aboutDescription || 'Sin descripción disponible.'}</p>
                 )}
               </div>
 
