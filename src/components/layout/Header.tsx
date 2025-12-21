@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag, Package, Pencil, Check, Sparkles } from "lucide-react";
+import { Menu, X, ShoppingBag, User, ChevronDown, Search, Shield, Tag, Package, Pencil, Check, Sparkles, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cartStore";
 import { useAdminModeStore } from "@/stores/adminModeStore";
@@ -270,6 +270,13 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
                         <Sparkles className="h-4 w-4" />
                         Nuevos Productos
                       </button>
+                      <Link
+                        to="/admin/overrides"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        Overrides Precio
+                      </Link>
                     </HoverCardContent>
                   </HoverCard>
                 )}

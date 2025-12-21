@@ -151,7 +151,7 @@ const DestacadosGrid = ({
         const productTags = getTagsForProduct(product.node.id);
         const override = overrides?.find(o => o.shopify_product_id === product.node.id);
         const displayTitle = override?.title || product.node.title;
-        const displayPrice = showOverridePrice && override?.price 
+        const displayPrice = (showOverridePrice && override?.price !== null && override?.price !== undefined && override?.price_enabled !== false)
           ? { amount: override.price.toString(), currencyCode: product.node.priceRange.minVariantPrice.currencyCode }
           : product.node.priceRange.minVariantPrice;
         

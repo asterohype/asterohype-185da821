@@ -288,7 +288,7 @@ const ProductDetail = () => {
   const displaySubtitle = productOverride?.subtitle ?? null;
   const displayDescription = productOverride?.description ?? product?.description;
 
-  const displayPriceAmount = (showAdminControls && productOverride?.price !== null && productOverride?.price !== undefined)
+  const displayPriceAmount = (showAdminControls && productOverride?.price !== null && productOverride?.price !== undefined && productOverride?.price_enabled !== false)
     ? productOverride.price.toString()
     : (selectedVariant?.price.amount || product?.variants.edges[0]?.node.price.amount || product?.priceRange.minVariantPrice.amount);
 

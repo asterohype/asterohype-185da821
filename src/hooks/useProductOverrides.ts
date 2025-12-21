@@ -8,6 +8,7 @@ export interface ProductOverride {
   subtitle: string | null;
   description: string | null;
   price: number | null;
+  price_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
