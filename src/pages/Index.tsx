@@ -268,6 +268,24 @@ const Index = () => {
     loadProducts();
   }, []);
 
+  // Polling: refresh products every 30 seconds to get latest prices from Shopify
+  useEffect(() => {
+    const POLLING_INTERVAL = 30000; // 30 seconds
+
+    const refreshProducts = async () => {
+      try {
+        const freshProducts = await fetchProducts(200);
+        setProducts(freshProducts);
+        console.log("[Shopify Polling] Products refreshed at", new Date().toLocaleTimeString());
+      } catch (error) {
+        console.error("[Shopify Polling] Failed to refresh products:", error);
+      }
+    };
+
+    const interval = setInterval(refreshProducts, POLLING_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
+
 
   // Filter products by special tags
   const topProducts = useMemo(() => {
