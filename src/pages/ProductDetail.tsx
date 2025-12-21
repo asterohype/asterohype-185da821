@@ -98,8 +98,7 @@ const ProductDetail = () => {
   const [editingSeparator, setEditingSeparator] = useState(false);
   const [selectedSeparator, setSelectedSeparator] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState('');
-  const [editedSubtitle, setEditedSubtitle] = useState('');
+  const [editedShopifyTitle, setEditedShopifyTitle] = useState('');
   const [editingPrice, setEditingPrice] = useState(false);
   const [editedPrice, setEditedPrice] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
@@ -386,48 +385,59 @@ const ProductDetail = () => {
     setEditingSeparator(true);
   };
 
-  // Start editing title/subtitle
+  // Start editing title (Shopify title directly)
   const startEditingTitle = () => {
-    setEditedTitle(displayTitle);
-    setEditedSubtitle(displaySubtitle || '');
-    setSelectedSeparator(productOverride?.title_separator || ' - ');
+    setEditedShopifyTitle(product?.title || '');
+
+    // If we already have a saved separator, use it; otherwise try to detect one from the current Shopify title.
+    const saved = productOverride?.title_separator || null;
+    if (saved) {
+      setSelectedSeparator(saved);
+    } else {
+      const current = product?.title || '';
+      const detected = [' - ', ' | ', ' — ', ', ', ' / '].find((sep) => current.includes(sep)) || null;
+      setSelectedSeparator(detected);
+    }
+
     setEditingTitle(true);
   };
 
-  // Save title/subtitle to Shopify (combines with separator)
+  // Save Shopify title exactly as typed; separator is only for how we *display* title/subtitle
   const saveTitle = async () => {
-    if (!product || !editedTitle.trim()) {
+    if (!product) {
       setEditingTitle(false);
       return;
     }
 
-    const separator = selectedSeparator || ' - ';
-    const newFullTitle = editedSubtitle.trim() 
-      ? `${editedTitle.trim()}${separator}${editedSubtitle.trim()}`
-      : editedTitle.trim();
+    const newTitle = editedShopifyTitle.trim();
+    if (!newTitle) {
+      setEditingTitle(false);
+      return;
+    }
 
     setSavingProduct(true);
     try {
-      // Update title in Shopify
-      await updateProductTitle(product.id, newFullTitle);
-      
-      // Save the separator in our DB so we know how to split it
+      const res = await updateProductTitle(product.id, newTitle);
+      if (!res.ok) return;
+
+      const separatorToSave =
+        selectedSeparator && newTitle.includes(selectedSeparator) ? selectedSeparator : null;
+
       await upsertOverride.mutateAsync({
         shopify_product_id: product.id,
-        title_separator: editedSubtitle.trim() ? separator : null,
+        title_separator: separatorToSave,
       });
 
-      // Update local state
       setProduct({
         ...product,
-        title: newFullTitle,
+        title: newTitle,
       });
 
       toast.success('Título actualizado en Shopify');
       setEditingTitle(false);
     } catch (error) {
       console.error('Error updating title:', error);
-      toast.error('Error al actualizar el título en Shopify');
+      toast.error('No se pudo actualizar el título en Shopify');
     } finally {
       setSavingProduct(false);
     }
@@ -473,7 +483,7 @@ const ProductDetail = () => {
       setEditingPrice(false);
       return;
     }
-    
+
     // Get first variant to update price in Shopify
     const firstVariant = product.variants.edges[0]?.node;
     if (!firstVariant) {
@@ -485,8 +495,9 @@ const ProductDetail = () => {
     setSavingProduct(true);
     try {
       // Update price directly in Shopify (not our DB)
-      await updateProductPrice(product.id, firstVariant.id, editedPrice.trim());
-      
+      const res = await updateProductPrice(product.id, firstVariant.id, editedPrice.trim());
+      if (!res.ok) return;
+
       // Update local state to reflect the change
       setProduct({
         ...product,
@@ -495,17 +506,23 @@ const ProductDetail = () => {
           minVariantPrice: {
             ...product.priceRange.minVariantPrice,
             amount: editedPrice.trim(),
-          }
+          },
         },
         variants: {
-          edges: product.variants.edges.map((v, i) => 
-            i === 0 
-              ? { ...v, node: { ...v.node, price: { ...v.node.price, amount: editedPrice.trim() } } }
+          edges: product.variants.edges.map((v, i) =>
+            i === 0
+              ? {
+                  ...v,
+                  node: {
+                    ...v.node,
+                    price: { ...v.node.price, amount: editedPrice.trim() },
+                  },
+                }
               : v
-          )
-        }
+          ),
+        },
       });
-      
+
       toast.success('Precio actualizado en Shopify');
       setEditingPrice(false);
     } catch (error) {
@@ -1063,14 +1080,15 @@ const ProductDetail = () => {
                   </button>
                 )}
 
-                {/* Title/Subtitle Editor Dialog */}
+                {/* Title Editor Dialog (Shopify title directly) */}
                 {showAdminControls && editingTitle && (
                   <Dialog open={editingTitle} onOpenChange={setEditingTitle}>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Editar Título y Subtítulo</DialogTitle>
+                        <DialogTitle>Editar título (Shopify)</DialogTitle>
                         <DialogDescription>
-                          Edita el título y subtítulo. Se guardarán en Shopify como: "Título{selectedSeparator || ' - '}Subtítulo"
+                          Escribe el título tal cual se guardará en Shopify. Si incluyes un separador, la web mostrará
+                          lo de la izquierda como título y lo de la derecha como subtítulo.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
@@ -1080,83 +1098,84 @@ const ProductDetail = () => {
                           <p className="font-medium text-foreground text-sm">{shopifyTitle}</p>
                         </div>
 
-                        {/* Title input */}
+                        {/* Shopify title input */}
                         <div className="space-y-2">
-                          <Label htmlFor="edit-title">Título principal (estético)</Label>
+                          <Label htmlFor="edit-shopify-title">Título (Shopify)</Label>
                           <Input
-                            id="edit-title"
-                            value={editedTitle}
-                            onChange={(e) => setEditedTitle(e.target.value)}
-                            placeholder="Ej: Alfombrilla Gaming RGB"
+                            id="edit-shopify-title"
+                            value={editedShopifyTitle}
+                            onChange={(e) => setEditedShopifyTitle(e.target.value)}
+                            placeholder='Ej: "Alfombrilla Gaming RGB - XXL 80x30"'
                             className="text-base"
                           />
                         </div>
 
-                        {/* Separator selector */}
+                        {/* Separator selector (display only) */}
                         <div className="space-y-2">
-                          <Label>Separador</Label>
+                          <Label>Separador para mostrar subtítulo</Label>
                           <div className="flex flex-wrap gap-2">
                             {[' - ', ' | ', ' — ', ', ', ' / '].map((sep) => (
                               <button
                                 key={sep}
+                                type="button"
                                 onClick={() => setSelectedSeparator(sep)}
                                 className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
-                                  selectedSeparator === sep 
-                                    ? 'border-price-yellow bg-price-yellow/10 text-foreground' 
+                                  selectedSeparator === sep
+                                    ? 'border-price-yellow bg-price-yellow/10 text-foreground'
                                     : 'border-border hover:border-muted-foreground'
                                 }`}
                               >
                                 <span className="font-mono">"{sep.trim()}"</span>
                               </button>
                             ))}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSeparator(null)}
+                              className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                                selectedSeparator === null
+                                  ? 'border-price-yellow bg-price-yellow/10 text-foreground'
+                                  : 'border-border hover:border-muted-foreground'
+                              }`}
+                            >
+                              Sin separador
+                            </button>
                           </div>
-                        </div>
-
-                        {/* Subtitle input */}
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-subtitle">Subtítulo (descripción corta)</Label>
-                          <Input
-                            id="edit-subtitle"
-                            value={editedSubtitle}
-                            onChange={(e) => setEditedSubtitle(e.target.value)}
-                            placeholder="Ej: Iluminación LED XXL 80x30cm"
-                            className="text-base"
-                          />
                           <p className="text-xs text-muted-foreground">
-                            Deja vacío si no quieres subtítulo
+                            Nota: el separador no se “inserta” solo; para que exista, debes escribirlo dentro del título.
                           </p>
                         </div>
 
                         {/* Preview */}
-                        <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
-                          <p className="text-xs text-muted-foreground">Vista previa en Shopify:</p>
-                          <p className="font-mono text-sm text-foreground bg-muted px-2 py-1 rounded">
-                            {editedSubtitle.trim() 
-                              ? `${editedTitle.trim()}${selectedSeparator || ' - '}${editedSubtitle.trim()}`
-                              : editedTitle.trim() || '(vacío)'}
-                          </p>
-                          <div className="border-t border-border pt-2 mt-2">
-                            <p className="text-xs text-muted-foreground mb-1">Así se verá en la tienda:</p>
-                            <p className="font-semibold text-foreground">{editedTitle.trim() || '(título)'}</p>
-                            {editedSubtitle.trim() && (
-                              <p className="text-sm text-muted-foreground">{editedSubtitle.trim()}</p>
-                            )}
-                          </div>
-                        </div>
+                        {(() => {
+                          const previewTitle = editedShopifyTitle.trim() || '(vacío)';
+                          const { title, subtitle } = splitTitle(previewTitle, selectedSeparator);
+                          return (
+                            <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
+                              <p className="text-xs text-muted-foreground">Vista previa:</p>
+                              <p className="font-mono text-sm text-foreground bg-muted px-2 py-1 rounded">{previewTitle}</p>
+                              <div className="border-t border-border pt-2 mt-2">
+                                <p className="text-xs text-muted-foreground mb-1">Así se verá en la tienda:</p>
+                                <p className="font-semibold text-foreground">{title || '(título)'}</p>
+                                {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         <div className="flex gap-2 pt-4">
-                          <Button 
-                            onClick={saveTitle} 
-                            disabled={savingProduct || !editedTitle.trim()}
+                          <Button
+                            onClick={saveTitle}
+                            disabled={savingProduct || !editedShopifyTitle.trim()}
                             className="flex-1"
                           >
-                            {savingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                            {savingProduct ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <Save className="h-4 w-4 mr-2" />
+                            )}
                             Guardar en Shopify
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setEditingTitle(false)}
-                          >
+                          <Button variant="outline" onClick={() => setEditingTitle(false)}>
                             Cancelar
                           </Button>
                         </div>
