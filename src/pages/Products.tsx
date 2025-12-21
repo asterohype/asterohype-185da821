@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
 import { useProductTags } from "@/hooks/useProductTags";
 import { useCollections } from "@/hooks/useCollections";
+import { ProductPageBanners } from "@/components/products/ProductPageBanners";
 import { Loader2, Search, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -320,6 +321,9 @@ const Products = () => {
     <div className="min-h-screen bg-background">
       <Header onMobileFilterClick={() => setMobileFiltersOpen(true)} />
       <main className="pt-32 pb-28 md:pb-16">
+        {/* Banners full width */}
+        <ProductPageBanners />
+        
         <div className="container mx-auto px-4 md:px-6">
           {/* Header */}
           <div className="mb-6 animate-fade-up">
