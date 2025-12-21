@@ -71,7 +71,7 @@ export function ChristmasBanner() {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, []);
-  return <div className="relative w-full h-[180px] md:h-[220px] lg:h-[260px] overflow-hidden rounded-2xl mx-auto my-8 bg-gradient-to-r from-red-900 via-green-900 to-red-900">
+  return <div className="relative w-full h-[180px] md:h-[220px] lg:h-[260px] overflow-hidden bg-gradient-to-r from-red-900 via-green-900 to-red-900">
       {/* Christmas background pattern */}
       <div className="absolute inset-0 opacity-20" style={{
       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 5 L35 20 L25 20 Z' fill='%23ffd700' opacity='0.3'/%3E%3Ccircle cx='10' cy='50' r='5' fill='%23ff0000' opacity='0.3'/%3E%3Ccircle cx='50' cy='50' r='5' fill='%23ff0000' opacity='0.3'/%3E%3C/svg%3E")`,
@@ -96,12 +96,12 @@ export function ChristmasBanner() {
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
         {/* ASTEROHYPE text */}
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl uppercase italic text-price-yellow tracking-[0.2em] drop-shadow-[0_4px_20px_rgba(255,215,0,0.5)]">
-          FELICES FIESTAS 
+          ASTEROHYPE
         </h2>
         
         {/* Subtitle */}
         <p className="text-white/80 text-sm md:text-base mt-3 tracking-widest uppercase">
-          🎁 DESCUENTOS🎁
+          🎁 FELICES FIESTAS 🎁
         </p>
 
         {/* Christmas lights effect */}
