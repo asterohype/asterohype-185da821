@@ -6,6 +6,8 @@ import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { ProductTag } from "@/hooks/useProductTags";
 import { useProductOverrides } from "@/hooks/useProductOverrides";
+import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminModeStore } from "@/stores/adminModeStore";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -17,18 +19,23 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
   const addItem = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setOpen);
   const { node } = product;
-  
-  // Get overrides from Supabase
+
+  // Admin mode (only admins should see manual price overrides)
+  const { isAdmin } = useAdmin();
+  const { isAdminModeActive } = useAdminModeStore();
+  const showOverridePrice = isAdmin && isAdminModeActive;
+
+  // Get overrides from backend
   const { data: overrides } = useProductOverrides();
-  const override = overrides?.find(o => o.shopify_product_id === node.id);
+  const override = overrides?.find((o) => o.shopify_product_id === node.id);
 
   const imageUrl = node.images.edges[0]?.node.url;
   const price = node.priceRange.minVariantPrice;
   const firstVariant = node.variants.edges[0]?.node;
-  
+
   // Apply overrides if they exist
   const displayTitle = override?.title || node.title;
-  const displayPrice = override?.price 
+  const displayPrice = showOverridePrice && override?.price
     ? { amount: override.price.toString(), currencyCode: price.currencyCode }
     : price;
 
