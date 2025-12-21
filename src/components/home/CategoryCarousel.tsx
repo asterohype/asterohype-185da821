@@ -93,9 +93,11 @@ export function CategoryCarousel({ products, categorySlug, direction = "right" }
       <style>{`
         @keyframes astroMarqueeLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes astroMarqueeRight { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
-        .astro-marquee-left { animation: astroMarqueeLeft 45s linear infinite; }
-        .astro-marquee-right { animation: astroMarqueeRight 45s linear infinite; }
-        .astro-marquee-left:hover, .astro-marquee-right:hover { animation-play-state: paused; }
+        .astro-marquee-left { animation: astroMarqueeLeft 80s linear infinite; }
+        .astro-marquee-right { animation: astroMarqueeRight 80s linear infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .astro-marquee-left, .astro-marquee-right { animation: none !important; transform: none !important; }
+        }
       `}</style>
 
       {/* Fade edges */}

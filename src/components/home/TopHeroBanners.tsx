@@ -85,10 +85,9 @@ function HolidayStripCard({
 
 export function TopHeroBanners() {
   return (
-    <section className="container mx-auto px-4 mb-8" aria-label="Banners principales">
+    <section className="container mx-auto px-4 mb-6" aria-label="Banners principales">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Felices Fiestas">
-          {/* Cabecera negra arriba (separada de la imagen) */}
           <header className="bg-foreground text-background p-6 md:p-8">
             <h2 className="font-display italic uppercase text-background text-2xl md:text-3xl leading-tight">
               Felices Fiestas
@@ -100,11 +99,6 @@ export function TopHeroBanners() {
               </Button>
             </Link>
           </header>
-
-          {/* Imagen abajo */}
-          <div className="relative h-[220px] md:h-[260px] overflow-hidden">
-            <BannerCarousel images={LIFESTYLE_BANNER_IMAGES} interval={5000} />
-          </div>
         </article>
 
         <article className="rounded-2xl overflow-hidden border border-border/40 bg-card" aria-label="Ofertas Navideñas">
@@ -119,13 +113,10 @@ export function TopHeroBanners() {
               </Button>
             </Link>
           </header>
-
-          <div className="relative h-[220px] md:h-[260px] overflow-hidden">
-            <BannerCarousel images={OFFERS_BANNER_IMAGES} interval={4000} />
-          </div>
         </article>
       </div>
     </section>
   );
 }
+
 
