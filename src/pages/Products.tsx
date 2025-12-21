@@ -27,6 +27,17 @@ const Products = () => {
     const tag = searchParams.get("tag");
     return tag ? [tag] : [];
   });
+
+  // Orden mezclado persistente (se mezcla una vez y se queda así)
+  const [mixedOrderIds, setMixedOrderIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("products_mixed_order_v1");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'General': true,
     'Ropa Detallado': false,
@@ -42,6 +53,48 @@ const Products = () => {
   useEffect(() => {
     let cancelled = false;
 
+    const mixOnce = (items: ShopifyProduct[]) => {
+      // mezcla simple por productType, determinista
+      const seedStr = "asterohype_v1";
+      let seed = 0;
+      for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+      const rand = () => {
+        seed = (1664525 * seed + 1013904223) >>> 0;
+        return seed / 0xffffffff;
+      };
+      const shuffle = <T,>(arr: T[]) => {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(rand() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+
+      const byType: Record<string, ShopifyProduct[]> = {};
+      items.forEach((p) => {
+        const type = p.node.productType || "otros";
+        (byType[type] ??= []).push(p);
+      });
+
+      const types = shuffle(Object.keys(byType));
+      const lists = Object.fromEntries(types.map((t) => [t, shuffle(byType[t])])) as Record<string, ShopifyProduct[]>;
+
+      const mixed: string[] = [];
+      let remaining = items.length;
+      let idx = 0;
+      while (remaining > 0) {
+        const type = types[idx % types.length];
+        const item = lists[type]?.shift();
+        if (item) {
+          mixed.push(item.node.id);
+          remaining--;
+        }
+        idx++;
+      }
+      return mixed;
+    };
+
     async function loadProducts() {
       try {
         // Primera página rápida - solo 40 productos (1 página)
@@ -50,18 +103,27 @@ const Products = () => {
         setProducts(firstBatch);
         setLoading(false);
 
-        // Cargar resto en segundo plano de forma incremental
+        // Mezclar SOLO UNA VEZ (si no existe ya) y persistir
+        setMixedOrderIds((prev) => {
+          if (prev.length > 0) return prev;
+          const mixed = mixOnce(firstBatch);
+          try {
+            localStorage.setItem("products_mixed_order_v1", JSON.stringify(mixed));
+          } catch {}
+          return mixed;
+        });
+
+        // Cargar resto en segundo plano sin remezclar (solo amplía catálogo)
         const batchSizes = [80, 150, 250, 400];
         for (const size of batchSizes) {
-          await new Promise(resolve => setTimeout(resolve, 500)); // Pequeña pausa
+          await new Promise((resolve) => setTimeout(resolve, 500));
           if (cancelled) return;
           const batch = await fetchProducts(size);
           if (cancelled) return;
           setProducts(batch);
         }
 
-        // Carga final completa
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         if (cancelled) return;
         const fullBatch = await fetchProducts(9999);
         if (cancelled) return;
@@ -125,6 +187,7 @@ const Products = () => {
     : null;
 
   const filteredProducts = useMemo(() => {
+    // Base filter
     let filtered = products.filter((product) => {
       const titleLower = product.node.title?.toLowerCase() || "";
       const descLower = product.node.description?.toLowerCase() || "";
@@ -152,61 +215,23 @@ const Products = () => {
       return matchesSearch && matchesTags;
     });
 
-    // Mezclar productos por nicho (alternando por productType) + mezclar dentro de cada tipo
-    if (filtered.length > 0) {
-      // Seed estable por sesión/búsqueda para que no cambie cada render
-      const seedStr = `${searchQuery}|${selectedTags.join(",")}|${collectionSlug ?? ""}`;
-      let seed = 0;
-      for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
-
-      const seededRand = () => {
-        // LCG simple
-        seed = (1664525 * seed + 1013904223) >>> 0;
-        return seed / 0xffffffff;
-      };
-
-      const shuffleInPlace = <T,>(arr: T[]) => {
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(seededRand() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-      };
-
-      // Agrupar por tipo de producto
-      const byType: Record<string, ShopifyProduct[]> = {};
-      filtered.forEach((p) => {
-        const type = p.node.productType || "otros";
-        (byType[type] ??= []).push(p);
+    // Orden mezclado persistente SOLO cuando no hay filtros activos
+    const hasActiveFilters = selectedTags.length > 0 || searchQuery !== "" || collectionSlug !== null;
+    if (!hasActiveFilters && mixedOrderIds.length > 0) {
+      const indexMap = new Map<string, number>();
+      mixedOrderIds.forEach((id, idx) => indexMap.set(id, idx));
+      filtered = [...filtered].sort((a, b) => {
+        const ai = indexMap.get(a.node.id);
+        const bi = indexMap.get(b.node.id);
+        if (ai === undefined && bi === undefined) return 0;
+        if (ai === undefined) return 1;
+        if (bi === undefined) return -1;
+        return ai - bi;
       });
-
-      // Mezclar dentro de cada tipo para evitar “bloques” repetidos
-      Object.values(byType).forEach((list) => shuffleInPlace(list));
-
-      // Orden de tipos mezclado (pero estable)
-      const types = shuffleInPlace(Object.keys(byType));
-
-      // Intercalado round-robin
-      const mixed: ShopifyProduct[] = [];
-      let remaining = filtered.length;
-      let typeIndex = 0;
-
-      while (remaining > 0) {
-        const type = types[typeIndex % types.length];
-        const list = byType[type];
-        const item = list?.shift();
-        if (item) {
-          mixed.push(item);
-          remaining--;
-        }
-        typeIndex++;
-      }
-
-      return mixed;
     }
 
     return filtered;
-  }, [products, collectionProductIds, searchQuery, selectedTags, getTagsForProduct]);
+  }, [products, collectionProductIds, searchQuery, selectedTags, getTagsForProduct, collectionSlug, mixedOrderIds]);
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
