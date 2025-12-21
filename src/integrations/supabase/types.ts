@@ -316,6 +316,7 @@ export type Database = {
           description: string | null
           id: string
           price: number | null
+          price_enabled: boolean
           shopify_product_id: string
           subtitle: string | null
           title: string | null
@@ -326,6 +327,7 @@ export type Database = {
           description?: string | null
           id?: string
           price?: number | null
+          price_enabled?: boolean
           shopify_product_id: string
           subtitle?: string | null
           title?: string | null
@@ -336,6 +338,7 @@ export type Database = {
           description?: string | null
           id?: string
           price?: number | null
+          price_enabled?: boolean
           shopify_product_id?: string
           subtitle?: string | null
           title?: string | null

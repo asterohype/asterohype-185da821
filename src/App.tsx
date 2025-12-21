@@ -13,6 +13,7 @@ import Terms from "./pages/Terms";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import AdminCollections from "./pages/AdminCollections";
+import AdminOverrides from "./pages/AdminOverrides";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/collections" element={<AdminCollections />} />
+          <Route path="/admin/overrides" element={<AdminOverrides />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

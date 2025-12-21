@@ -35,9 +35,9 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
   // Prefer el precio del primer variant (modelo por defecto) para que coincida con Shopify
   const basePrice = firstVariant?.price ?? node.priceRange.minVariantPrice;
 
-  // Apply overrides if they exist
+  // Apply overrides if they exist. Price override ONLY if price_enabled is true AND admin mode.
   const displayTitle = override?.title || node.title;
-  const displayPrice = showOverridePrice && override?.price
+  const displayPrice = (showOverridePrice && override?.price !== null && override?.price !== undefined && override?.price_enabled !== false)
     ? { amount: override.price.toString(), currencyCode: basePrice.currencyCode }
     : basePrice;
 
