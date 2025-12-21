@@ -85,23 +85,23 @@ export function ChristmasBanner() {
       {/* Snowflakes canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
-      {/* Christmas decorations */}
-      <div className="absolute top-0 left-0 right-0 flex justify-between px-8">
-        <div className="text-4xl opacity-60">🎄</div>
-        <div className="text-3xl opacity-60">⭐</div>
-        <div className="text-4xl opacity-60">🎄</div>
+      {/* Christmas decorations - moved down */}
+      <div className="absolute top-4 md:top-6 left-0 right-0 flex justify-between px-8">
+        <div className="text-3xl md:text-4xl opacity-60">🎄</div>
+        <div className="text-2xl md:text-3xl opacity-60">⭐</div>
+        <div className="text-3xl md:text-4xl opacity-60">🎄</div>
       </div>
 
       {/* Main content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        {/* ASTEROHYPE text */}
+        {/* Felices Fiestas text */}
         <h2 className="font-display text-4xl md:text-6xl lg:text-7xl uppercase italic text-price-yellow tracking-[0.2em] drop-shadow-[0_4px_20px_rgba(255,215,0,0.5)]">
-          ASTEROHYPE
+          FELICES FIESTAS
         </h2>
         
         {/* Subtitle */}
         <p className="text-white/80 text-sm md:text-base mt-3 tracking-widest uppercase">
-          🎁 FELICES FIESTAS 🎁
+          🎁 OFERTAS NAVIDEÑAS 🎁
         </p>
 
         {/* Christmas lights effect */}
