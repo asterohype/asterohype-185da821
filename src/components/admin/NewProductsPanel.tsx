@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { fetchProducts, ShopifyProduct } from "@/lib/shopify";
 import { useProductEditStatuses } from "@/hooks/useProductEditStatus";
-import { Loader2, Package, Check, Circle, ExternalLink, X } from "lucide-react";
+import { Loader2, Package, Check, Circle, ExternalLink, X, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,11 +16,13 @@ export function NewProductsPanel({ open, onOpenChange }: NewProductsPanelProps) 
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const { data: editStatuses } = useProductEditStatuses();
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(250);
+        // Fetch up to 500 products (enough for 350+)
+        const data = await fetchProducts(500);
         setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);
@@ -32,6 +34,13 @@ export function NewProductsPanel({ open, onOpenChange }: NewProductsPanelProps) 
       loadProducts();
     }
   }, [open]);
+
+  const handleNavigateToProduct = (handle: string) => {
+    // Store that we came from the panel so we can show back button
+    sessionStorage.setItem('fromNewProductsPanel', 'true');
+    onOpenChange(false);
+    navigate(`/product/${handle}`);
+  };
 
   // Get products that are incomplete (not all_done)
   const incompleteProducts = products.filter((product) => {
@@ -46,10 +55,15 @@ export function NewProductsPanel({ open, onOpenChange }: NewProductsPanelProps) 
     return !status;
   });
 
-  // Products with partial status
+  // Products with partial status (at least one field is done but not all)
   const partiallyEditedProducts = incompleteProducts.filter((product) => {
     const status = editStatuses?.find(s => s.shopify_product_id === product.node.id);
-    return status && !status.all_done;
+    if (!status || status.all_done) return false;
+    // Check if ANY field is done
+    const anyFieldDone = status.title_done || status.price_done || status.about_done || 
+                         status.description_done || status.model_done || status.color_done || 
+                         status.tags_done || status.offers_done || status.images_done;
+    return anyFieldDone;
   });
 
   const getStatusInfo = (productId: string) => {
@@ -119,7 +133,13 @@ export function NewProductsPanel({ open, onOpenChange }: NewProductsPanelProps) 
                   </h3>
                   <div className="space-y-2">
                     {completelyNewProducts.slice(0, 20).map((product) => (
-                      <ProductRow key={product.node.id} product={product} statusInfo={getStatusInfo(product.node.id)} isNew />
+                      <ProductRow 
+                        key={product.node.id} 
+                        product={product} 
+                        statusInfo={getStatusInfo(product.node.id)} 
+                        isNew 
+                        onNavigate={() => handleNavigateToProduct(product.node.handle)}
+                      />
                     ))}
                     {completelyNewProducts.length > 20 && (
                       <p className="text-xs text-muted-foreground text-center py-2">
@@ -139,7 +159,12 @@ export function NewProductsPanel({ open, onOpenChange }: NewProductsPanelProps) 
                   </h3>
                   <div className="space-y-2">
                     {partiallyEditedProducts.map((product) => (
-                      <ProductRow key={product.node.id} product={product} statusInfo={getStatusInfo(product.node.id)} />
+                      <ProductRow 
+                        key={product.node.id} 
+                        product={product} 
+                        statusInfo={getStatusInfo(product.node.id)} 
+                        onNavigate={() => handleNavigateToProduct(product.node.handle)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -155,18 +180,23 @@ export function NewProductsPanel({ open, onOpenChange }: NewProductsPanelProps) 
 function ProductRow({ 
   product, 
   statusInfo,
-  isNew = false 
+  isNew = false,
+  onNavigate
 }: { 
   product: ShopifyProduct; 
   statusInfo: { completed: number; total: number; fields: { key: string; label: string; done: boolean }[] };
   isNew?: boolean;
+  onNavigate: () => void;
 }) {
   const progressPercent = (statusInfo.completed / statusInfo.total) * 100;
   
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors hover:bg-secondary/50 ${
-      isNew ? 'border-red-500/30 bg-red-500/5' : 'border-amber-500/30 bg-amber-500/5'
-    }`}>
+    <button
+      onClick={onNavigate}
+      className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors hover:bg-secondary/50 text-left ${
+        isNew ? 'border-red-500/30 bg-red-500/5' : 'border-amber-500/30 bg-amber-500/5'
+      }`}
+    >
       {/* Image */}
       <div className="w-12 h-12 rounded-lg overflow-hidden bg-secondary flex-shrink-0">
         {product.node.images.edges[0]?.node.url ? (
@@ -213,13 +243,8 @@ function ProductRow({
         )}
       </div>
 
-      {/* Action */}
-      <Link to={`/product/${product.node.handle}`}>
-        <Button size="sm" variant="outline" className="h-8 gap-1">
-          <ExternalLink className="h-3 w-3" />
-          Editar
-        </Button>
-      </Link>
-    </div>
+      {/* Arrow indicator */}
+      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+    </button>
   );
 }
