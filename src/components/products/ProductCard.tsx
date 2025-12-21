@@ -30,14 +30,16 @@ export function ProductCard({ product, tags, showFeaturedBadge }: ProductCardPro
   const override = overrides?.find((o) => o.shopify_product_id === node.id);
 
   const imageUrl = node.images.edges[0]?.node.url;
-  const price = node.priceRange.minVariantPrice;
   const firstVariant = node.variants.edges[0]?.node;
+
+  // Prefer el precio del primer variant (modelo por defecto) para que coincida con Shopify
+  const basePrice = firstVariant?.price ?? node.priceRange.minVariantPrice;
 
   // Apply overrides if they exist
   const displayTitle = override?.title || node.title;
   const displayPrice = showOverridePrice && override?.price
-    ? { amount: override.price.toString(), currencyCode: price.currencyCode }
-    : price;
+    ? { amount: override.price.toString(), currencyCode: basePrice.currencyCode }
+    : basePrice;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();

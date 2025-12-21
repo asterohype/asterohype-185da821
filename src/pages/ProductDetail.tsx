@@ -283,15 +283,18 @@ const ProductDetail = () => {
     setSelectedImage(variantImageIndex);
   }, [variantImageIndex]);
 
-  // Use local override if available, otherwise fallback to Shopify data
+  // Use local override ONLY in admin mode; otherwise always show Shopify variant price
   const displayTitle = productOverride?.title ?? product?.title;
   const displaySubtitle = productOverride?.subtitle ?? null;
   const displayDescription = productOverride?.description ?? product?.description;
-  const displayPriceAmount = productOverride?.price 
-    ? productOverride.price.toString() 
-    : (selectedVariant?.price.amount || product?.priceRange.minVariantPrice.amount);
+
+  const displayPriceAmount = (showAdminControls && productOverride?.price !== null && productOverride?.price !== undefined)
+    ? productOverride.price.toString()
+    : (selectedVariant?.price.amount || product?.variants.edges[0]?.node.price.amount || product?.priceRange.minVariantPrice.amount);
+
   const displayCurrency =
     selectedVariant?.price.currencyCode ||
+    product?.variants.edges[0]?.node.price.currencyCode ||
     product?.priceRange.minVariantPrice.currencyCode ||
     "EUR";
 

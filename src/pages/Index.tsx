@@ -40,6 +40,7 @@ import { CategoryCarousel } from "@/components/home/CategoryCarousel";
 import { CategoryStaticGrid } from "@/components/home/CategoryStaticGrid";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
 import { ChristmasBanner } from "@/components/home/ChristmasBanner";
+import { TopHeroBanners } from "@/components/home/TopHeroBanners";
 import { TopHeroImageStrips } from "@/components/home/TopHeroImageStrips";
 
 // Scroll animation hook
@@ -310,9 +311,12 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-32 pb-24 md:pb-8">
-        {/* Banner sin bordes - full width */}
+        {/* Banner 1: Felices Fiestas */}
         <ChristmasBanner />
-        
+
+        {/* Banner 2: AsteroHype (con bordes redondos) */}
+        <TopHeroBanners />
+
         <TopHeroImageStrips />
 
         {/* Marketing Cards Grid - Amazon Style with scroll animations */}
