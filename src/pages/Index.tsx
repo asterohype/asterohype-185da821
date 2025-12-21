@@ -23,6 +23,7 @@ import {
   Check,
   ImagePlus,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -225,6 +226,7 @@ const Index = () => {
     updateCategoryImage,
     clearCategoryImage,
     addCategory,
+    removeCategory,
   } = useMenuConfigStore();
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -306,7 +308,9 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-32 pb-24 md:pb-8">
+        {/* Banner sin bordes - full width */}
         <ChristmasBanner />
+        
         <TopHeroImageStrips />
 
         {/* Marketing Cards Grid - Amazon Style with scroll animations */}
@@ -529,18 +533,31 @@ const Index = () => {
                 
                 return (
                   <div key={category.id} className="flex flex-col items-center gap-3 group relative">
-                    {/* Admin edit overlay for image - opens modal instead of prompt */}
+                    {/* Admin controls - image and delete */}
                     {showAdminControls && (
-                      <button
-                        onClick={() => setImageSelectorCategory({
-                          id: category.id,
-                          label: category.label,
-                          customImage: category.customImage,
-                        })}
-                        className="absolute top-0 right-0 z-10 p-1.5 rounded-full bg-primary/90 text-primary-foreground shadow-lg hover:bg-primary transition-colors"
-                      >
-                        <ImagePlus className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="absolute -top-1 -right-1 z-10 flex gap-1">
+                        <button
+                          onClick={() => setImageSelectorCategory({
+                            id: category.id,
+                            label: category.label,
+                            customImage: category.customImage,
+                          })}
+                          className="p-1.5 rounded-full bg-primary/90 text-primary-foreground shadow-lg hover:bg-primary transition-colors"
+                        >
+                          <ImagePlus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`¿Eliminar la categoría "${category.label}"?`)) {
+                              removeCategory(category.id);
+                              toast.success('Categoría eliminada');
+                            }
+                          }}
+                          className="p-1.5 rounded-full bg-destructive/90 text-destructive-foreground shadow-lg hover:bg-destructive transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     )}
                     
                     <Link
