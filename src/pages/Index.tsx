@@ -328,7 +328,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-32 pb-24 md:pb-8">
+      <main className="pt-28 pb-32 md:pb-8">
         {/* Banner 1: Felices Fiestas */}
         <ChristmasBanner />
 

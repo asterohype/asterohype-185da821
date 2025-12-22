@@ -859,8 +859,8 @@ const ProductDetail = () => {
       {/* NewProductsPanel modal */}
       <NewProductsPanel open={newProductsPanelOpen} onOpenChange={setNewProductsPanelOpen} />
       
-      <main className="pt-24 pb-24 md:pb-12">
-        <div className="max-w-6xl mx-auto px-6">
+      <main className="pt-28 pb-32 md:pb-12">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
           {/* Back to Panel button (only if came from panel) */}
           {showAdminControls && showBackToPanel && (
             <Button 
@@ -940,7 +940,7 @@ const ProductDetail = () => {
 
                 {/* Main Image */}
                 <div className="flex-1">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-card border border-border relative">
+                  <div className="aspect-[4/3] md:aspect-square rounded-xl overflow-hidden bg-card border border-border relative">
                     {images.length > 0 ? (
                       <img
                         src={images[selectedImage]?.node.url}
