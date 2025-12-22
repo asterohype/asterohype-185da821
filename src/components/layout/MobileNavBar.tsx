@@ -54,8 +54,8 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
     const active = item.action === 'link' && isActive(item.path);
     
     const buttonClasses = active
-      ? "flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground transition-all duration-200"
-      : "flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground transition-all duration-200";
+      ? "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground transition-all duration-200"
+      : "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200";
     
     if (item.action === 'link') {
       return (
@@ -65,14 +65,14 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
           className={buttonClasses}
         >
           <div className="relative">
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+            <Icon className="h-4 w-4" strokeWidth={active ? 2.5 : 2} />
             {item.badge && item.badge > 0 && (
-              <span className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1.5 h-3 min-w-3 px-0.5 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
                 {item.badge > 9 ? '9+' : item.badge}
               </span>
             )}
           </div>
-          <span className="text-[10px] font-medium">{item.label}</span>
+          <span className="text-[9px] font-medium">{item.label}</span>
         </Link>
       );
     }
@@ -82,10 +82,10 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
         <button
           key={item.id}
           onClick={onSearchClick}
-          className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground transition-all duration-200"
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
-          <Icon className="h-5 w-5" strokeWidth={2} />
-          <span className="text-[10px] font-medium">{item.label}</span>
+          <Icon className="h-4 w-4" strokeWidth={2} />
+          <span className="text-[9px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -95,17 +95,17 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
         <button
           key={item.id}
           onClick={() => setCartOpen(true)}
-          className="relative flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground transition-all duration-200"
+          className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <div className="relative">
-            <Icon className="h-5 w-5" strokeWidth={2} />
+            <Icon className="h-4 w-4" strokeWidth={2} />
             {totalItems > 0 && (
-              <span className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1.5 h-3 min-w-3 px-0.5 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
                 {totalItems > 9 ? '9+' : totalItems}
               </span>
             )}
           </div>
-          <span className="text-[10px] font-medium">{item.label}</span>
+          <span className="text-[9px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -115,10 +115,10 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
         <button
           key={item.id}
           onClick={onThemeClick}
-          className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground transition-all duration-200"
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
-          <Icon className="h-5 w-5" strokeWidth={2} />
-          <span className="text-[10px] font-medium">{item.label}</span>
+          <Icon className="h-4 w-4" strokeWidth={2} />
+          <span className="text-[9px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -128,10 +128,10 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
         <button
           key={item.id}
           onClick={onAuthClick}
-          className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-muted-foreground hover:text-foreground transition-all duration-200"
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
-          <Icon className="h-5 w-5" strokeWidth={2} />
-          <span className="text-[10px] font-medium">{item.label}</span>
+          <Icon className="h-4 w-4" strokeWidth={2} />
+          <span className="text-[9px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -146,7 +146,7 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
         <div className="px-4 pb-2 pointer-events-auto">
           <button
             onClick={onFilterClick}
-            className="w-full py-3 bg-primary text-primary-foreground rounded-full font-semibold text-sm shadow-lg"
+            className="w-full py-2.5 bg-primary text-primary-foreground rounded-full font-semibold text-sm shadow-lg"
           >
             Filtros
           </button>
@@ -154,19 +154,19 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
       )}
       
       {/* Main navigation bar */}
-      <div className="mx-4 mb-4 bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl shadow-2xl shadow-black/30 pointer-events-auto">
-        <div className="flex items-center justify-around py-2">
+      <div className="mx-3 mb-2 bg-card/95 backdrop-blur-xl border border-border/40 rounded-xl shadow-lg shadow-black/20 pointer-events-auto">
+        <div className="flex items-center justify-around py-1.5">
           {/* Page toggle button */}
           <button
             onClick={() => setCurrentPage(currentPage === 0 ? 1 : 0)}
-            className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground transition-all duration-200"
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
           >
             {currentPage === 0 ? (
-              <ChevronUp className="h-5 w-5" strokeWidth={2} />
+              <ChevronUp className="h-4 w-4" strokeWidth={2} />
             ) : (
-              <ChevronDown className="h-5 w-5" strokeWidth={2} />
+              <ChevronDown className="h-4 w-4" strokeWidth={2} />
             )}
-            <span className="text-[10px] font-medium">{currentPage === 0 ? 'Más' : 'Volver'}</span>
+            <span className="text-[9px] font-medium">{currentPage === 0 ? 'Más' : 'Volver'}</span>
           </button>
 
           {/* Current page items */}
