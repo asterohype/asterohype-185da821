@@ -31,6 +31,7 @@ import { useProductEditStatus } from "@/hooks/useProductEditStatus";
 import { EditStatusChecklist } from "@/components/admin/EditStatusChecklist";
 import { NewProductsPanel } from "@/components/admin/NewProductsPanel";
 import { VariantsPricePanel } from "@/components/admin/VariantsPricePanel";
+import { ProductTesterRating } from "@/components/products/ProductTesterRating";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1386,6 +1387,9 @@ const ProductDetail = () => {
                   <p className="text-sm text-muted-foreground">{aboutDescription || 'Sin descripción disponible.'}</p>
                 )}
               </div>
+
+              {/* Product Tester Rating Section */}
+              <ProductTesterRating shopifyProductId={product.id} />
 
               {/* Size/Variant Selection (Nike style) */}
               <div className="space-y-4 border-t border-border pt-4">

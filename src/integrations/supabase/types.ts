@@ -474,6 +474,36 @@ export type Database = {
         }
         Relationships: []
       }
+      product_test_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          rating: string
+          shopify_product_id: string
+          tester_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rating: string
+          shopify_product_id: string
+          tester_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rating?: string
+          shopify_product_id?: string
+          tester_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -504,6 +534,33 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      tester_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
