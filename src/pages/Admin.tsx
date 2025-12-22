@@ -32,6 +32,7 @@ import { AdminRequestModal } from '@/components/admin/AdminRequestModal';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ProductCostManager } from '@/components/admin/ProductCostManager';
 import { SyncCJCostsButton } from '@/components/admin/SyncCJCostsButton';
+import { TesterCodesManager } from '@/components/admin/TesterCodesManager';
 import { supabase } from '@/integrations/supabase/client';
 
 const TAG_GROUPS = ['General', 'Ropa Detallado', 'Estilos', 'Destacados'];
@@ -381,6 +382,11 @@ export default function Admin() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Tester Codes Section */}
+          <div className="mb-8">
+            <TesterCodesManager />
           </div>
 
           {/* Products Section */}
