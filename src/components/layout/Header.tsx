@@ -211,115 +211,118 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
 
               {/* Right side actions */}
               <div className="flex items-center gap-3">
-                {/* Search Icon - Opens Modal */}
-                <button
-                  onClick={() => setSearchOpen(true)}
-                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
-                >
-                  <Search className="h-4 w-4 text-price-yellow" />
-                </button>
+                {/* Mobile (Admin mode): hide top action buttons to avoid duplicating bottom bar */}
+                <div className={`${showAdminControls ? 'hidden md:flex' : 'flex'} items-center gap-3`}>
+                  {/* Search Icon - Opens Modal */}
+                  <button
+                    onClick={() => setSearchOpen(true)}
+                    className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
+                  >
+                    <Search className="h-4 w-4 text-price-yellow" />
+                  </button>
 
-                {/* Admin Button with Hover Menu */}
-                {isAdmin && (
-                  <HoverCard openDelay={100} closeDelay={200}>
-                    <HoverCardTrigger asChild>
-                      <button
-                        onClick={() => {
-                          toggleAdminMode();
-                          toast.success(isAdminModeActive ? 'Modo Admin desactivado' : 'Modo Admin activado');
-                        }}
-                        style={{
-                          background: isAdminModeActive 
-                            ? 'linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(40, 100%, 45%) 100%)' 
-                            : 'hsla(45, 100%, 50%, 0.15)',
-                          color: isAdminModeActive ? 'hsl(0, 0%, 5%)' : 'hsl(45, 100%, 50%)',
-                          border: isAdminModeActive ? '1px solid hsl(45, 100%, 55%)' : '1px solid hsla(45, 100%, 50%, 0.4)',
-                          boxShadow: isAdminModeActive ? '0 4px 16px hsla(45, 100%, 50%, 0.3)' : 'none',
-                        }}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 hover:opacity-90"
+                  {/* Admin Button with Hover Menu */}
+                  {isAdmin && (
+                    <HoverCard openDelay={100} closeDelay={200}>
+                      <HoverCardTrigger asChild>
+                        <button
+                          onClick={() => {
+                            toggleAdminMode();
+                            toast.success(isAdminModeActive ? 'Modo Admin desactivado' : 'Modo Admin activado');
+                          }}
+                          style={{
+                            background: isAdminModeActive 
+                              ? 'linear-gradient(135deg, hsl(45, 100%, 50%) 0%, hsl(40, 100%, 45%) 100%)' 
+                              : 'hsla(45, 100%, 50%, 0.15)',
+                            color: isAdminModeActive ? 'hsl(0, 0%, 5%)' : 'hsl(45, 100%, 50%)',
+                            border: isAdminModeActive ? '1px solid hsl(45, 100%, 55%)' : '1px solid hsla(45, 100%, 50%, 0.4)',
+                            boxShadow: isAdminModeActive ? '0 4px 16px hsla(45, 100%, 50%, 0.3)' : 'none',
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 hover:opacity-90"
+                        >
+                          <Shield className="h-4 w-4" />
+                          <span className="hidden sm:inline text-sm font-medium">
+                            Admin {isAdminModeActive && '✓'}
+                          </span>
+                        </button>
+                      </HoverCardTrigger>
+                      <HoverCardContent 
+                        align="center" 
+                        className="w-48 p-2 bg-popover border border-border shadow-lg rounded-xl"
+                        sideOffset={8}
                       >
-                        <Shield className="h-4 w-4" />
-                        <span className="hidden sm:inline text-sm font-medium">
-                          Admin {isAdminModeActive && '✓'}
-                        </span>
-                      </button>
-                    </HoverCardTrigger>
-                    <HoverCardContent 
-                      align="center" 
-                      className="w-48 p-2 bg-popover border border-border shadow-lg rounded-xl"
-                      sideOffset={8}
+                        <Link
+                          to="/admin"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
+                        >
+                          <Tag className="h-4 w-4" />
+                          Gestionar Etiquetas
+                        </Link>
+                        <Link
+                          to="/admin/collections"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
+                        >
+                          <Package className="h-4 w-4" />
+                          Colecciones
+                        </Link>
+                        <button
+                          onClick={() => setNewProductsPanelOpen(true)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all w-full text-left"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Nuevos Productos
+                        </button>
+                        <Link
+                          to="/admin/overrides"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
+                        >
+                          <DollarSign className="h-4 w-4" />
+                          Overrides Precio
+                        </Link>
+                      </HoverCardContent>
+                    </HoverCard>
+                  )}
+
+                  {/* Theme Selector */}
+                  <ThemeSelector />
+
+                  {/* User Account */}
+                  {user ? (
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
                     >
-                      <Link
-                        to="/admin"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
-                      >
-                        <Tag className="h-4 w-4" />
-                        Gestionar Etiquetas
-                      </Link>
-                      <Link
-                        to="/admin/collections"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
-                      >
-                        <Package className="h-4 w-4" />
-                        Colecciones
-                      </Link>
-                      <button
-                        onClick={() => setNewProductsPanelOpen(true)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all w-full text-left"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        Nuevos Productos
-                      </button>
-                      <Link
-                        to="/admin/overrides"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-price-yellow hover:bg-secondary/50 transition-all"
-                      >
-                        <DollarSign className="h-4 w-4" />
-                        Overrides Precio
-                      </Link>
-                    </HoverCardContent>
-                  </HoverCard>
-                )}
+                      <User className="h-4 w-4 text-price-yellow" />
+                      <span className="hidden sm:inline text-sm text-muted-foreground">Salir</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setAuthModalOpen(true)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
+                    >
+                      <User className="h-4 w-4 text-price-yellow" />
+                      <span className="hidden sm:inline text-sm text-muted-foreground">Registrarme</span>
+                    </button>
+                  )}
 
-                {/* Theme Selector */}
-                <ThemeSelector />
-
-                {/* User Account */}
-                {user ? (
+                  {/* Custom Cart Icon */}
                   <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
+                    onClick={() => setCartOpen(true)}
+                    className="relative group flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
                   >
-                    <User className="h-4 w-4 text-price-yellow" />
-                    <span className="hidden sm:inline text-sm text-muted-foreground">Salir</span>
+                    <div className="relative">
+                      <ShoppingBag className="h-5 w-5 text-price-yellow" />
+                      {totalItems > 0 && (
+                        <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-price-yellow text-background text-[10px] flex items-center justify-center font-bold">
+                          {totalItems}
+                        </span>
+                      )}
+                    </div>
+                    <span className="hidden sm:inline text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                      Carrito
+                    </span>
                   </button>
-                ) : (
-                  <button
-                    onClick={() => setAuthModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
-                  >
-                    <User className="h-4 w-4 text-price-yellow" />
-                    <span className="hidden sm:inline text-sm text-muted-foreground">Registrarme</span>
-                  </button>
-                )}
-
-                {/* Custom Cart Icon */}
-                <button
-                  onClick={() => setCartOpen(true)}
-                  className="relative group flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-price-yellow/50 transition-all duration-300"
-                >
-                  <div className="relative">
-                    <ShoppingBag className="h-5 w-5 text-price-yellow" />
-                    {totalItems > 0 && (
-                      <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-price-yellow text-background text-[10px] flex items-center justify-center font-bold">
-                        {totalItems}
-                      </span>
-                    )}
-                  </div>
-                  <span className="hidden sm:inline text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                    Carrito
-                  </span>
-                </button>
+                </div>
 
                 {/* Mobile menu button */}
                 <Button

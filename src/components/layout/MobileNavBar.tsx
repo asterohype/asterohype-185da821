@@ -2,7 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Search, ShoppingBag, Grid3X3, ChevronUp, ChevronDown, Heart, Sparkles, User, LucideIcon } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
-import { useState } from "react";
+import { ThemeStyle, useThemeStore } from "@/stores/themeStore";
+import { useCallback, useMemo, useState } from "react";
 
 interface MobileNavBarProps {
   onSearchClick: () => void;
@@ -23,29 +24,44 @@ interface NavItem {
   badge?: number;
 }
 
+function applyThemeToDom(themeId: ThemeStyle) {
+  const root = document.documentElement;
+  root.classList.remove('theme-default', 'theme-hype', 'theme-cute');
+  root.classList.add(`theme-${themeId}`);
+}
+
 export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false, onAuthClick, onThemeClick }: MobileNavBarProps) {
   const location = useLocation();
   const totalItems = useCartStore((state) => state.getTotalItems());
   const setCartOpen = useCartStore((state) => state.setOpen);
   const favoritesCount = useFavoritesStore((state) => state.favorites.length);
+  const { theme, setTheme } = useThemeStore();
   const [currentPage, setCurrentPage] = useState(0);
   
   const isActive = (path: string) => location.pathname === path;
 
+  const handleThemeToggle = useCallback(() => {
+    const next: ThemeStyle = theme === 'default' ? 'hype' : theme === 'hype' ? 'cute' : 'default';
+    applyThemeToDom(next);
+    setTheme(next);
+  }, [setTheme, theme]);
+
+  const themeClick = onThemeClick ?? handleThemeToggle;
+
   // Page 1: Main navigation
-  const page1Items: NavItem[] = [
+  const page1Items: NavItem[] = useMemo(() => [
     { id: 'home', icon: Home, label: 'Inicio', path: '/', action: 'link' },
     { id: 'products', icon: Grid3X3, label: 'Productos', path: '/products', action: 'link' },
     { id: 'search', icon: Search, label: 'Buscar', path: '', action: 'search' },
     { id: 'cart', icon: ShoppingBag, label: 'Carrito', path: '', action: 'cart' },
-  ];
+  ], []);
 
   // Page 2: Secondary actions
-  const page2Items: NavItem[] = [
+  const page2Items: NavItem[] = useMemo(() => [
     { id: 'favorites', icon: Heart, label: 'Favoritos', path: '/favorites', action: 'link', badge: favoritesCount },
     { id: 'theme', icon: Sparkles, label: 'Tema', path: '', action: 'theme' },
     { id: 'account', icon: User, label: 'Cuenta', path: '', action: 'auth' },
-  ];
+  ], [favoritesCount]);
 
   const currentItems = currentPage === 0 ? page1Items : page2Items;
 
@@ -114,7 +130,7 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
       return (
         <button
           key={item.id}
-          onClick={onThemeClick}
+          onClick={themeClick}
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <Icon className="h-4 w-4" strokeWidth={2} />
