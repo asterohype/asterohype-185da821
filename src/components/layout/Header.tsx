@@ -389,6 +389,7 @@ export function Header({ onMobileFilterClick }: HeaderProps = {}) {
         onSearchClick={() => setSearchOpen(true)} 
         onFilterClick={onMobileFilterClick}
         showFilters={isProductsPage && !!onMobileFilterClick}
+        onAuthClick={() => setAuthModalOpen(true)}
       />
     </>
   );
