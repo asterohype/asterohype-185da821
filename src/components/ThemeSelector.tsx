@@ -51,7 +51,10 @@ export const ThemeSelector = () => {
           {currentTheme.icon}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent
+        align="end"
+        className="w-56 bg-popover border border-border shadow-lg rounded-xl p-1 z-50"
+      >
         {themes.map((t) => (
           <div
             key={t.id}
@@ -59,7 +62,7 @@ export const ThemeSelector = () => {
             tabIndex={0}
             onClick={() => handleThemeChange(t.id)}
             onKeyDown={(e) => e.key === 'Enter' && handleThemeChange(t.id)}
-            className="flex items-center gap-3 cursor-pointer px-2 py-2 rounded-sm hover:bg-accent transition-colors"
+            className="flex items-center gap-3 cursor-pointer px-2 py-2 rounded-lg hover:bg-accent transition-colors"
           >
             <span className="flex-shrink-0">{t.icon}</span>
             <div className="flex-1">
