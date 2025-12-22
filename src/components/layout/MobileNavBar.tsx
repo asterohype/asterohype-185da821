@@ -22,6 +22,7 @@ interface NavItem {
   path: string;
   action: NavAction;
   badge?: number;
+  featured?: boolean;
 }
 
 function applyThemeToDom(themeId: ThemeStyle) {
@@ -51,10 +52,10 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
   // Page 1: Main navigation
   const page1Items: NavItem[] = useMemo(() => [
     { id: 'home', icon: Home, label: 'Inicio', path: '/', action: 'link' },
-    { id: 'products', icon: Grid3X3, label: 'Productos', path: '/products', action: 'link' },
+    { id: 'products', icon: Grid3X3, label: 'Productos', path: '/products', action: 'link', featured: true },
     { id: 'search', icon: Search, label: 'Buscar', path: '', action: 'search' },
     { id: 'cart', icon: ShoppingBag, label: 'Carrito', path: '', action: 'cart' },
-  ], []);
+  ] as NavItem[], []);
 
   // Page 2: Secondary actions
   const page2Items: NavItem[] = useMemo(() => [
@@ -69,9 +70,14 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
     const Icon = item.icon;
     const active = item.action === 'link' && isActive(item.path);
     
+    const baseClasses = "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all duration-200";
+    const featuredClasses = item.featured 
+      ? "border-2 border-primary bg-primary/10 text-primary"
+      : "";
+    
     const buttonClasses = active
-      ? "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground transition-all duration-200"
-      : "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200";
+      ? `${baseClasses} bg-primary text-primary-foreground`
+      : `${baseClasses} text-muted-foreground hover:text-foreground ${featuredClasses}`;
     
     if (item.action === 'link') {
       return (
@@ -81,14 +87,14 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
           className={buttonClasses}
         >
           <div className="relative">
-            <Icon className="h-4 w-4" strokeWidth={active ? 2.5 : 2} />
+            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
             {item.badge && item.badge > 0 && (
-              <span className="absolute -top-1 -right-1.5 h-3 min-w-3 px-0.5 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
+              <span className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center font-bold">
                 {item.badge > 9 ? '9+' : item.badge}
               </span>
             )}
           </div>
-          <span className="text-[9px] font-medium">{item.label}</span>
+          <span className="text-[10px] font-medium">{item.label}</span>
         </Link>
       );
     }
@@ -100,8 +106,8 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
           onClick={onSearchClick}
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
-          <Icon className="h-4 w-4" strokeWidth={2} />
-          <span className="text-[9px] font-medium">{item.label}</span>
+          <Icon className="h-5 w-5" strokeWidth={2} />
+          <span className="text-[10px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -114,14 +120,14 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
           className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <div className="relative">
-            <Icon className="h-4 w-4" strokeWidth={2} />
+            <Icon className="h-5 w-5" strokeWidth={2} />
             {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1.5 h-3 min-w-3 px-0.5 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
+              <span className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center font-bold">
                 {totalItems > 9 ? '9+' : totalItems}
               </span>
             )}
           </div>
-          <span className="text-[9px] font-medium">{item.label}</span>
+          <span className="text-[10px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -133,8 +139,8 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
           onClick={themeClick}
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
-          <Icon className="h-4 w-4" strokeWidth={2} />
-          <span className="text-[9px] font-medium">{item.label}</span>
+          <Icon className="h-5 w-5" strokeWidth={2} />
+          <span className="text-[10px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -146,8 +152,8 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
           onClick={onAuthClick}
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
         >
-          <Icon className="h-4 w-4" strokeWidth={2} />
-          <span className="text-[9px] font-medium">{item.label}</span>
+          <Icon className="h-5 w-5" strokeWidth={2} />
+          <span className="text-[10px] font-medium">{item.label}</span>
         </button>
       );
     }
@@ -170,19 +176,19 @@ export function MobileNavBar({ onSearchClick, onFilterClick, showFilters = false
       )}
       
       {/* Main navigation bar */}
-      <div className="mx-3 mb-2 bg-card/95 backdrop-blur-xl border border-border/40 rounded-xl shadow-lg shadow-black/20 pointer-events-auto">
-        <div className="flex items-center justify-around py-1.5">
+      <div className="mx-3 mb-3 bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl shadow-lg shadow-black/20 pointer-events-auto">
+        <div className="flex items-center justify-around py-2.5 px-1">
           {/* Page toggle button */}
           <button
             onClick={() => setCurrentPage(currentPage === 0 ? 1 : 0)}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-all duration-200"
           >
             {currentPage === 0 ? (
-              <ChevronUp className="h-4 w-4" strokeWidth={2} />
+              <ChevronUp className="h-5 w-5" strokeWidth={2} />
             ) : (
-              <ChevronDown className="h-4 w-4" strokeWidth={2} />
+              <ChevronDown className="h-5 w-5" strokeWidth={2} />
             )}
-            <span className="text-[9px] font-medium">{currentPage === 0 ? 'Más' : 'Volver'}</span>
+            <span className="text-[10px] font-medium">{currentPage === 0 ? 'Más' : 'Volver'}</span>
           </button>
 
           {/* Current page items */}
