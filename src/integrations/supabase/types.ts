@@ -620,6 +620,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_valid_tester_code: { Args: { _tester_code: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
