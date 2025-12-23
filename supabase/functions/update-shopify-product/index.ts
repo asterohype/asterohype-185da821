@@ -79,12 +79,9 @@ serve(async (req) => {
       );
     }
 
-    // Prefer a manually provided Admin API token (if present). Fallback to the integration token.
-    const SHOPIFY_ACCESS_TOKEN =
-      Deno.env.get("SHOPIFY_ADMIN_ACCESS_TOKEN") ||
-      Deno.env.get("SHOPIFY_ACCESS_TOKEN");
+    const SHOPIFY_ACCESS_TOKEN = Deno.env.get("SHOPIFY_ACCESS_TOKEN");
     if (!SHOPIFY_ACCESS_TOKEN) {
-      throw new Error("Shopify admin token not configured");
+      throw new Error("SHOPIFY_ACCESS_TOKEN not configured");
     }
 
     const numericProductId = productId.replace("gid://shopify/Product/", "");
