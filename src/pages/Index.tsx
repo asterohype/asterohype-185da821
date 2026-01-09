@@ -24,48 +24,31 @@ import {
   ImagePlus,
   Plus,
   Trash2,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProductTags } from "@/hooks/useProductTags";
+import { EditableText } from "@/components/admin/EditableText";
 import { useProductOverrides, splitTitle } from "@/hooks/useProductOverrides";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useAdminModeStore } from "@/stores/adminModeStore";
-import { useMenuConfigStore } from "@/stores/menuConfigStore";
+import { useSiteCategories } from "@/hooks/useSiteCategories";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CategoryCarousel } from "@/components/home/CategoryCarousel";
-import { CategoryStaticGrid } from "@/components/home/CategoryStaticGrid";
 import { CategoryImageSelector } from "@/components/admin/CategoryImageSelector";
+import { HomeModulesEditor, HomeModules } from '@/components/admin/HomeModulesEditor';
 import { ChristmasBanner } from "@/components/home/ChristmasBanner";
+import { FeaturedImageMarquee } from "@/components/home/FeaturedImageMarquee";
 import { TopHeroBanners } from "@/components/home/TopHeroBanners";
 import { TopHeroImageStrips } from "@/components/home/TopHeroImageStrips";
+import { ProductAccessSection } from "@/components/home/ProductAccessSection";
+import { motion, useScroll, useTransform } from "framer-motion";
 
-// Scroll animation hook
-function useScrollReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          if (ref.current) observer.unobserve(ref.current);
-        }
-      },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return { ref, isVisible };
-}
-
-// Animated Section Wrapper
+// Animated Section Wrapper with Framer Motion
 function AnimatedSection({
   children,
   delay = 0,
@@ -75,20 +58,16 @@ function AnimatedSection({
   delay?: number;
   className?: string;
 }) {
-  const { ref, isVisible } = useScrollReveal();
-
   return (
-    <div
-      ref={ref}
-      className={`transition-all duration-700 ease-out ${className}`}
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(40px)",
-        transitionDelay: `${delay}ms`,
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.7, delay: delay / 1000, ease: "easeOut" }}
+      className={className}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -106,7 +85,7 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<any>> = {
 
 
 // Animated Image Carousel Component for product cards
-const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval?: number }) => {
+const ImageCarousel = ({ images, interval = 2000 }: { images: string[], interval?: number }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -124,7 +103,7 @@ const ImageCarousel = ({ images, interval = 3000 }: { images: string[], interval
           key={i}
           src={url}
           alt=""
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-in-out ${
             i === currentIndex ? 'opacity-100' : 'opacity-0'
           }`}
         />
@@ -163,10 +142,15 @@ const DestacadosGrid = ({
             style={{ animationDelay: `${index * 80}ms` }}
           >
             {/* Destacado badge */}
-            <div className="absolute top-2 left-2 z-10 bg-price-yellow text-background text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Star className="h-2.5 w-2.5 fill-background" />
-              DESTACADO
-            </div>
+      <motion.div 
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="absolute top-2 left-2 z-10 bg-price-yellow text-background text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
+      >
+        <Star className="h-2.5 w-2.5 fill-background" />
+        DESTACADO
+      </motion.div>
             
             {/* Category labels from DB */}
             {productTags.length > 0 && (
@@ -230,7 +214,7 @@ const Index = () => {
     clearCategoryImage,
     addCategory,
     removeCategory,
-  } = useMenuConfigStore();
+  } = useSiteCategories();
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [imageSelectorCategory, setImageSelectorCategory] = useState<{
@@ -257,7 +241,7 @@ const Index = () => {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await fetchProducts(200);
+        const data = await fetchProducts(300);
         setProducts(data);
       } catch (error) {
         console.error("Failed to load products:", error);
@@ -274,7 +258,7 @@ const Index = () => {
 
     const refreshProducts = async () => {
       try {
-        const freshProducts = await fetchProducts(200);
+        const freshProducts = await fetchProducts(300);
         setProducts(freshProducts);
         console.log("[Shopify Polling] Products refreshed at", new Date().toLocaleTimeString());
       } catch (error) {
@@ -290,34 +274,130 @@ const Index = () => {
   // Filter products by special tags
   const topProducts = useMemo(() => {
     const ids = getProductsForTag('top');
-    return products.filter(p => ids.includes(p.node.id));
+    return products.filter(p => {
+        const simpleId = p.node.id.replace('gid://shopify/Product/', '');
+        return ids.includes(p.node.id) || ids.includes(simpleId);
+    });
   }, [products, getProductsForTag]);
 
   const ofertasProducts = useMemo(() => {
     const ids = getProductsForTag('ofertas');
-    return products.filter(p => ids.includes(p.node.id));
+    return products.filter(p => {
+        const simpleId = p.node.id.replace('gid://shopify/Product/', '');
+        return ids.includes(p.node.id) || ids.includes(simpleId);
+    });
   }, [products, getProductsForTag]);
 
   const nuevosProducts = useMemo(() => {
     const ids = getProductsForTag('nuevos');
-    return products.filter(p => ids.includes(p.node.id));
+    return products.filter(p => {
+        const simpleId = p.node.id.replace('gid://shopify/Product/', '');
+        return ids.includes(p.node.id) || ids.includes(simpleId);
+    });
   }, [products, getProductsForTag]);
 
   const destacadosProducts = useMemo(() => {
     const ids = getProductsForTag('destacado');
-    return products.filter(p => ids.includes(p.node.id));
+    return products.filter(p => {
+        const simpleId = p.node.id.replace('gid://shopify/Product/', '');
+        return ids.includes(p.node.id) || ids.includes(simpleId);
+    });
   }, [products, getProductsForTag]);
+
+  // Fetch missing featured products that might not be in the initial batch
+  // OPTIMIZATION: Only fetch if we really have missing critical items, and debounce/limit
+  useEffect(() => {
+    // Only run if we have initial products and tags loaded
+    if (loading || tagsLoading) return;
+    
+    // Check if we already have enough items for critical sections to avoid unnecessary fetches
+    // (e.g. if we have 4+ highlighted items, maybe we don't need to fetch more urgently)
+    // But user complained about "tarda mucho encargar", so let's try to fetch them ASAP but efficiently.
+
+    const fetchMissingProducts = async () => {
+      // 1. Get tags from active modules
+      const { data: modules } = await supabase
+        .from('home_modules')
+        .select('tag_filter')
+        .eq('is_active', true);
+      
+      const moduleTags = modules?.map(m => m.tag_filter) || [];
+      
+      // Reduce the list of tags to check to just the most critical ones for the home page + module tags
+      // Use Set to deduplicate
+      const specialTags = Array.from(new Set(['destacado', 'nuevos', ...moduleTags])); 
+      const allMissingIds = new Set<string>();
+
+      specialTags.forEach(slug => {
+          const ids = getProductsForTag(slug); // slug here can be name or slug thanks to updated hook
+          // Only fetch if we have VERY few items (e.g. < 4) to populate the initial view
+          // If we already have 4, user won't see the missing ones immediately anyway
+          const currentCount = ids.filter(id => 
+            products.some(p => p.node.id === id || p.node.id.replace('gid://shopify/Product/', '') === id)
+          ).length;
+          
+          if (currentCount < 4) {
+             const missing = ids.filter(id => 
+                !products.some(p => p.node.id === id || p.node.id.replace('gid://shopify/Product/', '') === id)
+             );
+             // Limit to first 4 missing per tag to avoid massive queries
+             missing.slice(0, 4).forEach(id => allMissingIds.add(id));
+          }
+      });
+      
+      const missingIdsArray = Array.from(allMissingIds);
+
+      if (missingIdsArray.length > 0) {
+        console.log("Fetching missing special tag products (optimized):", missingIdsArray.length);
+        
+        // Extract numeric IDs for Shopify search query
+        const numericIds = missingIdsArray.map(gid => {
+            const parts = gid.split('/');
+            return parts[parts.length - 1];
+        }).filter(Boolean);
+
+        if (numericIds.length === 0) return;
+
+        // Fetch small batch
+        const query = numericIds.map(id => `id:${id}`).join(' OR ');
+        
+        try {
+            const missingProducts = await fetchProducts(50, query);
+            if (missingProducts.length > 0) {
+                setProducts(prev => {
+                    const existingIds = new Set(prev.map(p => p.node.id));
+                    const newProducts = missingProducts.filter(p => !existingIds.has(p.node.id));
+                    if (newProducts.length === 0) return prev;
+                    return [...prev, ...newProducts];
+                });
+            }
+        } catch (e) {
+            console.error("Error fetching missing special products batch:", e);
+        }
+      }
+    };
+    
+    // Small timeout to let main thread breathe after initial render
+    const t = setTimeout(fetchMissingProducts, 100);
+    return () => clearTimeout(t);
+  }, [loading, tagsLoading, getProductsForTag, products.length]);
 
   const eleganteProducts = useMemo(() => {
     const ids = getProductsForTag('elegante');
-    return products.filter(p => ids.includes(p.node.id));
+    return products.filter(p => {
+        const simpleId = p.node.id.replace('gid://shopify/Product/', '');
+        return ids.includes(p.node.id) || ids.includes(simpleId);
+    });
   }, [products, getProductsForTag]);
 
   // Get a product image for a category using DB tags
   const getCategoryPreviewImage = useCallback((categorySlug: string) => {
     const taggedProductIds = getProductsForTag(categorySlug);
     if (taggedProductIds.length > 0) {
-      const taggedProduct = products.find(p => taggedProductIds.includes(p.node.id));
+      const taggedProduct = products.find(p => {
+        const simpleId = p.node.id.replace('gid://shopify/Product/', '');
+        return taggedProductIds.includes(p.node.id) || taggedProductIds.includes(simpleId);
+      });
       if (taggedProduct) {
         return taggedProduct.node.images.edges[0]?.node.url;
       }
@@ -326,140 +406,38 @@ const Index = () => {
   }, [products, getProductsForTag]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col pt-[100px] md:pt-[130px]">
       <Header />
-      <main className="pt-28 pb-32 md:pb-8">
-        {/* Banner 1: Felices Fiestas */}
-        <ChristmasBanner />
+      
+      <main className="flex-grow pb-24 md:pb-16">
+        {/* Quick Access Button */}
+        <div className="container mx-auto px-4 mt-4 md:mt-6 mb-2">
+          <Link to="/products">
+            <Button className="w-full h-12 md:h-14 text-sm sm:text-base md:text-lg font-bold rounded-xl shadow-lg shadow-price-yellow/20 bg-price-yellow text-black hover:bg-price-yellow/90 hover:scale-[1.01] transition-all flex items-center justify-center gap-2 animate-pulse-slow">
+              <ShoppingBag className="h-5 w-5 md:h-6 md:w-6" />
+              <EditableText id="home_quick_access_btn" defaultText="VER TODOS LOS PRODUCTOS" />
+              <ArrowRight className="h-5 w-5 md:h-6 md:w-6" />
+            </Button>
+          </Link>
+        </div>
 
-        {/* Banner 2: AsteroHype (con bordes redondos) */}
-        <TopHeroBanners />
-
-        <TopHeroImageStrips />
-
-        {/* Marketing Cards Grid - Amazon Style with scroll animations */}
-        <AnimatedSection className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {loading ? (
-              // Skeleton loaders
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-card border border-border rounded-xl p-5">
-                  <Skeleton className="h-6 w-32 mb-4" />
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {Array.from({ length: 4 }).map((_, j) => (
-                      <Skeleton key={j} className="aspect-square rounded-lg" />
-                    ))}
-                  </div>
-                  <Skeleton className="h-4 w-20" />
+        {/* Marketing Cards Grid - Dynamic Modules */}
+        <AnimatedSection className="container mx-auto px-4 py-6 md:py-8">
+            {showAdminControls && (
+                <div className="mb-8 p-4 border rounded-xl bg-card">
+                    <HomeModulesEditor />
                 </div>
-              ))
-            ) : (
-              <>
-                {/* Top Ventas Card with Carousel */}
-                {topProducts.length > 0 && (
-                  <div className="bg-card border border-border rounded-xl p-3 sm:p-5 hover:border-price-yellow/50 transition-colors">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
-                      <h3 className="font-semibold text-foreground text-sm sm:text-base">Top Ventas</h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-                      {topProducts.slice(0, 4).map((product, i) => (
-                        <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
-                          <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3000 + i * 500} />
-                        </Link>
-                      ))}
-                    </div>
-                    <Link to="/products?tag=top" className="text-xs sm:text-sm text-price-yellow hover:underline flex items-center gap-1">
-                      Ver más <ChevronRight className="h-3 w-3" />
-                    </Link>
-                  </div>
-                )}
-
-                {/* Ofertas Flash Card */}
-                {ofertasProducts.length > 0 && (
-                  <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-xl p-3 sm:p-5">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 animate-pulse" />
-                      <h3 className="font-semibold text-foreground text-sm sm:text-base">Ofertas del Día</h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-                      {ofertasProducts.slice(0, 4).map((product, i) => (
-                        <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-red-500/50 transition-all relative group">
-                          <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={2500 + i * 400} />
-                          <span className="absolute bottom-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">HOT</span>
-                        </Link>
-                      ))}
-                    </div>
-                    <Link to="/products?tag=ofertas" className="text-xs sm:text-sm text-red-400 hover:underline flex items-center gap-1">
-                      Ver ofertas <ChevronRight className="h-3 w-3" />
-                    </Link>
-                  </div>
-                )}
-
-                {/* Nuevos Productos Card */}
-                {nuevosProducts.length > 0 && (
-                  <div className="bg-gradient-to-br from-price-yellow/10 to-amber-500/10 border border-price-yellow/20 rounded-xl p-3 sm:p-5">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-price-yellow" />
-                      <h3 className="font-semibold text-foreground text-sm sm:text-base">Nuevos</h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-                      {nuevosProducts.slice(0, 4).map((product, i) => (
-                        <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-price-yellow/50 transition-all">
-                          <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3500 + i * 300} />
-                        </Link>
-                      ))}
-                    </div>
-                    <Link to="/products?tag=nuevos" className="text-xs sm:text-sm text-price-yellow hover:underline flex items-center gap-1">
-                      Explorar <ChevronRight className="h-3 w-3" />
-                    </Link>
-                  </div>
-                )}
-
-                {/* User Card - Changes based on auth state */}
-                {user ? (
-                  // Logged in: Show Elegante category
-                  <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-3 sm:p-5">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
-                      <h3 className="font-semibold text-foreground text-sm sm:text-base">Elegante</h3>
-                    </div>
-                    {eleganteProducts.length > 0 ? (
-                      <>
-                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-                          {eleganteProducts.slice(0, 4).map((product, i) => (
-                            <Link key={i} to={`/product/${product.node.handle}`} className="aspect-square rounded-lg overflow-hidden bg-secondary/50 hover:ring-2 hover:ring-purple-500/50 transition-all">
-                              <ImageCarousel images={[product.node.images.edges[0]?.node.url, product.node.images.edges[1]?.node.url].filter(Boolean) as string[]} interval={3200 + i * 400} />
-                            </Link>
-                          ))}
-                        </div>
-                        <Link to="/products?tag=elegante" className="text-xs sm:text-sm text-purple-400 hover:underline flex items-center gap-1">
-                          Ver colección <ChevronRight className="h-3 w-3" />
-                        </Link>
-                      </>
-                    ) : (
-                      <p className="text-xs sm:text-sm text-muted-foreground">Próximamente más productos</p>
-                    )}
-                  </div>
-                ) : (
-                  // Not logged in: Show login card
-                  <div className="bg-card border border-border rounded-xl p-3 sm:p-5 flex flex-col">
-                    <h3 className="font-semibold text-foreground text-sm sm:text-base mb-2">Mejora tu experiencia</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 flex-1">Inicia sesión para guardar favoritos.</p>
-                    <Link to="/auth">
-                      <Button variant="hero" className="w-full rounded-full text-sm">
-                        Iniciar Sesión
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </>
             )}
-          </div>
+            
+            <HomeModules 
+                products={products}
+                getProductsForTag={getProductsForTag}
+                loading={loading || tagsLoading}
+            />
         </AnimatedSection>
 
         {/* Category Quick Access - Shein Style Circles */}
-        <section className="container mx-auto px-4 py-8">
+        <section className="container mx-auto px-4 py-8 mb-8">
           <div className="flex items-center justify-between mb-8">
             <h2 className="font-display text-2xl md:text-3xl uppercase italic text-foreground">Categorías</h2>
             <div className="flex items-center gap-3">
@@ -476,7 +454,7 @@ const Index = () => {
                 </Button>
               )}
               <Link
-                to="/products"
+                to="/categories"
                 className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1"
               >
                 Ver todo <ArrowRight className="h-4 w-4" />
@@ -515,7 +493,7 @@ const Index = () => {
                         toast.error("Rellena nombre y slug");
                         return;
                       }
-                      addCategory(slug, label);
+                      addCategory({ slug, label });
                       setIsCreatingCategory(false);
                       setNewCategoryLabel("");
                       setNewCategorySlug("");
@@ -549,14 +527,19 @@ const Index = () => {
             </div>
 
           ) : (
-            <div className="flex justify-center gap-6 md:gap-10 lg:gap-12 flex-wrap">
+            <div className="grid grid-cols-2 gap-4 pb-4 justify-items-center md:flex md:flex-wrap md:justify-center md:gap-10 lg:gap-12">
               {categories.map((category) => {
                 const previewImage = category.customImage || getCategoryPreviewImage(category.slug);
                 const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
                 const isEditing = editingCategory === category.id;
                 
                 return (
-                  <div key={category.id} className="flex flex-col items-center gap-3 group relative">
+                  <motion.div 
+                    key={category.id} 
+                    className="flex flex-col items-center gap-3 group relative flex-shrink-0 snap-center"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
                     {/* Admin controls - image and delete */}
                     {showAdminControls && (
                       <div className="absolute -top-1 -right-1 z-10 flex gap-1">
@@ -605,7 +588,7 @@ const Index = () => {
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              updateCategory(category.id, editValue);
+                              updateCategory({ id: category.id, label: editValue });
                               setEditingCategory(null);
                               toast.success('Guardado');
                             }
@@ -614,7 +597,7 @@ const Index = () => {
                         />
                         <button
                           onClick={() => {
-                            updateCategory(category.id, editValue);
+                            updateCategory({ id: category.id, label: editValue });
                             setEditingCategory(null);
                             toast.success('Guardado');
                           }}
@@ -640,7 +623,7 @@ const Index = () => {
                         )}
                       </span>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -651,7 +634,7 @@ const Index = () => {
             <CategoryImageSelector
               isOpen={!!imageSelectorCategory}
               onClose={() => setImageSelectorCategory(null)}
-              onSelectImage={(url) => updateCategoryImage(imageSelectorCategory.id, url)}
+              onSelectImage={(url) => updateCategoryImage({ id: imageSelectorCategory.id, imageUrl: url })}
               onClearImage={() => clearCategoryImage(imageSelectorCategory.id)}
               products={products}
               currentImage={imageSelectorCategory.customImage}
@@ -659,6 +642,23 @@ const Index = () => {
             />
           )}
         </section>
+
+        {/* Horizontal Scrolling Products (Bottom Marquee) - Moved here */}
+        {!loading && products.length > 0 && (
+          <AnimatedSection className="py-8 bg-secondary/20">
+             <div className="container mx-auto px-4 mb-4">
+                 <h2 className="font-display text-xl md:text-2xl uppercase italic text-foreground text-center">
+                   Muchos de Nuestros Productos
+                 </h2>
+             </div>
+             <CategoryCarousel
+               products={products.slice(0, 15)} // Show first 15 mixed products
+               categorySlug="all"
+               getTagsForProduct={getTagsForProduct}
+               direction="left"
+             />
+          </AnimatedSection>
+        )}
 
         {/* Christmas Banner - debajo de categorías */}
         <section className="container mx-auto px-4">
@@ -676,7 +676,7 @@ const Index = () => {
                 </h2>
                 <Star className="h-6 w-6 text-price-yellow fill-price-yellow animate-pulse" />
               </div>
-              <Link to="/products" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
+              <Link to="/products?tag=destacado" className="text-sm text-price-yellow hover:underline flex items-center gap-1">
                 Ver todo <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -692,71 +692,22 @@ const Index = () => {
                 ))}
               </div>
             ) : destacadosProducts.length > 0 ? (
-              <DestacadosGrid products={destacadosProducts.slice(0, 10)} getTagsForProduct={getTagsForProduct} />
+              <CategoryCarousel 
+                products={destacadosProducts}
+                categorySlug="destacados"
+                getTagsForProduct={getTagsForProduct}
+                direction="right"
+              />
             ) : (
               <p className="text-center text-muted-foreground py-8">No hay productos destacados aún</p>
             )}
           </div>
         </AnimatedSection>
+        
+        {/* New Section: Product Access */}
+        <ProductAccessSection />
 
-        {/* Category Sections - Static grids for tecnologia/accesorios, Carousel for ropa */}
-        {!loading && !tagsLoading && products.length > 0 && (() => {
-          // Show only tecnologia, accesorios, ropa (exclude fundas)
-          const categoriesToShow = categories.filter(c => 
-            ['tecnologia', 'accesorios', 'ropa'].includes(c.slug)
-          );
-
-          return categoriesToShow.map((category, categoryIndex) => {
-            const taggedProductIds = getProductsForTag(category.slug);
-            const categoryProducts = products
-              .filter((p) => taggedProductIds.includes(p.node.id));
-
-            if (categoryProducts.length === 0) return null;
-            const Icon = CATEGORY_ICONS[category.slug] || Smartphone;
-
-            // First 2 (tecnologia, accesorios) = static grid, ropa = carousel
-            const useStaticGrid = category.slug === 'tecnologia' || category.slug === 'accesorios';
-
-            return (
-              <AnimatedSection key={category.slug} delay={categoryIndex * 100} className="py-8">
-                <div className="container mx-auto px-4 mb-6">
-                  <h2 className="font-display text-2xl md:text-3xl uppercase italic text-foreground text-center">
-                    {category.label}
-                  </h2>
-                  <div className="flex justify-center mt-2">
-                    <Link
-                      to={`/products?tag=${category.slug}`}
-                      className="text-sm text-muted-foreground hover:text-price-yellow flex items-center gap-1"
-                    >
-                      Ver todo <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </div>
-
-                {useStaticGrid ? (
-                  <CategoryStaticGrid
-                    products={categoryProducts}
-                    categorySlug={category.slug}
-                    maxProducts={7}
-                  />
-                ) : (
-                  <CategoryCarousel
-                    products={categoryProducts}
-                    categorySlug={category.slug}
-                    getTagsForProduct={getTagsForProduct}
-                    direction={categoryIndex % 2 === 0 ? "right" : "left"}
-                  />
-                )}
-              </AnimatedSection>
-            );
-          });
-        })()}
-
-
-        {/* Sponsors section with products */}
-        <Sponsors products={products.slice(12, 20)} />
-
-        {/* Trust Badges - Above footer */}
+        {/* Trust Badges - Moved here as requested */}
         <section className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
@@ -775,6 +726,43 @@ const Index = () => {
             ))}
           </div>
         </section>
+
+        {/* Banner 1: Felices Fiestas - Moved here */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="py-8"
+        >
+          <TopHeroImageStrips />
+        </motion.div>
+
+        {/* Category Sections - Static grids for tecnologia/accesorios, Carousel for ropa */}
+        {!loading && !tagsLoading && products.length > 0 && (() => {
+          // Exclude categories that are already shown as static grids or special sections if any
+          // The user complained about duplicates ("antiguas"). 
+          // We previously rendered 'tecnologia', 'accesorios', 'ropa' here.
+          // If the user says they are "antiguas" and wants them removed, we should probably remove this whole block 
+          // OR verify if they are indeed duplicates of something else.
+          // Looking at the code, we have:
+          // 1. Marketing Cards Grid (Top/Nuevos/Ofertas/Elegante)
+          // 2. Category Quick Access (Shein Style Circles)
+          // 3. CategoryCarousel for "all" (Muchos de Nuestros Productos)
+          // 4. Christmas Banner
+          // 5. Productos Destacados
+          // 6. Product Access Section
+          // 7. Trust Badges
+          // 8. TopHeroImageStrips
+          // 9. THIS BLOCK -> Dynamic Category Sections
+          
+          // If the user sees duplicates, it might be because "Tecnología" and "Ropa" are already covered 
+          // by the "Shein Style Circles" or just they don't want these specific sections at the bottom.
+          // User directive: "ELIMINALAS PARA SIEMPRE".
+          // So I will remove this map block entirely.
+          
+          return null;
+        })()}
       </main>
       <Footer />
     </div>
